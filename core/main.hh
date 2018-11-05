@@ -111,6 +111,7 @@ struct OpPrint {
   void RLC(Val8 val)  { pp("RLC", val); }
   void SLA(Val8 val)  { pp("SLA", val); }
   void SRA(Val8 val)  { pp("SRA", val); }
+  void SRL(Val8 val)  { pp("SRL", val); }
   void SWAP(Val8 val) { pp("SWAP", val); }
 
   // single-bit
@@ -121,8 +122,10 @@ struct OpPrint {
   // Arithmetic
   void XOR(Val8 val) { pp("XOR", val); }
   void ADD(Val8 dst, Val8 val) { pp("ADD", dst, val); }
+  void ADC(Val8 dst, Val8 val) { pp("ADC", dst, val); }
   void ADD(Val16 dst, Val16 val) { pp("ADD", dst, val); }
   void SUB(Val8 val) { pp("SUB", val); }
+  void SBC(Val8 dst, Val8 val) { pp("SBC", dst, val); }
 
   void p(const char *s) { printf("%s", s); }
   void p(int x) { printf("%x", x); }
@@ -150,7 +153,7 @@ struct OpPrint {
 struct Executor {
   Memory &mem;
   Registers &reg;
-
+  uint64_t timer = 0;
   Executor(Registers &reg, Memory &memory) : mem(memory), reg(reg) { }
 
   bool cond_eval(Cond c) {
@@ -199,6 +202,7 @@ struct Executor {
   void RLC(Val8 val);
   void SLA(Val8 val);
   void SRA(Val8 val);
+  void SRL(Val8 val);
   void SWAP(Val8 val);
 
   // single-bit
@@ -209,6 +213,8 @@ struct Executor {
   // Arithmetic
   void XOR(Val8 val);
   void ADD(Val8 dst, Val8 val);
+  void ADC(Val8 dst, Val8 val);
   void ADD(Val16 dst, Val16 val);
   void SUB(Val8 val);
+  void SBC(Val8 val);
 };

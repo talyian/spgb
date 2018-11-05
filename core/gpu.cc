@@ -25,7 +25,7 @@ struct PPU {
   } state = SCAN_OAM;
 
   int sock = -1;
-  GPU(Memory &mem) :
+  PPU(Memory &mem) :
     mem(mem),
     SCY(mem[0xFF42]),
     SCX(mem[0xFF43]),
