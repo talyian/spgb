@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <memory>
+#include "unistd.h"
 
 #include "registers.hh"
 void Registers::dump() {
@@ -55,10 +56,10 @@ u8 Val8::get(Registers &reg, Memory &mem)  {
   switch(type) {
   case Reg: return getRegister(value.r, reg);
   case Val: return value.value;
-  case PtrN: return mem.buf[value.ptr_n];
+  case PtrN: return mem[value.ptr_n];
   case PtrR: return 0; // TODO
-  case IoN: return mem.buf[0xFF00 + value.io_n];
-  case IoR: return mem.buf[0xFF00 + getRegister(value.io_r, reg)];
+  case IoN: return mem[0xFF00 + value.io_n];
+  case IoR: return mem[0xFF00 + getRegister(value.io_r, reg)];
   }
 }
 
@@ -67,10 +68,10 @@ void Val8::set(Registers &reg, Memory &mem, Val8 source)  {
   switch(type) {
   case Reg: setRegister(value.r, reg, new_value); break;
   case Val: abort(); // TODO
-  case PtrN: mem.buf[value.ptr_n] = new_value; break;
-  case PtrR: mem.buf[getRegister(value.ptr_r, reg)] = new_value; break;
-  case IoN: mem.buf[0xFF00 + value.io_n] = new_value; break;
-  case IoR: mem.buf[0xFF00 + getRegister(value.io_r, reg)] = new_value; break;
+  case PtrN: mem[value.ptr_n] = new_value; break;
+  case PtrR: mem[getRegister(value.ptr_r, reg)] = new_value; break;
+  case IoN: mem[0xFF00 + value.io_n] = new_value; break;
+  case IoR: mem[0xFF00 + getRegister(value.io_r, reg)] = new_value; break;
   }
 }
 
@@ -103,29 +104,41 @@ void Executor::LD(Val16 dst, Val16 src) { set(dst, get(src)); }
 // stack operations
 void Executor::PUSH(Val16 val) {
   u16 v = get(val);
-  mem.buf[reg.SP--] = v;
-  mem.buf[reg.SP--] = v >> 8;
+  mem[reg.SP--] = v;
+  mem[reg.SP--] = v >> 8;
+}
+u16 Executor::PEEK() {
+  u16 v = 0;
+  v = (v << 8) | mem[reg.SP + 1];
+  v = (v << 8) | mem[reg.SP + 2];
+  return v;
 }
 void Executor::POP(Val16 addr) {
   u16 v = 0;
-  v = (v << 8) | mem.buf[++reg.SP];
-  v = (v << 8) | mem.buf[++reg.SP];
+  v = (v << 8) | mem[++reg.SP];
+  v = (v << 8) | mem[++reg.SP];
   set(addr, v);
 }
 
 // jumps
-void Executor::JP(Cond cond, Val16 dst) { if (cond_eval(cond)) { reg.PC = get(dst); } }
-void Executor::JR(Cond cond, Val8 offset) { if (cond_eval(cond)) { reg.PC += get(offset); } }
+void Executor::JP(Cond cond, Val16 dst) {
+  // printf("JP %04x\n", get(dst));
+  if (cond_eval(cond)) {
+    reg.PC = get(dst); } }
+void Executor::JR(Cond cond, Val8 offset) {
+  // printf("JR ");
+  // show(cond);
+  // printf(" %04x\n", reg.PC + (int8_t)get(offset));
+  if (cond_eval(cond)) { reg.PC += (int8_t)get(offset); }}
 void Executor::RET(Cond cond) {
-  if (cond_eval(cond)) { POP(REG16::PC); }
-}
+  printf("RET %04x\n", PEEK());
+  if (cond_eval(cond)) { POP(REG16::PC); }}
 void Executor::CALL(Cond cond, Val16 target) {
+  printf("CALL %04x\n", get(target));
   if (cond_eval(cond)) {
     PUSH(REG16::PC);
     reg.PC = get(target);
-  }
-}
-
+  }}
 // tests
 void Executor::CP(Val8 rhs) {
   u8 a = reg.A;
@@ -135,10 +148,22 @@ void Executor::CP(Val8 rhs) {
   reg.setFH(0); // TODO:
   reg.setFO(1); // TODO: really??
 }
-void Executor::INC(Val8 dst) { set(dst, get(dst) + 1); }
+void Executor::INC(Val8 dst) {
+  // printf("INC ");
+  // dst.show();
+  // printf(" -> %x\n", get(dst) + 1);
+  set(dst, get(dst) + 1); }
 void Executor::INC(Val16 dst) { set(dst, get(dst) + 1); }
-void Executor::DEC(Val8 dst) { set(dst, get(dst) - 1); }
-void Executor::DEC(Val16 dst) { set(dst, get(dst) - 1); }
+void Executor::DEC(Val8 dst) {
+  // printf("DEC ");
+  // dst.show();
+  // printf(" -> %x\n", get(dst) - 1);
+  set(dst, get(dst) - 1); }
+void Executor::DEC(Val16 dst) {
+  // printf("DEC ");
+  // dst.show();
+  // printf(" -> %x\n", get(dst) - 1);
+  set(dst, get(dst) - 1); }
 
 // // bitwise
 void Executor::RR(Val8 val) { }
@@ -185,10 +210,12 @@ void Executor::BIT(int bit, Val8 rhs) {
 
 // // Arithmetic
 void Executor::XOR(Val8 val) { reg.A ^= get(val); }
-void Executor::ADD(Val8 val) { reg.A += get(val); }
+void Executor::ADD(Val8 dst, Val8 val) { set(dst, get(dst) + get(val)); }
+void Executor::ADD(Val16 dst, Val16 val) { set(dst, get(dst) + get(val)); }
 void Executor::SUB(Val8 val) { reg.A -= get(val); }
 
-struct Parser {
+template<class Executor>
+struct OpParser {
   Registers &registers;
   Memory &mem;
   Executor &ii;
@@ -204,10 +231,10 @@ struct Parser {
   SS(SP) SS(PC)
   #undef SS
 
-  Parser(Registers &registers, Memory &mem, Executor &ii, u8 * buf, size_t buflen)
+  OpParser(Registers &registers, Memory &mem, Executor &ii, u8 * buf, size_t buflen)
   : registers(registers), mem(mem), ii(ii), buf(buf), buflen(buflen)  { }
 
-  Parser(Registers &registers, Memory &mem, Executor &ii, FILE * file)
+  OpParser(Registers &registers, Memory &mem, Executor &ii, FILE * file)
     : registers(registers), mem(mem), ii(ii) {
     fseek(file, 0, SEEK_END);
     buflen = ftell(file);
@@ -216,12 +243,13 @@ struct Parser {
     fread(buf, 1, buflen, file);
   }
 
-  Val8 Load(u16 x) { return Val8(LOAD, x); }
-  Val8 Load(REG16 x) { return Val8(LOAD, x); }
+  Val8 Load(u16 x) { Val8 v(0); v.type=Val8::PtrN; v.value.ptr_n=x; return v; }
+  Val8 Load(REG16 x) { Val8 v(0); v.type=Val8::PtrR; v.value.ptr_r=x; return v; }
   Val8 IO(u8 x) { Val8 v(0); v.type=Val8::IoN; v.value.io_n=x; return v; }
   Val8 IO(REG8 x) { Val8 v(0); v.type=Val8::IoR; v.value.io_r=x; return v; }
   // The parser decodes a single instruction and feeds it to a given interpreter
   void Step() {
+    ii.timer = 0;
     u16 pc = registers.PC;
     u8 op = read8();
     switch (op) {
@@ -310,10 +338,17 @@ struct Parser {
     case 0x7E: ii.LD(A, Load(HL)); break;
     case 0x7F: ii.LD(A, A); break;
 
-    case 0xE0: ii.LD(IO(read8()), A); break;
-    case 0xE2: ii.LD(IO(C), A); break;
+      // All IO
+    case 0xE0:
+      // printf("Write %x\n", buf[registers.PC]);
+      ii.LD(IO(read8()), A); break;
+    case 0xE2:
+      // printf("Write A\n");
+      ii.LD(IO(C), A); break;
     case 0xEA: ii.LD(Load(read16()), A); break;
-    case 0xF0: ii.LD(A, IO(read8())); break;
+    case 0xF0:
+      // printf("Read %x -> %x\n", buf[registers.PC], mem.buf[0xFF44]);
+      ii.LD(A, IO(read8())); break; //
       // PUSH
     case 0xC5: ii.PUSH(BC); break;
     case 0xD5: ii.PUSH(DE); break;
@@ -360,6 +395,31 @@ struct Parser {
     case 0x35: ii.DEC(Load(HL)); break;
     case 0x3B: ii.DEC(SP); break;
     case 0x3D: ii.DEC(A); break;
+      // ADD
+    case 0x09: ii.ADD(HL, BC); break;
+    case 0x19: ii.ADD(HL, DE); break;
+    case 0x29: ii.ADD(HL, HL); break;
+    case 0x39: ii.ADD(HL, SP); break;
+    case 0x80: ii.ADD(A, B); break;
+    case 0x81: ii.ADD(A, C); break;
+    case 0x82: ii.ADD(A, D); break;
+    case 0x83: ii.ADD(A, E); break;
+    case 0x84: ii.ADD(A, H); break;
+    case 0x85: ii.ADD(A, L); break;
+    case 0x86: ii.ADD(A, Load(HL)); break;
+    case 0x87: ii.ADD(A, A); break;
+    case 0xC6: ii.ADD(A, read8()); break;
+    case 0xE8: ii.ADD(SP, (int8_t)read8()); break; // warning! signed int!
+      // SUB
+    case 0x90: ii.SUB(B); break;
+    case 0x91: ii.SUB(C); break;
+    case 0x92: ii.SUB(D); break;
+    case 0x93: ii.SUB(E); break;
+    case 0x94: ii.SUB(H); break;
+    case 0x95: ii.SUB(L); break;
+    case 0x96: ii.SUB(Load(HL)); break;
+    case 0x97: ii.SUB(A); break;
+    case 0x98: ii.SUB(read8()); break;
       // rotations
     case 0x07: ii.RLC(A); break;
     case 0x0F: ii.RRC(A); break;
@@ -368,8 +428,11 @@ struct Parser {
 
     case 0x18: ii.JR(Cond::ALWAYS, read8()); break;
     case 0x20: ii.JR(Cond::NZ, read8()); break;
-    case 0x28: ii.JP(Cond::Z, read8()); break;
+    case 0x28: ii.JR(Cond::Z, read8()); break;
+    case 0x30: ii.JR(Cond::NC, read8()); break;
+    case 0x38: ii.JR(Cond::C, read8()); break;
     case 0xAF: ii.XOR(A); break;
+
     case 0xCB: {
       auto op2 = read8();
       switch (op2) {
@@ -389,17 +452,26 @@ struct Parser {
 
 #include "gpu.cc"
 
+u8 *full_screen_buf; // 256x256 pixels;
+u8 *display_buf; // 160x144 pixels;
+u8 *io_buf;
+
 int main() {
+  char stdout_buf[2048];
+  setvbuf(stdout, stdout_buf, _IOFBF, sizeof stdout_buf);
   Registers reg;
   Memory memory;
   Executor exec(reg, memory);
-  Parser pp(reg, memory, exec, fopen("DMG_ROM.bin", "r"));
-  struct GPU gpu(memory);
-  while(reg.PC < 0x65) {
-    pp.Step();
-    // gpu.Step(4);
+  OpPrint printer(reg);
+  struct PPU ppu(memory);
+  OpParser pp(reg, memory, exec, fopen("data/DMG_ROM.bin", "r"));
+
+  while(reg.PC < 0x100) {
+    for(int i=0; i<1000; i++) {
+      pp.Step();
+      ppu.Step(400);
+      sleep(0);
+    }
   }
   reg.dump();
-  printf("ok");
-  return 0;
 }
