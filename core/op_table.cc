@@ -1,3 +1,4 @@
+    switch (op) {
     case 0x00: OP(NOP()               ,  1,  4, "- - - -");
     case 0x01: OP(LD(BC,read16())     ,  3, 12, "- - - -");
     case 0x02: OP(LD(Load(BC),A)      ,  1,  8, "- - - -");
@@ -32,7 +33,7 @@
     case 0x1f: OP(RR(A)               ,  1,  4, "0 0 0 C");
     case 0x20: OP(JR(Cond::NZ,(int8_t)read8()),  2, 12/8, "- - - -");
     case 0x21: OP(LD(HL,read16())     ,  3, 12, "- - - -");
-    // case 0x22: OP(LD(Load(HL+),A)     ,  1,  8, "- - - -");
+    case 0x22: ii.LD(Load(HL),A);ii.INC(HL); break;//OP(LD(Load(HL+),A),1,8,"- - - -");
     case 0x23: OP(INC(HL)             ,  1,  8, "- - - -");
     case 0x24: OP(INC(H)              ,  1,  4, "Z 0 H -");
     case 0x25: OP(DEC(H)              ,  1,  4, "Z 1 H -");
@@ -48,7 +49,7 @@
     case 0x2f: OP(CPL()               ,  1,  4, "- 1 1 -");
     case 0x30: OP(JR(Cond::NC,(int8_t)read8()),  2, 12/8, "- - - -");
     case 0x31: OP(LD(SP,read16())     ,  3, 12, "- - - -");
-    // case 0x32: OP(LD(Load(HL-),A)     ,  1,  8, "- - - -");
+    case 0x32: ii.LD(Load(HL),A);ii.DEC(HL); break;// OP(LD(Load(HL-),A),1,8,"- - - -");
     case 0x33: OP(INC(SP)             ,  1,  8, "- - - -");
     case 0x34: OP(INC(Load(HL))       ,  1, 12, "Z 0 H -");
     case 0x35: OP(DEC(Load(HL))       ,  1, 12, "Z 1 H -");
@@ -499,3 +500,6 @@
     case 0x1fd: OP(SET(7,L)            ,  2,  8, "- - - -");
     case 0x1fe: OP(SET(7,Load(HL))     ,  2, 16, "- - - -");
     case 0x1ff: OP(SET(7,A)            ,  2,  8, "- - - -");
+    default:
+      printf("Unknown Opcode: %hx\n", op);
+    }

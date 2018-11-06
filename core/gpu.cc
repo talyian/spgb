@@ -56,7 +56,9 @@ struct PPU {
   uint rhash = 10;
 
   void RenderLine() { }
-  void RenderScreen() { }
+  void RenderScreen() {
+    Render();
+  }
   void Render() {
     char msg[1 + 160 * 144];
     msg[0] = 'l';

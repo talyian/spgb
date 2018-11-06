@@ -96,7 +96,7 @@ struct OpPrint {
   void JR(Cond cond, Val8 offset) { pp("JR", cond, offset); }
   void RET(Cond cond) { pp("RET", cond); }
   void CALL(Cond cond, Val16 target) { pp("CALL", cond, target); }
-
+  void RST(u8 val) { pp("RST", val); }
   // tests
   void CP(Val8 val)   { pp("CP", val); }
   void INC(Val8 dst)  { pp("INC", dst); }
@@ -121,11 +121,16 @@ struct OpPrint {
 
   // Arithmetic
   void XOR(Val8 val) { pp("XOR", val); }
+  void AND(Val8 val) { pp("AND", val); }
+  void OR(Val8 val) { pp("OR", val); }
   void ADD(Val8 dst, Val8 val) { pp("ADD", dst, val); }
   void ADC(Val8 dst, Val8 val) { pp("ADC", dst, val); }
   void ADD(Val16 dst, Val16 val) { pp("ADD", dst, val); }
   void SUB(Val8 val) { pp("SUB", val); }
   void SBC(Val8 dst, Val8 val) { pp("SBC", dst, val); }
+
+  void DI() { pp("DI"); }
+  void EI() { pp("EI"); }
 
   void p(const char *s) { printf("%s", s); }
   void p(int x) { printf("%x", x); }
@@ -187,7 +192,7 @@ struct Executor {
   void JR(Cond cond, Val8 offset);
   void RET(Cond cond);
   void CALL(Cond cond, Val16 target);
-
+  void RST(u8 val);
   // tests
   void CP(Val8 val);
   void INC(Val8 dst);
@@ -212,9 +217,16 @@ struct Executor {
 
   // Arithmetic
   void XOR(Val8 val);
+  void AND(Val8 val);
+  void OR(Val8 val);
+  void CPL();
   void ADD(Val8 dst, Val8 val);
   void ADC(Val8 dst, Val8 val);
   void ADD(Val16 dst, Val16 val);
   void SUB(Val8 val);
   void SBC(Val8 val);
+
+  // Interrupts
+  void DI();
+  void EI();
 };
