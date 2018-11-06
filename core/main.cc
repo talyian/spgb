@@ -18,6 +18,34 @@ void Registers::dump() {
 
 #include "main.hh"
 
+void show(Cond c) {
+  switch(c) {
+  case Cond::ALWAYS: break;
+  case Cond::C: printf("C"); break;
+  case Cond::Z: printf("Z"); break;
+  case Cond::NC: printf("NC"); break;
+  case Cond::NZ: printf("NZ"); break;
+  }
+}
+
+void show(Val16 v) {
+  switch(v.type) {
+  case Val16::Reg: printf("%.2s", (char *)"BCDEHLAFSPPC" + (2 * (int)v.value.r)); break;
+  case Val16::Val: printf("%hx", v.value.value); break;
+  }
+}
+
+void show(Val8 v) {
+  switch(v.type) {
+  case Val8::Val: printf("$%hhx", v.value.value); break;
+  case Val8::Reg: printf("%c", "ABCDEFHL"[(int)v.value.r]); break;
+  case Val8::PtrN: printf("($%hx)", v.value.ptr_n); break;
+  case Val8::PtrR: printf("(%.2s)", (char *)"BCDEHLAFSPPC" + (2 * (int)v.value.ptr_r)); break;
+  case Val8::IoN: printf("(IO:FF00+$%hhx)", v.value.io_n); break;
+  case Val8::IoR: printf("(IO:FF00+%c)", "ABCDEFHL"[(int)v.value.io_r]); break;
+  }
+}
+
 u8 getRegister(REG8 r, Registers &rr) {
   switch(r) {
   #define F(Z) case REG8::Z: return rr.Z;
@@ -127,7 +155,7 @@ void Executor::JP(Cond cond, Val16 dst) {
     reg.PC = get(dst); } }
 void Executor::JR(Cond cond, Val8 offset) {
    if (reg.PC > 0x10) {
-  // {
+    // {
     // printf("[%x] ", reg._PC);
     // printf("JR ");
     // show(cond);
