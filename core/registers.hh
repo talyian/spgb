@@ -4,7 +4,7 @@ typedef uint8_t u8;
 typedef uint16_t u16;
 
 struct Registers {
-  u8 A = 0, B = 0, C = 0, D = 0, E = 0, F = 0, H = 0, L = 0;
+  u8 A = 0, B = 0, C = 0, D = 0, E = 0, F = 0, H = 0, L = 0, IME = 0;
   u16 SP = 0, PC = 0, _PC = 0; // the previous PC
   // R16 is a struct that aliases access to two 8-bit registers;
   struct R16 {
