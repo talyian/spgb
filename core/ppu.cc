@@ -10,8 +10,8 @@ u8 PPU::bgTile(u8 x,u8 y)  {
 void PPU::RenderLine()  {
     // background
     for(u8 x = 0; x < 160; x++) {
-      auto tile_x = (x + SCX) / 8;
-      auto tile_y = (LY + SCY) / 8;
+      auto tile_x = (u8)(x + SCX) / 8;
+      auto tile_y = (u8)(LY + SCY) / 8;
       auto tile_id = bgTile(tile_x, tile_y);
       auto px = (x + SCX) % 8;
       auto py = (LY + SCY) % 8;

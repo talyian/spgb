@@ -21,7 +21,15 @@ void CPU::LD(Val16 dst, Val16 src) {
 void CPU::PUSH(Val16 val) { u16 v = get(val); mem[reg.SP--] = v; mem[reg.SP--] = v >> 8; }
 // PEEK is not a real op!
 u16 CPU::PEEK() { return (mem[reg.SP+1] << 8) | mem[reg.SP + 2]; }
-void CPU::POP(Val16 addr) { u16 v = mem[++reg.SP]; set(addr, (v << 8) | mem[++reg.SP]); }
+void CPU::POP(Val16 addr) {
+  u16 v = mem[++reg.SP];
+  v = (v << 8) | mem[++reg.SP];
+  // the bottom 4 bits of F are always zero
+  if (addr.type == Val16::Reg && addr.value.r == REG16::AF)
+    set(addr, (v & 0xFFF0));
+  else
+    set(addr, v);
+}
 
 // jumps
 void CPU::JP(Cond cond, Val16 dst) { if(cond_eval(cond)) {reg.PC = get(dst);}}
@@ -174,7 +182,7 @@ void CPU::ADC(Val8 dst, Val8 val) {
 }
 void CPU::ADD(Val16 dst, Val16 val) {
   u16 oldval = get(dst);
-  u16 newval = oldval + get(val) + reg.FC();
+  u16 newval = oldval + get(val);
   set(dst, newval);
   // hmmmm.
   if (dst.type == Val16::Reg && dst.value.r == REG16::SP) reg.setFZ(0);
@@ -203,7 +211,17 @@ void CPU::SBC(Val8 val) {
 void CPU::DI() { reg.IME=0x00; }
 void CPU::EI() { reg.IME=0xFF; }
 void CPU::STOP() { printf("TODO: STOP\n"); abort(3);}
-void CPU::DAA() { printf("TODO: STOP\n"); abort(4);}
+void CPU::DAA() {
+  if (reg.FO()) { // subtraction
+    if (reg.FC()) reg.A -= 0x60;
+    if (reg.FH()) reg.A -= 6;
+  } else {
+    if (reg.FC() || reg.A > 0x99) { reg.A += 0x60; reg.setFC(1); }
+    if (reg.FH() || (reg.A & 0xF) > 9) { reg.A += 6; }
+  }
+  reg.setFZ(reg.A == 0);
+  reg.setFH(0);
+}
 void CPU::CCF() {
   reg.setFC(~reg.FC());
   reg.setFO(0);

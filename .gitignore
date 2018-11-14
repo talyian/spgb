@@ -1,0 +1,16 @@
+/bgbtest.1.asm
+/bgbtest.asm
+/bgbtest.notes
+bin
+/data/Pokemon Red.gb
+/data/Pokemon Red.sav
+/data/add_sp_e_timing.gb
+/data/add_sp_e_timing.sym
+/data/testGame.asm
+/data/ttt.asm
+libs
+/main.exe
+/main.obj
+sdlgui
+tools
+winformui

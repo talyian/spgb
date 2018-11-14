@@ -26,8 +26,8 @@
 int main(int argc, const char ** argv) {
   const char * rom_path = "gb-test-roms/cpu_instrs/individual/06-ld r,r.gb";
   rom_path = "data/opus5.gb";
-  // rom_path = "data/ttt.gb";
-  // rom_path = "data/bgbtest.gb";
+  rom_path = "data/bgbtest.gb";
+  rom_path = "data/ttt.gb";
   if (argc == 2) rom_path = argv[1];
 
   Registers registers;
