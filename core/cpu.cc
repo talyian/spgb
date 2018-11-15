@@ -1,6 +1,3 @@
-// CPU -
-// this file contains the implementation of the Z80 instructions
-
 #include "cpu.hh"
 
 u8 CPU::get(Val8 a) { return a.get(reg, mem); }
@@ -161,7 +158,7 @@ void CPU::BIT(int bit, Val8 rhs) {
 void CPU::AND(Val8 val) { reg.A &= get(val); reg.F = 0x20; reg.setFZ(reg.A == 0); }
 void CPU::OR(Val8 val) { reg.A |= get(val); reg.F = 0; reg.setFZ(reg.A == 0); }
 void CPU::XOR(Val8 val) { reg.A ^= get(val); reg.F = 0; reg.setFZ(reg.A == 0); }
-void CPU::CPL() { reg.A = ~reg.A; reg.F |= ~0x60; }
+void CPU::CPL() { reg.A ^= 0xFF; reg.F |= ~0x60; }
 void CPU::ADD(Val8 dst, Val8 val) {
   u8 oldval = get(dst);
   u8 newval = oldval + get(val);
@@ -222,13 +219,5 @@ void CPU::DAA() {
   reg.setFZ(reg.A == 0);
   reg.setFH(0);
 }
-void CPU::CCF() {
-  reg.setFC(~reg.FC());
-  reg.setFO(0);
-  reg.setFH(0);
-}
-void CPU::SCF() {
-  reg.setFC(1);
-  reg.setFO(0);
-  reg.setFH(0);
-}
+void CPU::CCF() { reg.F ^= 0x10; reg.F &= ~0x60; }
+void CPU::SCF() { reg.F |= 0x10; reg.F &= ~0x60; }

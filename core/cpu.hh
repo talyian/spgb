@@ -1,5 +1,3 @@
-// CPU.hh - defines instruction handlers on memory and registers
-
 #pragma once
 #include "main.hh"
 
@@ -29,15 +27,12 @@ struct CPU {
 
   void NOP();
   void HALT();
-
   void LD(Val8 dst, Val8 src);
   void LD(Val16 dst, Val16 src);
-
   // stack operations
   void PUSH(Val16 val);
   void POP(Val16 addr);
   u16 PEEK();
-
   // jumps
   void JP(Cond cond, Val16 dst);
   void JR(Cond cond, Val8 offset);
@@ -50,7 +45,6 @@ struct CPU {
   void INC(Val16 dst);
   void DEC(Val8 dst);
   void DEC(Val16 dst);
-
   // bitwise
   void RR(Val8 val);
   void RRC(Val8 val);
@@ -60,12 +54,10 @@ struct CPU {
   void SRA(Val8 val);
   void SRL(Val8 val);
   void SWAP(Val8 val);
-
   // single-bit
   void RES(int bit, Val8 val);
   void SET(int bit, Val8 val);
   void BIT(int bit, Val8 val);
-
   // Arithmetic
   void XOR(Val8 val);
   void AND(Val8 val);
@@ -76,7 +68,6 @@ struct CPU {
   void ADD(Val16 dst, Val16 val);
   void SUB(Val8 val);
   void SBC(Val8 val);
-
   // Interrupts
   void DI();
   void EI();
