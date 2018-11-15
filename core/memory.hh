@@ -99,6 +99,8 @@ struct Memory {
       auto buflen = ftell(cartridge);
       fseek(cartridge, 0, 0);
       fread(&mem, 1, (buflen > 0x10000 ? 0x10000 : buflen), cartridge);
+    } else {
+        fprintf(stderr, "could not find cartridge\n");
     }
 
     mem[0xFF46] = 0xFF;

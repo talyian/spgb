@@ -35,7 +35,9 @@ void CPU::POP(Val16 addr) {
 void CPU::JP(Cond cond, Val16 dst) { if(cond_eval(cond)) {reg.PC = get(dst);}}
 void CPU::JR(Cond cond, Val8 offset) { if(cond_eval(cond)) {reg.PC += (int8_t)get(offset);}}
 void CPU::RET(Cond cond) {if (cond_eval(cond)) { POP(REG16::PC); }}
-void CPU::CALL(Cond cond, Val16 target) { if (cond_eval(cond)) { PUSH(REG16::PC); reg.PC = get(target); }}
+void CPU::CALL(Cond cond, Val16 target) { if (cond_eval(cond)) {
+    printf("[%hx] Call %hx\n", reg._PC, get(target));
+    PUSH(REG16::PC); reg.PC = get(target); }}
 void CPU::RST(u8 f) { reg.IME = 0; PUSH(REG16::PC); reg.PC = f; }
 
 // tests

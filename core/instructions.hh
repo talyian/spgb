@@ -138,7 +138,7 @@ struct OpParser {
 
 struct OpPrinter {
   uint64_t timer = 0;
-  u16 pc;
+  u16 pc, _pc;
 
   void NOP() { pp("NOP"); }
   void HALT() { pp("HALT"); }

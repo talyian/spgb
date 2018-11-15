@@ -177,10 +177,11 @@ int test_06_ld_r_r () {
     "\xCD\x00\x00" // TODO call test
   );
   const char test[] = (
-
+    ""
   );
   crc.reset();
-  if (checksum_af_bc_de_hl) {
+  //if (checksum_af_bc_de_hl) {
+  if (false) {
     crc.update(registers.A);
     crc.update(registers.F);
     crc.update(registers.B);

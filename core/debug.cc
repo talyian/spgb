@@ -20,13 +20,26 @@ struct Debugger {
   Debugger(Registers &r, Memory &m, PPU &p)
       : reg(r), mem(m), ppu(p), pprinter(reg, mem, printer) {
     signal(SIGINT, signal_handler);
-    // breakpoints.push_back(0x219); // bgbtest - start of sprite placement function
-    // breakpoints.push_back(0x241);    // bgbtest - setting sprite.y to random value
-    // breakpoints.push_back(0x31f);    // bgbtest - random value function start
+    // [blargg 01 tests]
+    breakpoints.push_back(0x0100); // entry point
+    breakpoints.push_back(0x0210); // just before jump into RAM
+    breakpoints.push_back(0xc246); // mystery
+    breakpoints.push_back(0xc249); // mystery
+    breakpoints.push_back(0xc24C); // mystery
+    breakpoints.push_back(0xc24F); // mystery
+    breakpoints.push_back(0xc252); // mystery
+    breakpoints.push_back(0xc2a6); // main function
+    breakpoints.push_back(0xc26b); // exit test
+    // watches.push_back({0xc000, 0xc100});
+    // [bgbtest
+    // breakpoints.push_back(0x219); // start of sprite placement function
+    // breakpoints.push_back(0x241); // setting sprite.y to random value
+    // breakpoints.push_back(0x31f); // random value function start
     // watches.push_back({0xc000, 0xc002}); // first two star sprites
     // watches.push_back({0xc140, 0xc1a0}); // first two star sprites
     // breakpoints.push_back(0xFF80);
     // breakpoints.push_back(0x48); // LCDC Interrupt
+
   }
   void Step();
 };
@@ -61,7 +74,7 @@ void Debugger::Step() {
     u16 _pc = reg._PC;
     u16 pc = reg.PC;
     printf("pc: %x, pc: %x\n", _pc, pc);
-    printer.pc = _pc;
+    printer.pc = pc;
     pprinter.Step();
     reg._PC = _pc;
     reg.PC = pc;
@@ -97,7 +110,7 @@ void Debugger::Step() {
     }
     else if (CMD("q")) exit(0);
     else if (CMD("r")) { /* todo: scan until the next ret and run there */ }
-    else if (CMD("s")) return;
+    else if (CMD("") || CMD("s")) return;
     else if (CMD("t")) ppu.SendTiles();
     else { printf("Error parsing command [%s]\n", input_s); }
     #undef CMD

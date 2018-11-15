@@ -25,9 +25,10 @@
 
 int main(int argc, const char ** argv) {
   const char * rom_path = "gb-test-roms/cpu_instrs/individual/06-ld r,r.gb";
-  rom_path = "data/opus5.gb";
-  rom_path = "data/bgbtest.gb";
-  rom_path = "data/ttt.gb";
+  rom_path = "tools/gb-test-roms/cpu_instrs/individual/01-special.gb";
+  // rom_path = "data/opus5.gb";
+  // rom_path = "data/bgbtest.gb";
+  // rom_path = "data/ttt.gb";
   if (argc == 2) rom_path = argv[1];
 
   Registers registers;
@@ -38,6 +39,10 @@ int main(int argc, const char ** argv) {
     // fopen("data/bgbtest.gb", "rb")
   );
 
+  memory.exit_bios = 0x1;
+  registers.PC = 0x100;
+  registers.SP = 0xFFFE;
+
   CPU exec { registers, memory };
   PPU ppu { memory };
 
@@ -47,11 +52,12 @@ int main(int argc, const char ** argv) {
   Debugger debugger(registers, memory, ppu);
   Keypad keys { registers, memory };
 
+  // is_stepping = true;
   // Disassemble(pprinter);
   // return 0;
   uint64_t ticks = 0;
-  // for(u8 ct = 0; ; !(ct++) ? (usleep(100), 0) : 0) {
-  for(;;) {
+  for(u8 ct = 0; ; !(ct++) ? (usleep(10), 0) : 0) {
+  // for(;;) {
     u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
     if (active_interrupts)
     {
@@ -75,5 +81,12 @@ int main(int argc, const char ** argv) {
     }
     keys.Step();
     ppu.Step(4 * exec.timer); // TODO: why do I have to multiply by 4? is this the T-clock multiplier?
+
+    // serial
+    // if (memory[0xFF02 & 0x80]) {
+    //   if (memory[0xFF01]) printf("Serial: %c\n", memory[0xFF01]);
+    //   // TODO: this needs to be delayed by 8 instruction cycles
+    //   memory[0xFF02] &= ~0x80;
+    // }
   }
 }
