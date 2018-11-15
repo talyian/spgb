@@ -43,6 +43,7 @@ struct Memory {
     return mem[addr];
   };
   u8 &operator [](u16 addr) {
+    #ifdef PROTECT_IO_SLOTS
     if (((addr & 0xFF00) == 0xFF00) && (addr < 0xFF80)) {
       if (0xFF10 <= addr && addr < 0xFF40) {
         // sound registers
@@ -76,6 +77,7 @@ struct Memory {
         abort();
       }
     }
+    #endif
     if (!exit_bios && addr < 0x100) { return bios[addr]; }
     return mem[addr];
   }

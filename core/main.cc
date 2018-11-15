@@ -50,7 +50,8 @@ int main(int argc, const char ** argv) {
   // Disassemble(pprinter);
   // return 0;
   uint64_t ticks = 0;
-  for(u8 ct = 0; ; !(ct++) ? (usleep(100), 0) : 0) {
+  // for(u8 ct = 0; ; !(ct++) ? (usleep(100), 0) : 0) {
+  for(;;) {
     u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
     if (active_interrupts)
     {
@@ -66,8 +67,8 @@ int main(int argc, const char ** argv) {
       else ;
     }
 
+    debugger.Step();
     if (!exec.halted) {
-      debugger.Step();
       pp.Step();
       checkDMA(registers, memory);
       ticks += exec.timer;

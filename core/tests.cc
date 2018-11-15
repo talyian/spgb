@@ -14,7 +14,7 @@ OpPrinter printer;
 CPU cpu(registers, memory);
 
 void CHECKTEST(const char * testname, u16 pc) {
-  printf("%s: %s\n", testname,
+  printf("%-40s%s\n", testname,
          pc == 0xD000 ? "\x1b[1;31mFAIL\x1b[0m" :
          pc == 0xD008 ? "\x1b[1;32mOK\x1b[0m" :
          "\x1b[1;33mERR\x1b[0m");
@@ -161,6 +161,36 @@ int test_01_special_6_DAA() {
     parser.Step();
   }
   CHECKTEST(__FUNCTION__, ~crc.sum == 0x6A9F8D8A ? 0xD008 : 0xD000);
+  return 0;
+}
+
+int test_06_ld_r_r () {
+  // calls test with 00 10 e0 f0
+  const char test_instr[] = (
+    "\x0E\x00" // LD C 00
+    "\xCD\x00\x00" // TODO call test
+    "\x0E\x10" // LD C 00
+    "\xCD\x00\x00" // TODO call test
+    "\x0E\xE0" // LD C 00
+    "\xCD\x00\x00" // TODO call test
+    "\x0E\xF0" // LD C 00
+    "\xCD\x00\x00" // TODO call test
+  );
+  const char test[] = (
+
+  );
+  crc.reset();
+  if (checksum_af_bc_de_hl) {
+    crc.update(registers.A);
+    crc.update(registers.F);
+    crc.update(registers.B);
+    crc.update(registers.C);
+    crc.update(registers.D);
+    crc.update(registers.E);
+    crc.update(registers.H);
+    crc.update(registers.L);
+  }
+  printf("checksum: %x\n", ~crc.sum);
   return 0;
 }
 
