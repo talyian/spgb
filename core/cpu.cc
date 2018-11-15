@@ -18,12 +18,12 @@ void CPU::LD(Val16 dst, Val16 src) {
 }
 
 // stack operations
-void CPU::PUSH(Val16 val) { u16 v = get(val); mem[reg.SP--] = v; mem[reg.SP--] = v >> 8; }
+void CPU::PUSH(Val16 val) { u16 v = get(val); mem[--reg.SP] = v; mem[--reg.SP] = v >> 8; }
 // PEEK is not a real op!
-u16 CPU::PEEK() { return (mem[reg.SP+1] << 8) | mem[reg.SP + 2]; }
+u16 CPU::PEEK() { return (mem[reg.SP+0] << 8) | mem[reg.SP + 1]; }
 void CPU::POP(Val16 addr) {
-  u16 v = mem[++reg.SP];
-  v = (v << 8) | mem[++reg.SP];
+  u16 v = mem[reg.SP++];
+  v = (v << 8) | mem[reg.SP++];
   // the bottom 4 bits of F are always zero
   if (addr.type == Val16::Reg && addr.value.r == REG16::AF)
     set(addr, (v & 0xFFF0));
