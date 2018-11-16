@@ -15,17 +15,29 @@
 #include "cpu.hh"
 #include "cpu.cc"
 
-#include "disassemble.cc"
+#include "timer.cc"
+
 #include "ui_remote.hh"
 #include "ppu.cc"
 #include "dma.cc"
+#include "disassemble.cc"
 #include "debug.cc"
 
 #include "main.hh"
 
 int main(int argc, const char ** argv) {
   const char * rom_path = "gb-test-roms/cpu_instrs/individual/06-ld r,r.gb";
-  rom_path = "tools/gb-test-roms/cpu_instrs/individual/01-special.gb";
+  rom_path = "tools/gb-test-roms/cpu_instrs/individual/01-special.gb"; // passes
+  rom_path = "tools/gb-test-roms/cpu_instrs/individual/02-interrupts.gb"; // timer doesn't work
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb"; // e8 e8 f8 f8 failed
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb"; // ce de failed
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/05-op rp.gb"; // passed
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/06-ld r,r.gb"; // passed
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb"; // passed
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/08-misc instrs.gb"; // passed
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/09-op r,r.gb"; // failed
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/10-bit ops.gb"; // passed
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/11-op a,(hl).gb"; // failed 8e 9e 35 cb 26
   // rom_path = "data/opus5.gb";
   // rom_path = "data/bgbtest.gb";
   // rom_path = "data/ttt.gb";
@@ -41,6 +53,7 @@ int main(int argc, const char ** argv) {
 
   CPU exec { registers, memory };
   PPU ppu { memory };
+  Timer timer { memory };
 
   memory.exit_bios = 0x1;
   registers.AF = 0x01B0;
@@ -62,8 +75,8 @@ int main(int argc, const char ** argv) {
   // Disassemble(pprinter);
   // return 0;
   uint64_t ticks = 0;
-  for(u8 ct = 0; ; !(ct++) ? (usleep(10), 0) : 0) {
-  // for(;;) {
+  // for(u8 ct = 0; ; !(ct++) ? (usleep(10), 0) : 0) {
+  for(;;) {
     u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
     if (active_interrupts)
     {
@@ -85,7 +98,8 @@ int main(int argc, const char ** argv) {
       ticks += exec.timer;
     }
     keys.Step();
-    ppu.Step(exec.timer); // TODO: why do I have to multiply by 4? is this the T-clock multiplier?
+    ppu.Step(exec.timer);
+    timer.Step(2 * exec.timer); // TODO: this isn't right
 
     // serial
     // if (memory[0xFF02 & 0x80]) {

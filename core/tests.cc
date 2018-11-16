@@ -7,6 +7,7 @@
 #include "registers.cc"
 #include "instructions.cc"
 #include "cpu.cc"
+#include "timer.cc"
 
 Registers registers;
 Memory memory(0, 0);
@@ -163,35 +164,220 @@ int test_01_special_6_DAA() {
   return 0;
 }
 
-int test_06_ld_r_r () {
-  // calls test with 00 10 e0 f0
-  const char test_instr[] = (
-    "\x0E\x00" // LD C 00
-    "\xCD\x00\x00" // TODO call test
-    "\x0E\x10" // LD C 00
-    "\xCD\x00\x00" // TODO call test
-    "\x0E\xE0" // LD C 00
-    "\xCD\x00\x00" // TODO call test
-    "\x0E\xF0" // LD C 00
-    "\xCD\x00\x00" // TODO call test
+void test_02_interrupts_02_EI() {
+  // tests that when you LD(FF0F) it just jumps to the interrupt right away
+  // and that the stack is set appropriately
+  const char src[] = (
+    "\xFB"         // EI
+    "\x01\x00\x00" // LD BC $0
+    "\xC5"         // PUSH BC
+    "\xC1"         // POP BC
+    "\x04"         // INC B
+    // enable timer interrupt
+    "\x3E\x04"     // LD A,$4
+    "\xE0\x0F"     // LD (FF0F),A
+    // interrupt_addr
+    "\x05"         // DEC B
+    "\xC2\x00\xD0" // JPNZ test_failed
+    "\xF8\xFE"     // LD HL,SP-2
+    "\x2A"         // LDI A,(HL)
+    "\xFE\x0B"     // CP A, $0B
+    "\xC2\x00\xD0" // JPNZ test_failed
+    "\x7E"         // LD A,(HL)
+    "\xFE\x01"     // CP A, $01
+    "\xC2\x00\xD0" // JPNZ test_failed
+    "\xF0\x0F"     // ld a, FFOF
+    "\xE6\x04"     // AND $4
+    "\xC2\x00\xD0" // JPNZ test_failed
+    "\xC3\x08\xD0" // JP   #TEST_SUCC
   );
-  const char test[] = (
-    ""
-  );
-  crc.reset();
-  //if (checksum_af_bc_de_hl) {
-  if (false) {
-    crc.update(registers.A);
-    crc.update(registers.F);
-    crc.update(registers.B);
-    crc.update(registers.C);
-    crc.update(registers.D);
-    crc.update(registers.E);
-    crc.update(registers.H);
-    crc.update(registers.L);
+  memory.exit_bios = true;
+  memcpy(memory.mem + 0x100, src, sizeof src);
+  memcpy(memory.mem + 0x50, "\x3C\xc9", 2); // inc a; ret in timer interrupt
+  registers.PC = 0x100;
+  OpParser<CPU> parser(registers, memory, cpu);
+  memory[0xFFFF] = 0xFF;
+  while(registers.PC != 0xD000 && registers.PC != 0xD008) {
+    u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
+    if (active_interrupts)
+    {
+      cpu.halted = false;
+      registers.IME = 0;
+      memory[0xFF0F] = 0;
+      cpu.timer += 12;
+      if (active_interrupts & 0x1) { cpu.RST(0x40); } // VBLANK
+      else if (active_interrupts & 0x2) { cpu.RST(0x48); } // LCDC
+      else if (active_interrupts & 0x4) { cpu.RST(0x50); } // TIMER
+      else if (active_interrupts & 0x8) { cpu.RST(0x58); } // SERIAL
+      else if (active_interrupts & 0x10) { cpu.RST(0x60); } // KEYPAD
+      else ;
+    }
+    parser.Step();
   }
-  printf("checksum: %x\n", ~crc.sum);
-  return 0;
+  CHECKTEST(__FUNCTION__, registers.PC);
+}
+
+void test_02_interrupts_03_DI() {
+  // null test for previous test
+  const char src[] = (
+    "\xF3"         // DI
+    "\x01\x00\x00" // LD BC $0
+    "\xC5"         // PUSH BC
+    "\xC1"         // POP BC
+    // enable timer interrupt
+    "\x3E\x04"     // LD A,$4
+    "\xE0\x0F"     // LD (FF0F),A
+    // interrupt_addr
+    "\xF8\xFE"     // LD HL,SP-2
+    "\x2A"         // LDI A,(HL)
+    "\xB6"         // OR (HL)
+    "\xC2\x00\xD0" // JPNZ test_failed
+    "\xF0\x0F"     // ld a, FFOF
+    "\xE6\x04"     // AND $4
+    "\xCA\x00\xD0" // JPZ test_failed
+    "\xC3\x08\xD0" // JP   #TEST_SUCC
+  );
+  memory.exit_bios = true;
+  memcpy(memory.mem + 0x100, src, sizeof src);
+  memcpy(memory.mem + 0x50, "\x3C\xc9", 2); // inc a; ret in timer interrupt
+  registers.PC = 0x100;
+  OpParser<CPU> parser(registers, memory, cpu);
+  memory[0xFFFF] = 0xFF;
+  while(registers.PC != 0xD000 && registers.PC != 0xD008) {
+    u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
+    if (active_interrupts)
+    {
+      cpu.halted = false;
+      registers.IME = 0;
+      memory[0xFF0F] = 0;
+      cpu.timer += 12;
+      if (active_interrupts & 0x1) { cpu.RST(0x40); } // VBLANK
+      else if (active_interrupts & 0x2) { cpu.RST(0x48); } // LCDC
+      else if (active_interrupts & 0x4) { cpu.RST(0x50); } // TIMER
+      else if (active_interrupts & 0x8) { cpu.RST(0x58); } // SERIAL
+      else if (active_interrupts & 0x10) { cpu.RST(0x60); } // KEYPAD
+      else ;
+    }
+    parser.Step();
+  }
+  CHECKTEST(__FUNCTION__, registers.PC);
+}
+
+void test_02_interrupts_04_timer_doesnt_work() {
+  const char src[] = (
+    "\x3E\x05"     // LD A,$5;
+    "\xE0\x07"     // FF07=$5; // enable timer at every 16 cycles
+    "\x3E\x00"
+    "\xE0\x05"     // FF05 = 0
+    "\xE0\x0F"     // FF0F = 0
+
+    // Delay 500
+    "\xF5"         // PUSH AF
+    "\x3E\x01"
+    "\xCD\x00\x02" // Call 200
+    // line 110
+    "\x3E\xCC"
+    "\xCD\x00\x03" // Call 300
+    "\xF1"         // POP AF
+
+    "\xF0\x0F"     // LD A, (FF0F)
+    // line 118
+    "\xF5\x3E\x01\xCD\x00\x02\x3E\xCC\xCD\x00\x03\xF1" // delay 500
+
+    "\xE6\x04"     // AND $4
+    "\xC2\x00\xD0" // JPNZ test_failed
+    "\xF5\x3E\x01\xCD\x00\x02\x3E\xCC\xCD\x00\x03\xF1" // delay 500
+
+    "\xF0\x0F"     // LD A, (FF0F)
+    "\xE6\x04"     // AND $4
+    "\xCA\x00\xD0" // JPZ test_failed
+    "\xC3\x08\xD0" // JP   #TEST_SUCC
+  );
+  const char delay_func_1[] = (
+    "\xF5\x3E\xDF"
+    "\xCD\x00\x03"
+    "\xF1\x3D"
+    "\x20\xF6\xC9"
+  );
+  const char delay_func_2[] = (
+    "\xD6\x05"
+    "\x30\xFC"
+    "\x1F"
+    "\x30\x00"
+    "\xCE\x01"
+    "\xD0"
+    "\xC8"
+    "\x00\xC9"
+  );
+
+  memory.exit_bios = true;
+  memcpy(memory.mem + 0x100, src, sizeof src);
+  memcpy(memory.mem + 0x200, delay_func_1, sizeof delay_func_1);
+  memcpy(memory.mem + 0x300, delay_func_2, sizeof delay_func_2);
+  memcpy(memory.mem + 0x50, "\x3C\xc9", 2); // inc a; ret in timer interrupt
+  registers.PC = 0x100;
+  Timer timer { memory };
+  OpParser<CPU> parser(registers, memory, cpu);
+  memory[0xFFFF] = 0xFF;
+  while(registers.PC != 0xD000 && registers.PC != 0xD008) {
+    u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
+    if (active_interrupts)
+    {
+      cpu.halted = false;
+      registers.IME = 0;
+      memory[0xFF0F] = 0;
+      cpu.timer += 12;
+      if (active_interrupts & 0x1) { cpu.RST(0x40); } // VBLANK
+      else if (active_interrupts & 0x2) { cpu.RST(0x48); } // LCDC
+      else if (active_interrupts & 0x4) { cpu.RST(0x50); } // TIMER
+      else if (active_interrupts & 0x8) { cpu.RST(0x58); } // SERIAL
+      else if (active_interrupts & 0x10) { cpu.RST(0x60); } // KEYPAD
+      else ;
+    }
+    parser.Step();
+    timer.Step(2 * cpu.timer); // but why
+  }
+  CHECKTEST(__FUNCTION__, registers.PC);
+}
+
+void test_02_interrupts_05_halt() {
+  const char src[] = (
+    "\xFB"         // EI
+    "\x3E\x05\xE0\x07" // (ff07) = 5
+    "\x3E\x00\xE0\x05" // (ff05) = 0
+    "\x3E\x00\xE0\x0F" // (ff0F) = 0
+    "\x76\x00" // HALT
+    "\xC3\x08\xD0" // JP   #TEST_SUCC
+  );
+  memory.exit_bios = true;
+  memcpy(memory.mem + 0x100, src, sizeof src);
+  memcpy(memory.mem + 0x50, "\x3C\xc9", 2); // inc a; ret in timer interrupt
+  registers.PC = 0x100;
+  Timer timer { memory };
+  OpParser<CPU> parser(registers, memory, cpu);
+  memory[0xFFFF] = 0xFF;
+  registers.IME = 0xFF;
+  while(registers.PC != 0xD000 && registers.PC != 0xD008) {
+    u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
+    if (active_interrupts)
+    {
+      cpu.halted = false;
+      registers.IME = 0;
+      memory[0xFF0F] = 0;
+      cpu.timer += 12;
+      if (active_interrupts & 0x1) { cpu.RST(0x40); } // VBLANK
+      else if (active_interrupts & 0x2) { cpu.RST(0x48); } // LCDC
+      else if (active_interrupts & 0x4) { cpu.RST(0x50); } // TIMER
+      else if (active_interrupts & 0x8) { cpu.RST(0x58); } // SERIAL
+      else if (active_interrupts & 0x10) { cpu.RST(0x60); } // KEYPAD
+      else ;
+    }
+    if (!cpu.halted) {
+      parser.Step();
+    }
+    timer.Step(2 * cpu.timer);
+  }
+  CHECKTEST(__FUNCTION__, registers.PC);
 }
 
 int main() {
@@ -200,6 +386,11 @@ int main() {
   test_01_special_4_LD_PC_HL();
   test_01_special_5_POP_AF();
   test_01_special_6_DAA();
+
+  test_02_interrupts_02_EI();
+  test_02_interrupts_03_DI();
+  test_02_interrupts_04_timer_doesnt_work();
+  test_02_interrupts_05_halt();
   return 0;
 }
 

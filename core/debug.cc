@@ -25,27 +25,6 @@ struct Debugger {
 Debugger::Debugger(Registers &r, Memory &m, PPU &p)
       : reg(r), mem(m), ppu(p), pprinter(reg, mem, printer) {
     signal(SIGINT, signal_handler);
-    // [blargg 01 tests]
-    breakpoints.push_back(0x0100); // entry point
-    // breakpoints.push_back(0x0210); // just before jump into RAM
-    // in RAM, our main area calls mystery functions
-    // in our emulator this current resets to zero somehow
-    // breakpoints.push_back(0xc246); // mystery
-    // breakpoints.push_back(0xc249); // mystery
-
-    // Mystery - 0xc24f never executes
-    breakpoints.push_back(0xc24C); // mystery
-    // breakpoints.push_back(0xC79F); // this call is what we have so far
-    // breakpoints.push_back(0xC0AD); // this call is what we have so far that works
-    breakpoints.push_back(0xC0D1); // this call is what we have so far that works
-    breakpoints.push_back(0xc24F); // mystery - never executes
-    // breakpoints.push_back(0xc252); // mystery
-    // breakpoints.push_back(0xc26b); // exit test
-    // breakpoints.push_back(0xc2a6); // main function
-
-    // breakpoints.push_back(0xc410); // mystery 2
-    // breakpoints.push_back(0xc414); // mystery 2 - cont'd
-
     watches.push_back({0xdff0, 0xe000}); // stack
     watches.push_back({0xFF40, 0xFF48}); // IO registers
     watches.push_back({0xFFE0, 0xFFE4}); // HACK - PPU clock
