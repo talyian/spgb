@@ -15,12 +15,16 @@ void CPU::LD(Val16 dst, Val16 src) {
 }
 
 // stack operations
-void CPU::PUSH(Val16 val) { u16 v = get(val); mem[--reg.SP] = v; mem[--reg.SP] = v >> 8; }
-// PEEK is not a real op!
-u16 CPU::PEEK() { return (mem[reg.SP+0] << 8) | mem[reg.SP + 1]; }
+#define PUSH_U8(v) { mem[--reg.SP] = v; }
+#define POP_U8() (mem[reg.SP++])
+void CPU::PUSH(Val16 val) {
+  u16 v = get(val);
+  PUSH_U8(v >> 8);
+  PUSH_U8(v);
+}
 void CPU::POP(Val16 addr) {
-  u16 v = mem[reg.SP++];
-  v = (v << 8) | mem[reg.SP++];
+  u16 v = POP_U8();
+  v |= (POP_U8() << 8);
   // the bottom 4 bits of F are always zero
   if (addr.type == Val16::Reg && addr.value.r == REG16::AF)
     set(addr, (v & 0xFFF0));
@@ -48,7 +52,7 @@ void CPU::INC(Val8 dst) {
   u8 v = get(dst) + 1;
   set(dst, v);
   reg.setFZ(v == 0);
-  reg.setFO(1);
+  reg.setFO(0);
   reg.setFH((v & 0xF) == 0);
 }
 void CPU::DEC(Val8 dst) {
@@ -59,7 +63,8 @@ void CPU::DEC(Val8 dst) {
   reg.setFH((v & 0xF) == 0xFF);
 }
 
-void CPU::INC(Val16 dst) { set(dst, get(dst) + 1); }
+void CPU::INC(Val16 dst) {
+  set(dst, get(dst) + 1); }
 void CPU::DEC(Val16 dst) { set(dst, get(dst) - 1); }
 
 // bitwise operations
@@ -67,11 +72,11 @@ void CPU::DEC(Val16 dst) { set(dst, get(dst) - 1); }
 // 9-bit Rotate right
 void CPU::RR(Val8 v) {
   u8 val = get(v);
-  u8 new_val = (val >> 1) | (reg.FC() << 7);
+  u8 newval = (val >> 1) | (reg.FC() << 7);
   reg.F = 0;
-  reg.setFZ(new_val == 0);
+  reg.setFZ(newval == 0);
   reg.setFC(val & 1);
-  set(v, val);
+  set(v, newval);
 }
 // 8-bit rotate right
 void CPU::RRC(Val8 v) {

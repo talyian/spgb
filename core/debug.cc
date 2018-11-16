@@ -16,6 +16,7 @@ struct Debugger {
   OpPrinter printer;
   OpParser<OpPrinter> pprinter;
   vector<uint16_t> breakpoints;
+  vector<uint16_t> once_breakpoints;
   vector<span> watches;
   Debugger(Registers &r, Memory &m, PPU &p);
   void Step();
@@ -26,15 +27,28 @@ Debugger::Debugger(Registers &r, Memory &m, PPU &p)
     signal(SIGINT, signal_handler);
     // [blargg 01 tests]
     breakpoints.push_back(0x0100); // entry point
-    breakpoints.push_back(0x0210); // just before jump into RAM
-    breakpoints.push_back(0xc246); // mystery
-    breakpoints.push_back(0xc249); // mystery
+    // breakpoints.push_back(0x0210); // just before jump into RAM
+    // in RAM, our main area calls mystery functions
+    // in our emulator this current resets to zero somehow
+    // breakpoints.push_back(0xc246); // mystery
+    // breakpoints.push_back(0xc249); // mystery
+
+    // Mystery - 0xc24f never executes
     breakpoints.push_back(0xc24C); // mystery
-    breakpoints.push_back(0xc24F); // mystery
-    breakpoints.push_back(0xc252); // mystery
-    breakpoints.push_back(0xc2a6); // main function
-    breakpoints.push_back(0xc26b); // exit test
-    // watches.push_back({0xc000, 0xc100});
+    // breakpoints.push_back(0xC79F); // this call is what we have so far
+    // breakpoints.push_back(0xC0AD); // this call is what we have so far that works
+    breakpoints.push_back(0xC0D1); // this call is what we have so far that works
+    breakpoints.push_back(0xc24F); // mystery - never executes
+    // breakpoints.push_back(0xc252); // mystery
+    // breakpoints.push_back(0xc26b); // exit test
+    // breakpoints.push_back(0xc2a6); // main function
+
+    // breakpoints.push_back(0xc410); // mystery 2
+    // breakpoints.push_back(0xc414); // mystery 2 - cont'd
+
+    watches.push_back({0xdff0, 0xe000}); // stack
+    watches.push_back({0xFF40, 0xFF48}); // IO registers
+    watches.push_back({0xFFE0, 0xFFE4}); // HACK - PPU clock
     // [bgbtest
     // breakpoints.push_back(0x219); // start of sprite placement function
     // breakpoints.push_back(0x241); // setting sprite.y to random value
@@ -56,6 +70,10 @@ void Debugger::Step() {
   if (!is_stepping) {
     if (breakpoints.find(reg.PC) != breakpoints.end())
       is_stepping = true;
+    if (once_breakpoints.find(reg.PC) != once_breakpoints.end()) {
+      is_stepping = true;
+      *once_breakpoints.find(reg.PC) = once_breakpoints.pop_back();
+    }
   }
   while (is_stepping) {
     if (watches.size)
@@ -75,8 +93,12 @@ void Debugger::Step() {
     // we need to rewind back to the beginning of the current instruction after printing
     u16 _pc = reg._PC;
     u16 pc = reg.PC;
+    u16 pc_next = 0;
     printer.pc = pc;
     pprinter.Step();
+    // also due to pprinter modifying PC, pc_next points to next instr now.
+    // we'll need this for "run to next line" debugging
+    pc_next = reg.PC;
     reg._PC = _pc;
     reg.PC = pc;
 
@@ -111,7 +133,11 @@ void Debugger::Step() {
     }
     else if (CMD("q")) exit(0);
     else if (CMD("r")) { /* todo: scan until the next ret and run there */ }
-    else if (CMD("") || CMD("s")) return;
+    else if (CMD("n")) {
+      printf("n [%hx] --> %hx\n", reg.PC, pc_next);
+      once_breakpoints.push_back((u16)pc_next);
+      is_stepping = false; return; }
+    else if (CMD("") || CMD("s")) return; // single-step
     else if (CMD("t")) ppu.SendTiles();
     else { printf("Error parsing command [%s]\n", input_s); }
     #undef CMD

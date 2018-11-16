@@ -117,23 +117,35 @@ int vblank_counter = 0;
 
 void PPU::Step(uint32_t t)  {
 
-  if ((LcdControl & (1 << 7)) == 0) return; // LCD is off
+  if ((LcdControl & (1 << 7)) == 0 && !is_off) {
+    is_off = true;
+  }
+  if ((LcdControl & (1 << 7)) == 1 && is_off) {
+    is_off = false;
+    LY = 0;
+    state = LcdState::HBLANK; // TODO: do we start in HBLANK or SCAN_OAM?
+    clock = 0;
+  }
+
   // LCDC interrupts
 
     clock += t;
+    mem[0xFFE0] = clock;
+    mem[0xFFE1] = clock >> 8;
     vblank_counter += t;
+
     switch(state) {
     case LcdState::SCAN_OAM:
-      if (clock >= 80) {
+      if (clock >= 80) { // it takes 2 cycles per sprite * 40 sprites in the OAM table
         clock -= 80; setState(LcdState::SCAN_VRAM);
       };
       break;
     case LcdState::SCAN_VRAM:
-      if (clock >= 172) {
+      if (clock >= 172) { // tecnically this may take variable time
         clock -=172; setState(LcdState::HBLANK); RenderLine(); };
       break;
     case LcdState::HBLANK:
-      if (clock >= 204) {
+      if (clock >= 204) { // this should always line up at 456-cycles, even when SCAN_VRAM delays
         clock -= 204;
         if (LY++ == 0x8F) { setState(LcdState::VBLANK); vblank_counter=0; RenderScreen(); }
         else { setState(LcdState::SCAN_OAM); }
@@ -142,17 +154,9 @@ void PPU::Step(uint32_t t)  {
         if ((LcdStatus & (1 << 6)) && (LY == LYC)) mem[0xFF0F] |= (1 << 1);
       }; break;
     case LcdState::VBLANK:
-      if (clock >= 456) {
+      if (clock >= 456) { // 456 * 10 cycles @ 4MHz is about 1ms
         clock -= 456;
-        if (LY++ == 0x8F + 10) {
-          LY = 0;
-          setState(LcdState::SCAN_OAM);
-        }
-      }
-      break;
-      if (clock >= 456) {
-        clock = 0;
-        if (LY++ == 0x99) {
+        if (LY++ == 0x8F + 0xA) {
           LY = 0;
           setState(LcdState::SCAN_OAM);
         }

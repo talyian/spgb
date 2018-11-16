@@ -68,7 +68,7 @@ int test_01_special_3_JR_positive() {
 
 int test_01_special_4_LD_PC_HL() {
   const char src[] = (
-    "\x21\x11\x01" // LD HL, JUMP_HERE_ADDR
+    "\x21\x07\x01" // LD HL, JUMP_HERE_ADDR
     "\x3E\x00"     // LD A, 0;
     "\xE9"         //  JP (HL)
     "\x3C"         // INC A
@@ -78,7 +78,6 @@ int test_01_special_4_LD_PC_HL() {
     "\xFE\x02" // CP 2
     "\xC2\x00\xD0" // JPNZ #TEST_FAIL
     "\xC3\x08\xD0" // JP   #TEST_SUCC
-    "\x07\x01"     // JUMP_HERE_ADDR
     );
   memcpy(memory.mem + 0x100, src, sizeof src);
   registers.PC = 0x100;

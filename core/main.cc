@@ -39,12 +39,18 @@ int main(int argc, const char ** argv) {
     // fopen("data/bgbtest.gb", "rb")
   );
 
-  memory.exit_bios = 0x1;
-  registers.PC = 0x100;
-  registers.SP = 0xFFFE;
-
   CPU exec { registers, memory };
   PPU ppu { memory };
+
+  memory.exit_bios = 0x1;
+  registers.AF = 0x01B0;
+  registers.BC = 0x0013;
+  registers.DE = 0x00D8;
+  registers.HL = 0x014D;
+  registers.PC = 0x0100;
+  registers.SP = 0xFFFE;
+  ppu.clock = 0x28;
+  ppu.LY = 0;
 
   // OpPrinter printer;
   OpParser<CPU> pp(registers, memory, exec);
@@ -79,7 +85,7 @@ int main(int argc, const char ** argv) {
       ticks += exec.timer;
     }
     keys.Step();
-    ppu.Step(4 * exec.timer); // TODO: why do I have to multiply by 4? is this the T-clock multiplier?
+    ppu.Step(exec.timer); // TODO: why do I have to multiply by 4? is this the T-clock multiplier?
 
     // serial
     // if (memory[0xFF02 & 0x80]) {

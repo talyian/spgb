@@ -19,9 +19,10 @@ enum class LcdState { SCAN_OAM = 2, SCAN_VRAM = 3, HBLANK = 0, VBLANK = 1 };
 // Pixel Processing Unit
 struct PPU {
   Memory &mem;
-  uint32_t clock = 0;
+  uint16_t clock = 0;
   uint64_t frames = 0;
   bool bg_map;
+  bool is_off = false;
   uint8_t
     &SCY,
     &SCX,
