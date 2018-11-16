@@ -72,7 +72,6 @@ int main(int argc, const char ** argv) {
       else if (active_interrupts & 0x10) { exec.RST(0x60); } // KEYPAD
       else ;
     }
-
     debugger.Step();
     if (!exec.halted) {
       pp.Step();

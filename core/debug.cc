@@ -17,7 +17,11 @@ struct Debugger {
   OpParser<OpPrinter> pprinter;
   vector<uint16_t> breakpoints;
   vector<span> watches;
-  Debugger(Registers &r, Memory &m, PPU &p)
+  Debugger(Registers &r, Memory &m, PPU &p);
+  void Step();
+};
+
+Debugger::Debugger(Registers &r, Memory &m, PPU &p)
       : reg(r), mem(m), ppu(p), pprinter(reg, mem, printer) {
     signal(SIGINT, signal_handler);
     // [blargg 01 tests]
@@ -39,10 +43,7 @@ struct Debugger {
     // watches.push_back({0xc140, 0xc1a0}); // first two star sprites
     // breakpoints.push_back(0xFF80);
     // breakpoints.push_back(0x48); // LCDC Interrupt
-
-  }
-  void Step();
-};
+}
 
 bool is_stepping = false;
 void signal_handler(__attribute__((unused)) int signum) {
@@ -53,10 +54,9 @@ void signal_handler(__attribute__((unused)) int signum) {
 
 void Debugger::Step() {
   if (!is_stepping) {
-    if (breakpoints.find(reg._PC) != breakpoints.end())
+    if (breakpoints.find(reg.PC) != breakpoints.end())
       is_stepping = true;
   }
-
   while (is_stepping) {
     if (watches.size)
       printf("-[watched]------------------------------------\n");
@@ -71,9 +71,10 @@ void Debugger::Step() {
     }
     printf("-[registers]----------------------------------\n");
     reg.dump();
+    // due to (probably poor design in) pprinter reading and writing PC
+    // we need to rewind back to the beginning of the current instruction after printing
     u16 _pc = reg._PC;
     u16 pc = reg.PC;
-    printf("pc: %x, pc: %x\n", _pc, pc);
     printer.pc = pc;
     pprinter.Step();
     reg._PC = _pc;
