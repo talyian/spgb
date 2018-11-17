@@ -28,7 +28,7 @@
 int main(int argc, const char ** argv) {
   const char * rom_path = "gb-test-roms/cpu_instrs/individual/06-ld r,r.gb";
   rom_path = "tools/gb-test-roms/cpu_instrs/individual/01-special.gb"; // passes
-  rom_path = "tools/gb-test-roms/cpu_instrs/individual/02-interrupts.gb"; // timer doesn't work
+  rom_path = "tools/gb-test-roms/cpu_instrs/individual/02-interrupts.gb"; // passes
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb"; // e8 e8 f8 f8 failed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb"; // ce de failed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/05-op rp.gb"; // passed
@@ -62,6 +62,8 @@ int main(int argc, const char ** argv) {
   registers.HL = 0x014D;
   registers.PC = 0x0100;
   registers.SP = 0xFFFE;
+  registers.IME = 0xFF;
+  memory[0xFFFF] = 0xE1;
   ppu.clock = 0x28;
   ppu.LY = 0;
 
@@ -90,7 +92,11 @@ int main(int argc, const char ** argv) {
       else if (active_interrupts & 0x8) { exec.RST(0x58); } // SERIAL
       else if (active_interrupts & 0x10) { exec.RST(0x60); } // KEYPAD
       else ;
+    } else if (memory[0xFFFF] & memory[0xFF0F]) {
+      // an interrupt is requested but disabled by IME
+      exec.halted = false;
     }
+
     debugger.Step();
     if (!exec.halted) {
       pp.Step();

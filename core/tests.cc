@@ -342,10 +342,9 @@ void test_02_interrupts_04_timer_doesnt_work() {
 
 void test_02_interrupts_05_halt() {
   const char src[] = (
-    "\xFB"         // EI
-    "\x3E\x05\xE0\x07" // (ff07) = 5
-    "\x3E\x00\xE0\x05" // (ff05) = 0
-    "\x3E\x00\xE0\x0F" // (ff0F) = 0
+    "\x3E\x05\xE0\x07" // (ff07) = 5 - timer enable, 1024 cycles per timer tick
+    "\x3E\x00\xE0\x05" // (ff05) = 0 - start timer at 0
+    "\x3E\x00\xE0\x0F" // (ff0F) = 0 - clear interrupts
     "\x76\x00" // HALT
     "\xC3\x08\xD0" // JP   #TEST_SUCC
   );
@@ -371,6 +370,9 @@ void test_02_interrupts_05_halt() {
       else if (active_interrupts & 0x8) { cpu.RST(0x58); } // SERIAL
       else if (active_interrupts & 0x10) { cpu.RST(0x60); } // KEYPAD
       else ;
+    } else if (memory[0xFF0F] & memory[0xFFFF]) {
+      // halt while DI can get resumed, the handler just won't run
+      cpu.halted = false;
     }
     if (!cpu.halted) {
       parser.Step();

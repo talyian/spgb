@@ -58,14 +58,15 @@ void Debugger::Step() {
     if (watches.size)
       printf("-[watched]------------------------------------\n");
     for(auto && span: watches) {
-      for(auto p = span.start; p < span.end; p++) {
+      for(auto p = span.start; p != span.end; p++) {
         auto c = (p - span.start) % 8;
         if (!c) printf("[%04hx] ", p);
         printf("%02hhx ", mem[p]);
-        if (c == 7 || (p + 1 == span.end)) printf("\n");
+        if (c == 7 || ((u16)(p + 1) == span.end)) printf("\n");
       }
 
     }
+    printf("IME=%d\n", reg.IME);
     printf("-[registers]----------------------------------\n");
     reg.dump();
     // due to (probably poor design in) pprinter reading and writing PC
