@@ -27,17 +27,17 @@
 
 int main(int argc, const char ** argv) {
   const char * rom_path = "gb-test-roms/cpu_instrs/individual/06-ld r,r.gb";
-  rom_path = "tools/gb-test-roms/cpu_instrs/individual/01-special.gb"; // passes
-  rom_path = "tools/gb-test-roms/cpu_instrs/individual/02-interrupts.gb"; // passes
-  rom_path = "tools/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb"; // e8 e8 f8 f8 failed
-  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb"; // ce de failed
+  rom_path = "tools/gb-test-roms/cpu_instrs/individual/01-special.gb"; // passed
+  rom_path = "tools/gb-test-roms/cpu_instrs/individual/02-interrupts.gb"; // passe
+  rom_path = "tools/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb"; // passed
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb"; // passed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/05-op rp.gb"; // passed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/06-ld r,r.gb"; // passed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb"; // passed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/08-misc instrs.gb"; // passed
-  rom_path = "tools/gb-test-roms/cpu_instrs/individual/09-op r,r.gb"; // failed
+  rom_path = "tools/gb-test-roms/cpu_instrs/individual/09-op r,r.gb"; // passed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/10-bit ops.gb"; // passed
-  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/11-op a,(hl).gb"; // failed 8e 9e 35 cb 26
+  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/11-op a,(hl).gb"; // passed
   // rom_path = "data/opus5.gb";
   // rom_path = "data/bgbtest.gb";
   // rom_path = "data/ttt.gb";

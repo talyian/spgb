@@ -205,7 +205,10 @@ void CPU::ADD(Val16 dst, Val16 val) {
 
 void CPU::LDHLSP(Val8 val) {
   int8_t i = get(val);
-  reg.HL = (u16)reg.SP + i;
+  reg.HL = (u16)reg.SP + (u16)i;
+  reg.F = 0;
+  reg.setFH((reg.HL & 0xF) < (reg.SP & 0xF));
+  reg.setFC((reg.HL & 0xFF) < (reg.SP & 0xFF));
 }
 void CPU::SUB(Val8 val) {
   u8 old_a = reg.A;
