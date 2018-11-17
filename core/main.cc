@@ -35,7 +35,7 @@ int main(int argc, const char ** argv) {
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/06-ld r,r.gb"; // passed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb"; // passed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/08-misc instrs.gb"; // passed
-  // rom_path = "tools/gb-test-roms/cpu_instrs/individual/09-op r,r.gb"; // failed
+  rom_path = "tools/gb-test-roms/cpu_instrs/individual/09-op r,r.gb"; // failed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/10-bit ops.gb"; // passed
   // rom_path = "tools/gb-test-roms/cpu_instrs/individual/11-op a,(hl).gb"; // failed 8e 9e 35 cb 26
   // rom_path = "data/opus5.gb";
@@ -77,8 +77,8 @@ int main(int argc, const char ** argv) {
   // Disassemble(pprinter);
   // return 0;
   uint64_t ticks = 0;
-  for(u8 ct = 0; ; !(ct++) ? (usleep(10), 0) : 0) {
-  // for(;;) {
+  // for(u8 ct = 0; ; !(ct++) ? (usleep(10), 0) : 0) {
+  for(;;) {
     u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
     if (active_interrupts)
     {

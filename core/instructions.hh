@@ -195,7 +195,7 @@ struct OpPrinter {
   void CCF() { pp("CCF"); }
   void SCF() { pp("SCF"); }
   void CPL() { pp("CPL"); }
-
+  void LDHLSP(Val8 val) { pp("LD HL (SP+", val, ")"); }
   void p(const char *s) { printf("%s", s); }
   void p(int x) { printf("%x", x); }
   void p(Val8 v) { show(v); }

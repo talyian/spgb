@@ -61,7 +61,7 @@ void CPU::DEC(Val8 dst) {
   set(dst, v);
   reg.setFZ(v == 0);
   reg.setFO(1);
-  reg.setFH((v & 0xF) == 0xFF);
+  reg.setFH((v & 0xF) == 0xF);
 }
 
 void CPU::INC(Val16 dst) {
@@ -93,11 +93,11 @@ void CPU::RL(Val8 v) {
   u8 val = get(v);
   u8 carry = (val >> 7) & 1;
   val = (val << 1) | (reg.FC());
+
   reg.setFZ(val == 0);
   reg.setFC(carry);
   reg.setFO(0);
   reg.setFH(0); // really?
-  // reg.F = (val == 0 ? 0x80 : 0) | (carry ? 0x10 : 0);
   set(v, val);
 }
 // 8-bit shift
@@ -106,7 +106,6 @@ void CPU::RLC(Val8 v) {
   u8 carry = (val >> 7) & 1;
   val = (val << 1) | carry;
   set(v, val);
-  // reg.F = (val == 0 ? 0x80 : 0) | (carry ? 0x10 : 0);
   reg.setFZ(val == 0);
   reg.setFC(carry);
   reg.setFO(0);
@@ -115,10 +114,11 @@ void CPU::RLC(Val8 v) {
 // shift left
 void CPU::SLA(Val8 val) {
   u8 v = get(val);
+  u8 newvalue = v << 1;
   reg.F = 0;
-  reg.setFZ((v << 1) == 0);
+  reg.setFZ(newvalue == 0);
   reg.setFC(v >> 7);
-  set(val, v << 1);
+  set(val, newvalue);
 }
 // shift right - signed
 void CPU::SRA(Val8 val) {
@@ -164,7 +164,7 @@ void CPU::BIT(int bit, Val8 rhs) {
 void CPU::AND(Val8 val) { reg.A &= get(val); reg.F = 0x20; reg.setFZ(reg.A == 0); }
 void CPU::OR(Val8 val) { reg.A |= get(val); reg.F = 0; reg.setFZ(reg.A == 0); }
 void CPU::XOR(Val8 val) { reg.A ^= get(val); reg.F = 0; reg.setFZ(reg.A == 0); }
-void CPU::CPL() { reg.A ^= 0xFF; reg.F |= ~0x60; }
+void CPU::CPL() { reg.A ^= 0xFF; reg.F |= 0x60; }
 void CPU::ADD(Val8 dst, Val8 val) {
   u8 oldval = get(dst);
   u8 newval = oldval + get(val);
@@ -176,22 +176,36 @@ void CPU::ADD(Val8 dst, Val8 val) {
 }
 void CPU::ADC(Val8 dst, Val8 val) {
   u8 oldval = get(dst);
-  u8 newval = oldval + get(val) + reg.FC();
+  u8 addval = get(val);
+  u8 carry = reg.FC();
+  u8 newval = oldval + addval + carry;
   set(dst, newval);
   reg.setFZ(newval == 0);
   reg.setFO(0);
-  reg.setFH((newval & 0xF) < (oldval & 0xF));
-  reg.setFC(newval < oldval);
+  reg.setFH((oldval & 0xF) + (addval & 0xF) + (carry & 0xF) > 0xF);
+  // this logic is hairy, maybe just do it the naive newval + oldval + carry > 0xFF ?
+  reg.setFC(newval < oldval + carry);
 }
 void CPU::ADD(Val16 dst, Val16 val) {
   u16 oldval = get(dst);
   u16 newval = oldval + get(val);
   set(dst, newval);
   // hmmmm.
-  if (dst.type == Val16::Reg && dst.value.r == REG16::SP) reg.setFZ(0);
-  reg.setFO(0);
-  reg.setFH((newval & 0xFFF) < (oldval & 0xFFF));
-  reg.setFC(newval < oldval);
+  if (dst.type == Val16::Reg && dst.value.r == REG16::SP) {
+    reg.setFZ(0);
+    reg.setFO(0);
+    reg.setFH((newval & 0xF) < (oldval & 0xF));
+    reg.setFC((newval & 0xFF) < (oldval & 0xFF));
+  } else {
+    reg.setFO(0);
+    reg.setFH((newval & 0xFFF) < (oldval & 0xFFF));
+    reg.setFC(newval < oldval);
+  }
+}
+
+void CPU::LDHLSP(Val8 val) {
+  int8_t i = get(val);
+  reg.HL = (u16)reg.SP + i;
 }
 void CPU::SUB(Val8 val) {
   u8 old_a = reg.A;
@@ -203,11 +217,12 @@ void CPU::SUB(Val8 val) {
 }
 void CPU::SBC(Val8 val) {
   u8 old_a = reg.A;
-  reg.A = old_a - get(val) - reg.FC();
+  u8 carry = reg.FC();
+  reg.A = old_a - get(val) - carry;
   reg.setFZ(reg.A == 0);
   reg.setFO(1);
-  reg.setFH((reg.A & 0xF) > (old_a & 0xF));
-  reg.setFC(reg.A > old_a);
+  reg.setFH((reg.A & 0xF) > (old_a & 0xF) - carry);
+  reg.setFC(reg.A > old_a - carry);
 }
 
 // Misc

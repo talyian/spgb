@@ -30,7 +30,7 @@ Debugger::Debugger(Registers &r, Memory &m, PPU &p)
     watches.push_back({0xFFE0, 0xFFE4}); // HACK - PPU clock
 
     // [blargg test 03 - op sp,hl
-    breakpoints.push_back(0xDEF8); // this is the instruction under test
+    // breakpoints.push_back(0xDEF8); // this is the instruction under test
     // [blargg test 02 - HALT
     // breakpoints.push_back(0xc36f);
     // watches.push_back({0xFF05, 0xFF06}); // timer

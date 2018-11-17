@@ -75,4 +75,6 @@ struct CPU {
   void DAA();
   void CCF();
   void SCF();
+
+  void LDHLSP(Val8 val);
 };
