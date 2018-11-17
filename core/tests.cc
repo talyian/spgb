@@ -395,7 +395,6 @@ void test_03_op_sp_hl_100_SP_check() {
   OpParser<CPU> parser(registers, memory, cpu);
   while(registers.PC != 0xD000 && registers.PC != 0xD008) {
     parser.Step();
-    registers.dump();
   }
   CHECKTEST(__FUNCTION__, registers.PC);
 }
