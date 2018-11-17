@@ -7,6 +7,7 @@ void CPU::set(Val16 a, Val16 v) { a.set(reg, mem, v); }
 
 void CPU::NOP() { }
 void CPU::HALT() { halted = true; }
+void CPU::STOP() { halted = true; }
 void CPU::LD(Val8 dst, Val8 src) {
   set(dst, get(src)); }
 void CPU::LD(Val16 dst, Val16 src) {
@@ -212,7 +213,6 @@ void CPU::SBC(Val8 val) {
 // Misc
 void CPU::DI() { reg.IME=0x00; }
 void CPU::EI() { reg.IME=0xFF; }
-void CPU::STOP() { printf("TODO: STOP\n"); abort(3);}
 void CPU::DAA() {
   if (reg.FO()) { // subtraction
     if (reg.FC()) reg.A -= 0x60;

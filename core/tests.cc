@@ -382,6 +382,25 @@ void test_02_interrupts_05_halt() {
   CHECKTEST(__FUNCTION__, registers.PC);
 }
 
+void test_03_op_sp_hl_100_SP_check() {
+  const char src[] = (
+    "\x31\x00\x0F" // LD SP $f00
+    "\xE8\x01"     // ADD SP, 1
+    "\xE8\xFF"     // ADD SP, -1
+    "\xE8\xFE"     // ADD SP, -2
+    "\xC3\x08\xD0" // JP   #TEST_SUCC
+    );
+  memcpy(memory.mem + 0x100, src, sizeof src);
+  registers.PC = 0x100;
+  OpParser<CPU> parser(registers, memory, cpu);
+  while(registers.PC != 0xD000 && registers.PC != 0xD008) {
+    parser.Step();
+    registers.dump();
+  }
+  CHECKTEST(__FUNCTION__, registers.PC);
+}
+
+
 int main() {
   test_01_special_2_JR_negative();
   test_01_special_3_JR_positive();
@@ -393,6 +412,8 @@ int main() {
   test_02_interrupts_03_DI();
   test_02_interrupts_04_timer_doesnt_work();
   test_02_interrupts_05_halt();
+
+  test_03_op_sp_hl_100_SP_check();
   return 0;
 }
 

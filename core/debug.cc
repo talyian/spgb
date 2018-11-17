@@ -25,10 +25,18 @@ struct Debugger {
 Debugger::Debugger(Registers &r, Memory &m, PPU &p)
       : reg(r), mem(m), ppu(p), pprinter(reg, mem, printer) {
     signal(SIGINT, signal_handler);
-    watches.push_back({0xdff0, 0xe000}); // stack
+    // watches.push_back({0xdff0, 0xe000}); // stack
     watches.push_back({0xFF40, 0xFF48}); // IO registers
     watches.push_back({0xFFE0, 0xFFE4}); // HACK - PPU clock
-    // [bgbtest
+
+    // [blargg test 03 - op sp,hl
+    breakpoints.push_back(0xDEF8); // this is the instruction under test
+    // [blargg test 02 - HALT
+    // breakpoints.push_back(0xc36f);
+    // watches.push_back({0xFF05, 0xFF06}); // timer
+    // watches.push_back({0xFF0F, 0xFF10}); // interrupts - IE
+    // watches.push_back({0xFFFF, 0});      // interrupts - IF
+    // [bgbtest]
     // breakpoints.push_back(0x219); // start of sprite placement function
     // breakpoints.push_back(0x241); // setting sprite.y to random value
     // breakpoints.push_back(0x31f); // random value function start
