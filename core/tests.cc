@@ -196,14 +196,14 @@ void test_02_interrupts_02_EI() {
   memcpy(memory.mem + 0x50, "\x3C\xc9", 2); // inc a; ret in timer interrupt
   registers.PC = 0x100;
   OpParser<CPU> parser(registers, memory, cpu);
-  memory[0xFFFF] = 0xFF;
+  memory.mem[0xFFFF] = 0xFF;
   while(registers.PC != 0xD000 && registers.PC != 0xD008) {
     u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
     if (active_interrupts)
     {
       cpu.halted = false;
       registers.IME = 0;
-      memory[0xFF0F] = 0;
+      memory.mem[0xFF0F] = 0;
       cpu.timer += 12;
       if (active_interrupts & 0x1) { cpu.RST(0x40); } // VBLANK
       else if (active_interrupts & 0x2) { cpu.RST(0x48); } // LCDC
@@ -242,14 +242,14 @@ void test_02_interrupts_03_DI() {
   memcpy(memory.mem + 0x50, "\x3C\xc9", 2); // inc a; ret in timer interrupt
   registers.PC = 0x100;
   OpParser<CPU> parser(registers, memory, cpu);
-  memory[0xFFFF] = 0xFF;
+  memory.mem[0xFFFF] = 0xFF;
   while(registers.PC != 0xD000 && registers.PC != 0xD008) {
     u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
     if (active_interrupts)
     {
       cpu.halted = false;
       registers.IME = 0;
-      memory[0xFF0F] = 0;
+      memory.mem[0xFF0F] = 0;
       cpu.timer += 12;
       if (active_interrupts & 0x1) { cpu.RST(0x40); } // VBLANK
       else if (active_interrupts & 0x2) { cpu.RST(0x48); } // LCDC
@@ -318,14 +318,14 @@ void test_02_interrupts_04_timer_doesnt_work() {
   registers.PC = 0x100;
   Timer timer { memory };
   OpParser<CPU> parser(registers, memory, cpu);
-  memory[0xFFFF] = 0xFF;
+  memory.mem[0xFFFF] = 0xFF;
   while(registers.PC != 0xD000 && registers.PC != 0xD008) {
     u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
     if (active_interrupts)
     {
       cpu.halted = false;
       registers.IME = 0;
-      memory[0xFF0F] = 0;
+      memory.mem[0xFF0F] = 0;
       cpu.timer += 12;
       if (active_interrupts & 0x1) { cpu.RST(0x40); } // VBLANK
       else if (active_interrupts & 0x2) { cpu.RST(0x48); } // LCDC
@@ -354,7 +354,7 @@ void test_02_interrupts_05_halt() {
   registers.PC = 0x100;
   Timer timer { memory };
   OpParser<CPU> parser(registers, memory, cpu);
-  memory[0xFFFF] = 0xFF;
+  memory.mem[0xFFFF] = 0xFF;
   registers.IME = 0xFF;
   while(registers.PC != 0xD000 && registers.PC != 0xD008) {
     u8 active_interrupts = registers.IME & memory[0xFFFF] & memory[0xFF0F];
@@ -362,7 +362,7 @@ void test_02_interrupts_05_halt() {
     {
       cpu.halted = false;
       registers.IME = 0;
-      memory[0xFF0F] = 0;
+      memory.mem[0xFF0F] = 0;
       cpu.timer += 12;
       if (active_interrupts & 0x1) { cpu.RST(0x40); } // VBLANK
       else if (active_interrupts & 0x2) { cpu.RST(0x48); } // LCDC
