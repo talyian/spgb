@@ -2,12 +2,14 @@
 #include "memory.hh"
 #include "registers.hh"
 
-// socket info
-#ifdef __linux__
-#include "platform_unix.hh"
-#elif _WIN32
-#include "platform_win32.hh"
-#endif
+// // socket info
+// #ifdef wasm
+// #error asdf
+// #elif defined(__linux__)
+// // #include "platform_unix.hh"
+// #elif _WIN32
+// #include "platform_win32.hh"
+// #endif
 
 // A Display listening on 33445
 struct Display {

@@ -7,14 +7,9 @@
 
 #include <chrono>
 #include <thread>
-void usleep(int64_t usec) {
-  std::this_thread::sleep_for(std::chrono::microseconds(usec));
-}
+void usleep(int64_t usec);
 
 #include <random>
-std::random_device rd;
-std::int32_t random_int() {
-  return rd();
-}
+std::int32_t random_int();
 
 void __attribute__((noreturn)) abort(uint32_t i);

@@ -4,26 +4,35 @@
 #include <cstdlib>
 
 #include "utils.hh"
-#include "utils.cc"
-
 #include "registers.hh"
-#include "registers.cc"
-
 #include "instructions.hh"
-#include "instructions.cc"
-
 #include "cpu.hh"
-#include "cpu.cc"
+#include "ppu.hh"
+#include "timer.hh"
+#include "debug.hh"
+#include "dma.hh"
 
-#include "timer.cc"
-
-#include "ui_remote.hh"
-#include "ppu.cc"
-#include "dma.cc"
-#include "disassemble.cc"
-#include "debug.cc"
+// #include "utils.cc"
+// #include "registers.cc"
+// #include "instructions.cc"
+// #include "cpu.cc"
+// #include "timer.cc"
+// #include "ppu.cc"
+// #include "dma.cc"
+// #include "disassemble.cc"
+// #include "debug.cc"
 
 #include "main.hh"
+
+void usleep(int64_t usec) {
+  std::this_thread::sleep_for(std::chrono::microseconds(usec));
+}
+
+std::random_device rd;
+std::int32_t random_int() {
+  return rd();
+}
+
 
 int main(int argc, const char ** argv) {
   const char * rom_path = "gb-test-roms/cpu_instrs/individual/06-ld r,r.gb";
@@ -71,7 +80,7 @@ int main(int argc, const char ** argv) {
   OpParser<CPU> pp(registers, memory, exec);
   // OpParser<OpPrinter> pprinter(registers, memory, printer);
   Debugger debugger(registers, memory, ppu);
-  Keypad keys { registers, memory };
+  // Keypad keys { registers, memory };
 
   // is_stepping = true;
   // Disassemble(pprinter);
@@ -103,7 +112,7 @@ int main(int argc, const char ** argv) {
       checkDMA(registers, memory);
       ticks += exec.timer;
     }
-    keys.Step();
+    // keys.Step();
     ppu.Step(exec.timer);
     timer.Step(2 * exec.timer); // TODO: this isn't right
 

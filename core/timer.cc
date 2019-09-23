@@ -1,17 +1,4 @@
-#include "memory.hh"
-
-struct Timer {
-  u16 cycle_counter = 0;
-  u16 divider_counter = 0;
-  u16 last_tick_rate = -1;
-  Memory &mem;
-  u8 &DIV,
-    &Value,
-    &Limit,
-    &Control;
-  void Step(u8 cycles);
-  Timer(Memory &mem);
-};
+#include "timer.hh"
 
 Timer::Timer(Memory &mem) :
   mem(mem), DIV(mem.mem[0xFF04]), Value(mem.mem[0xFF05]), Limit(mem.mem[0xFF06]), Control(mem.mem[0xFF07]) { }

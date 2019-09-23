@@ -1,7 +1,6 @@
 #pragma once
 #include "main.hh"
 #include "memory.h"
-#include "ui_remote.hh"
 
 struct Tile {
   u8 data[16];
@@ -35,7 +34,7 @@ struct PPU {
     &OPal1,
     &WY, &WX;
   Tile *Tiles0, *Tiles1;
-  Display display;
+  //// Display display;
   LcdState state = LcdState::SCAN_OAM;
 
   PPU(Memory &mem) :
@@ -72,7 +71,7 @@ struct PPU {
   void SendForeground();
   void SendBackground();
   void SendScreen() {
-    display.send();
+    //// display.send();
   }
 
 

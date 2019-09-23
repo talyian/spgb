@@ -16,7 +16,7 @@ void PPU::RenderLine()  {
       auto px = (x + SCX) % 8;
       auto py = (LY + SCY) % 8;
       const Tile &t = tileData(tile_id);
-      display.set(x, LY, t.get(px, py));
+      //// display.set(x, LY, t.get(px, py));
     }
     u8 spritecount = 0;
     // foreground
@@ -35,7 +35,7 @@ void PPU::RenderLine()  {
           u8 color = t->get(
             o.flags & 0x20 ? 7 - tx : tx,
             o.flags & 0x40 ? ty : 7 - ty);
-          if (color) display.set(x, LY, color);
+          //// if (color) display.set(x, LY, color);
         }
       }
       spritecount += any_x;
@@ -60,7 +60,7 @@ void PPU::SendTiles()  {
       message.bg_tile_map[i] = i;
     }
     memcpy(&message.bg_tile_data, &mem[0x8000], 0x1000);
-    display.sender.send(&message, sizeof message);
+    //// display.sender.send(&message, sizeof message);
     printf("Sent message %ld bytes\n", sizeof message);
   }
 
@@ -82,7 +82,7 @@ void PPU::SendForeground()  {
     memcpy(&message.bg_tile_data, &mem[0x8000], 0x0800);
     memcpy(&message.bg_tile_data[0x800], &mem[0x8800], 0x0800);
     // memcpy(&message.bg_tile_data + 0x800, &mem[0x8800], 0x0800);
-    display.sender.send(&message, sizeof message);
+    //// display.sender.send(&message, sizeof message);
     printf("Sent message %ld bytes\n", sizeof message);
   }
 
@@ -100,7 +100,7 @@ void PPU::SendBackground() {
     message.ly = LY;
     memcpy(&message.bg_tile_map, &mem[0x9800], 0x400);
     memcpy(&message.bg_tile_data, &mem[0x8000], 0x1000);
-    display.sender.send(&message, sizeof message);
+    //// display.sender.send(&message, sizeof message);
     printf("Sent message %ld bytes\n", sizeof message);
   }
 

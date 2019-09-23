@@ -1,4 +1,5 @@
 #include "instructions.hh"
+#include "utils.hh"
 
 void show(Cond c) {
   switch(c) {

@@ -99,6 +99,7 @@ struct OpParser {
 
   // The parser decodes a single instruction and feeds it to a given interpreter
   void Step() {
+    printf("step [%d]\n", registers.PC);
     ii.timer = 0;
     // the saved PC is useful for "start of instruction" displays
     registers._PC = registers.PC;
