@@ -1,4 +1,20 @@
 #include "wasm_host.hpp"
+#include "boot_rom.hpp"
+#include "instructions.hpp"
+#include "instruction_decoder.hpp"
+#include "instruction_printer.hpp"
+// #include "instruction_runner.hpp"
+
+i32 strlen(const char * s) {
+  for(i32 i = 0;; i++, s++)
+    if (!*s)
+      return i;
+}
+void logs::_log(u8 v) { _logx8(v); }
+void logs::_log(u16 v) { _logx16(v); }
+void logs::_log(i32 v) { _logf(v); }
+void logs::_log(double f) { _logf(f); }
+void logs::_log(const char * s) { _logs(s, strlen(s)); }
 
 struct CartHeader {
   u8 entry_point[4];
@@ -34,8 +50,6 @@ extern "C" u32* get_ppu_frame(int ticks_elapsed) {
   return frame_buffer;
 };
 
-#include "boot_rom.hpp"
-#include "instruction_decoder.hpp"
 
 extern "C" int emu_main() {
   i32 pc = 0;

@@ -20,17 +20,14 @@ extern "C" {
   void WASM_EXPORT release_button(int button);
 }
 
-i32 strlen(const char * s) {
-  for(i32 i = 0;; i++, s++)
-    if (!*s)
-      return i;
-}
+i32 strlen(const char * s);
+
 namespace logs {
-void _log(u8 v) { _logx8(v); }
-void _log(u16 v) { _logx16(v); }
-void _log(i32 v) { _logf(v); }
-void _log(double f) { _logf(f); }
-void _log(const char * s) { _logs(s, strlen(s)); }
+void _log(u8 v);
+void _log(u16 v);
+void _log(i32 v);
+void _log(double f);
+void _log(const char * s);
 template<class T>
 void log(T x) { _log(x); _showlog (); }
 template<class T, class ... TS>
