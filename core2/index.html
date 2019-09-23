@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<script>
+  if (typeof TextDecoder == "undefined") {
+    function TextDecoder() {  }
+    TextDecoder.prototype.decode = function (arr) {
+      return String.fromCharCode.apply(null, new Uint8Array(arr));
+    }
+  }
+  var instance, line=[], dec = new TextDecoder();
+  var memory = new WebAssembly.Memory({ initial: 1024 });
+  var env = {
+    _test: function(foobar) { console.log(foobar); },
+    _logf: function(f) { line.push(f); },
+    _logx8: function(f) { line.push(('00' + f.toString(16)).substr(-2)); },
+    _logx16: function(f) { line.push(('0000' + f.toString(16)).substr(-4)); },
+    _logs: function(i, len) { line.push(dec.decode(memory.buffer.slice(i, i + len))); },
+    _showlog: function() { console.log.apply(console, line); line = []; },
+    memory:memory
+  };
+  fetch("build/gb_emulator.wasm")
+  .then((resp) => resp.arrayBuffer())
+  .then((wasm) => WebAssembly.instantiate(wasm, { env: env }))
+  .then((module) => {
+    instance = module.instance;
+    instance.exports.emu_main(); });
+</script>
