@@ -162,22 +162,22 @@ struct InstructionRunner {
     }
   }
   
-  void NOP() { log(__FUNCTION__); }
-  void STOP() { log(__FUNCTION__); }
-  void DAA() { log(__FUNCTION__); }
+  void NOP() { log(*PC_start_ptr, __FUNCTION__); }
+  void STOP() { log(*PC_start_ptr, __FUNCTION__); }
+  void DAA() { log(*PC_start_ptr, __FUNCTION__); }
 
-  void CPL() { log(__FUNCTION__); }
-  void SCF() { log(__FUNCTION__); }
-  void CCF() { log(__FUNCTION__); }
+  void CPL() { log(*PC_start_ptr, __FUNCTION__); }
+  void SCF() { log(*PC_start_ptr, __FUNCTION__); }
+  void CCF() { log(*PC_start_ptr, __FUNCTION__); }
 
-  void DI() { log(__FUNCTION__); }
-  void EI() { log(__FUNCTION__); }
-  void HALT() { log(__FUNCTION__); }
+  void DI() { log(*PC_start_ptr, __FUNCTION__); }
+  void EI() { log(*PC_start_ptr, __FUNCTION__); }
+  void HALT() { log(*PC_start_ptr, __FUNCTION__); }
 
-  void RLCA() { log(__FUNCTION__); }
-  void RRCA() { log(__FUNCTION__); }
-  void RLA() { log(__FUNCTION__); }
-  void RRA() { log(__FUNCTION__); }
+  void RLCA() { log(*PC_start_ptr, __FUNCTION__); }
+  void RRCA() { log(*PC_start_ptr, __FUNCTION__); }
+  void RLA() { log(*PC_start_ptr, __FUNCTION__); }
+  void RRA() { log(*PC_start_ptr, __FUNCTION__); }
   
   void LD8(Value8 o, Value8 v) {
     error = -1;
@@ -187,7 +187,7 @@ struct InstructionRunner {
   }
   void LD16(Value16 o, Value16 v) {
     error = -1;
-    log(__FUNCTION__, o, v);
+    log(*PC_start_ptr, __FUNCTION__, o, v);
     _write16(o, _read16(v));
     // registers.dump();
   }
@@ -196,56 +196,56 @@ struct InstructionRunner {
     if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
     // void BIT(Value8 o, Value8 v) {
     error = -1;
-    // log(__FUNCTION__, o, v);
+    // log(*PC_start_ptr, __FUNCTION__, o, v);
     u8 val = _read8(v) >> o;
     fl.Z = val == 0;
     fl.N = 0;
     fl.H = 1;
   }
-  void RES(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
-  void SET(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
-  void ADD(Value16 o, Value16 v) { log(__FUNCTION__, o, v); }
-  void ADD(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
-  // void ADD(Operand o, Operand v) { log(__FUNCTION__, o, v); }
-  void ADC(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
+  void RES(Value8 o, Value8 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void SET(Value8 o, Value8 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void ADD(Value16 o, Value16 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void ADD(Value8 o, Value8 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
+  // void ADD(Operand o, Operand v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void ADC(Value8 o, Value8 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
 
   void XOR(Value8 o) {
     error = -1;
-    log(__FUNCTION__, o);
+    log(*PC_start_ptr, __FUNCTION__, o);
     registers.A ^= _read8(o);
   }
-  void AND(Value8 o) { log(__FUNCTION__, o); }
-  void OR(Value8 o) { log(__FUNCTION__, o); }
-  void SBC(Value8 o) { log(__FUNCTION__, o); }
-  void DEC(Value8 o) { log(__FUNCTION__, o); } 
-  void DEC(Register16 o) { log(__FUNCTION__, o); } 
+  void AND(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void OR(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void SBC(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void DEC(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); } 
+  void DEC(Register16 o) { log(*PC_start_ptr, __FUNCTION__, o); } 
   void INC(Value8 o) {
     error = -1;
-    log(__FUNCTION__, o);
+    log(*PC_start_ptr, __FUNCTION__, o);
     _write8(o, _read8(o) + 1);
   }  // INC LoadHL)
-  void INC(Register16 o) { log(__FUNCTION__, o); } // INC HL
-  void SUB(Value8 o) { log(__FUNCTION__, o); }
+  void INC(Register16 o) { log(*PC_start_ptr, __FUNCTION__, o); } // INC HL
+  void SUB(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
   
-  void SRL(Value8 o) { log(__FUNCTION__, o); }
-  void SRA(Value8 o) { log(__FUNCTION__, o); }
-  void SLA(Value8 o) { log(__FUNCTION__, o); }
-  void RRC(Value8 o) { log(__FUNCTION__, o); }
-  void RLC(Value8 o) { log(__FUNCTION__, o); }
-  void RL(Value8 o) { log(__FUNCTION__, o); }
-  void RR(Value8 o) { log(__FUNCTION__, o); }
+  void SRL(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void SRA(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void SLA(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void RRC(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void RLC(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void RL(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void RR(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
 
-  void SWAP(Value8 o) { log(__FUNCTION__, o); }
-  void RST(u8 o) { log(__FUNCTION__, o); }
+  void SWAP(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void RST(u8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
 
-  void CP(Value8 o) { log(__FUNCTION__, o); }
-  void PUSH(Register16 o) { log(__FUNCTION__, o); }
-  void POP(Register16 o) { log(__FUNCTION__, o); }
+  void CP(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void PUSH(Register16 o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void POP(Register16 o) { log(*PC_start_ptr, __FUNCTION__, o); }
 
-  void RET(Conditions o) { log(__FUNCTION__, o); }
-  void RETI(Conditions o) { log(__FUNCTION__, o); }
+  void RET(Conditions o) { log(*PC_start_ptr, __FUNCTION__, o); }
+  void RETI(Conditions o) { log(*PC_start_ptr, __FUNCTION__, o); }
   void JR(Conditions o, Value8 v) {
-    // log(__FUNCTION__, o, v);
+    // log(*PC_start_ptr, __FUNCTION__, o, v);
     switch(o) {
     case Conditions::C: if (fl.C) *PC_ptr += (i8) _read8(v); break;
     case Conditions::NZ:
@@ -256,6 +256,6 @@ struct InstructionRunner {
     }
     error--;
   }
-  void JP(Conditions o, Value16 v) { log(__FUNCTION__, o, v); }
-  void CALL(Conditions o, Value16 v) { log(__FUNCTION__, o, v); }
+  void JP(Conditions o, Value16 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void CALL(Conditions o, Value16 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
 };
