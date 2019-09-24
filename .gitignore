@@ -19,3 +19,4 @@ core/opcodes.cc
 /core2/DMG_ROM.bin
 build
 /core2/tetris.gb
+build-native

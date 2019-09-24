@@ -3,12 +3,11 @@
 #include "instructions.hpp"
 #include "instruction_decoder.hpp"
 #include "instruction_printer.hpp"
-// #include "instruction_runner.hpp"
+#include "instruction_runner.hpp"
 
 i32 strlen(const char * s) {
   for(i32 i = 0;; i++, s++)
-    if (!*s)
-      return i;
+    if (!*s) return i;
 }
 void logs::_log(u8 v) { _logx8(v); }
 void logs::_log(u16 v) { _logx16(v); }
@@ -60,7 +59,11 @@ extern "C" int emu_main() {
     _showlog();
   }
   InstructionDecoder decoder(DMG_ROM_bin, 256, 0);
-  while(decoder.pc < decoder.buflen && !decoder.error)
+  int i = 0;
+  while(decoder.pc < decoder.buflen && !decoder.error && i++ < 10000 && decoder.pc < 0xa8) {
+    if (decoder.error) break;
+    if (decoder.ii.error) break;
     decoder.decode();
+  }
   return 0;
 }
