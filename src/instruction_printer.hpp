@@ -3,6 +3,8 @@
 #include "wasm_host.hpp"
 
 struct InstructionPrinter {
+  int error = 0;
+  
   void NOP() { log(__FUNCTION__); }
   void STOP() { log(__FUNCTION__); }
   void DAA() { log(__FUNCTION__); }
@@ -20,38 +22,49 @@ struct InstructionPrinter {
   void RLA() { log(__FUNCTION__); }
   void RRA() { log(__FUNCTION__); }
   
-  void LD(Operand o, Operand v) { log(__FUNCTION__, o, v); }
-  void BIT(Operand o, Operand v) { log(__FUNCTION__, o, v); }
-  void RES(Operand o, Operand v) { log(__FUNCTION__, o, v); }
-  void SET(Operand o, Operand v) { log(__FUNCTION__, o, v); }
-  void ADD(Operand o, Operand v) { log(__FUNCTION__, o, v); }
-  void ADC(Operand o, Operand v) { log(__FUNCTION__, o, v); }
-
-  void XOR(Operand o) { log(__FUNCTION__, o); }
-  void AND(Operand o) { log(__FUNCTION__, o); }
-  void OR(Operand o) { log(__FUNCTION__, o); }
-  void SBC(Operand o) { log(__FUNCTION__, o); }
-  void DEC(Operand o) { log(__FUNCTION__, o); }
-  void INC(Operand o) { log(__FUNCTION__, o); }
-  void SUB(Operand o) { log(__FUNCTION__, o); }
+  // void LD(Operand o, Operand v) { log(__FUNCTION__, o, v); }
+  // void LD(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
+  // void LD(Value16 o, Value16 v) { log(__FUNCTION__, o, v); }
   
-  void SRL(Operand o) { log(__FUNCTION__, o); }
-  void SRA(Operand o) { log(__FUNCTION__, o); }
-  void SLA(Operand o) { log(__FUNCTION__, o); }
-  void RRC(Operand o) { log(__FUNCTION__, o); }
-  void RLC(Operand o) { log(__FUNCTION__, o); }
-  void SWAP(Operand o) { log(__FUNCTION__, o); }
-  void RST(Operand o) { log(__FUNCTION__, o); }
+  void LD8(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
+  void LD16(Value16 o, Value16 v) { log(__FUNCTION__, o, v); }
+  
+  void BIT(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
+  void RES(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
+  void SET(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
+  void ADD(Value16 o, Value16 v) { log(__FUNCTION__, o, v); }
+  void ADD(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
+  // void ADD(Operand o, Operand v) { log(__FUNCTION__, o, v); }
+  void ADC(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
 
-  void CP(Operand o) { log(__FUNCTION__, o); }
-  void PUSH(Operand o) { log(__FUNCTION__, o); }
-  void POP(Operand o) { log(__FUNCTION__, o); }
-  void RL(Operand o) { log(__FUNCTION__, o); }
-  void RR(Operand o) { log(__FUNCTION__, o); }
+  void XOR(Value8 o) { log(__FUNCTION__, o); }
+  void AND(Value8 o) { log(__FUNCTION__, o); }
+  void OR(Value8 o) { log(__FUNCTION__, o); }
+  void SBC(Value8 o) { log(__FUNCTION__, o); }
+  void DEC(Value8 o) { log(__FUNCTION__, o); } 
+  void DEC(Register16 o) { log(__FUNCTION__, o); } 
+  void INC(Value8 o) { log(__FUNCTION__, o); }  // INC Load(HL)
+  void INC(Register16 o) { log(__FUNCTION__, o); } // INC HL
+  void SUB(Value8 o) { log(__FUNCTION__, o); }
+  
+  void SRL(Value8 o) { log(__FUNCTION__, o); }
+  void SRA(Value8 o) { log(__FUNCTION__, o); }
+  void SLA(Value8 o) { log(__FUNCTION__, o); }
+  void RRC(Value8 o) { log(__FUNCTION__, o); }
+  void RLC(Value8 o) { log(__FUNCTION__, o); }
+  void RL(Value8 o) { log(__FUNCTION__, o); }
+  void RR(Value8 o) { log(__FUNCTION__, o); }
+
+  void SWAP(Value8 o) { log(__FUNCTION__, o); }
+  void RST(u8 o) { log(__FUNCTION__, o); }
+
+  void CP(Value8 o) { log(__FUNCTION__, o); }
+  void PUSH(Register16 o) { log(__FUNCTION__, o); }
+  void POP(Register16 o) { log(__FUNCTION__, o); }
 
   void RET(Conditions o) { log(__FUNCTION__, o); }
   void RETI(Conditions o) { log(__FUNCTION__, o); }
-  void JR(Conditions o, Operand v) { log(__FUNCTION__, o, v); }
-  void JP(Conditions o, Operand v) { log(__FUNCTION__, o, v); }
-  void CALL(Conditions o, Operand v) { log(__FUNCTION__, o, v); }
+  void JR(Conditions o, Value8 v) { log(__FUNCTION__, o, v); }
+  void JP(Conditions o, Value16 v) { log(__FUNCTION__, o, v); }
+  void CALL(Conditions o, Value16 v) { log(__FUNCTION__, o, v); }
 };

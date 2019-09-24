@@ -4,24 +4,21 @@ rows = csv.reader(open(os.path.dirname(os.path.abspath(__file__)) + '/opcode_tab
 
 def parse_code(code):
 
-    operand = "\w+|IO\(\w+\)|(?:LoadSP|Load16|Load|Inc|Dec)\(\w+\)"
+    operand = "\w+|\w+\(\w+\)"
+    operand1 = "^(\w+)$|^(\w+)\((\w+)\)$"
     def op_func(n):
-        if n.isdigit() or n.startswith('0x'): 
-            return '{OperandType::IMM8, {(u8)' + n +'}}'
-        
-        if n.startswith('IO('):
-            return 'IO(' + op_func(n[3:-1]) + ')'
-        if n.startswith('Load16('):
-            return 'Load16(' + op_func(n[7:-1])  + ')'
-        if n.startswith('LoadSP('):
-            return 'LoadSP(' + op_func(n[7:-1])  + ')'
-        if n.startswith('Load('):
-            return 'Load(' + op_func(n[5:-1])  + ')'
-        if n.startswith('Inc('):
-            return 'Inc(' + op_func(n[4:-1])  + ')'
-        if n.startswith('Dec('):
-            return 'Dec(' + op_func(n[4:-1])  + ')'
-        return n + '()'
+        m = re.match(operand1, n)
+        single = m.group(1)
+        callee = m.group(2)
+        arg = m.group(3)
+        if single:
+            if single.isdigit() or single.startswith('0x'):
+                return single
+            return single + '()'
+        elif not arg:
+            return f'{callee}()'
+        else:
+            return f'{callee}({op_func(arg)})'
 
     m = re.match(rf'(\w+)\(\)', code)
     if m:
@@ -43,7 +40,7 @@ def parse_code(code):
         return f'ii.{instr}({op_func(a)}, {op_func(b)});'
 
 for row in rows:
-    opcode, size, cycles, flags, action = row
+    opcode, size, cycles, flags, action = row[:5]
     row_str =  ' '.join(row)
     if (opcode == 'opcode'): continue;
     if (size == ''): continue;
