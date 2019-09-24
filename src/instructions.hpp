@@ -7,13 +7,17 @@ enum class Conditions : u8{
   NC, NZ,
 };
 
-enum Register : u8 {
-  SP, BC, DE, HL, AF,
-  A, B, C, D, E, F,
-  H, L
-};
-enum class Register16 : u8 { SP = SP, BC=BC, DE=DE, HL=HL, AF=AF };
-enum class Register8 : u8 { A=A, B=B, C=C, D=D, E=E, F=F, H=H, L=L };
+enum class Register16 : u8 { SP, BC, DE, HL, AF };
+enum class Register8 : u8 { A, B, C, D, E, F, H, L };
+const char * name_of(Register16 r) {
+  switch(r) {
+  case Register16::BC: return("BC"); break;
+  case Register16::DE: return("DE"); break;
+  case Register16::HL: return("HL"); break;
+  case Register16::AF: return("AF"); break;
+  case Register16::SP: return("SP"); break;
+  }    
+}
 const char * name_of(Register8 r) {
   switch(r) {
   case Register8::A: return("A"); break;
@@ -51,12 +55,18 @@ struct Value8 {
   enum {
     REG8 = OperandType::REG8,
     IMM8 = OperandType::IMM8,
+    LdDecReg8,
+    LdIncReg8,
+    LdReg8,
+    Ld8,
     IO_R8,
     IO_I8,
   } type;
   union {
     u8 value;
+    u16 addr;
     Register8 reg;
+    Register16 reg16; // for ld-inc/ld-dec
   };
   Value8() = default;
   Value8(u8 v) : type(IMM8), value(v) { }
@@ -113,6 +123,23 @@ void _log(Value8 o) {
     io_buf[4] = (o.value & 0xF)["0123456789ABCDEF"];
     io_buf[5] = 0;
     _log(io_buf); break; }
+  case Value8::LdDecReg8: {
+    char *b = io_buf; *b++ = '*';
+    const char * r = name_of(o.reg16);
+    for(; *r; r++, b++) *b = *r;
+    *b++ = '-'; *b++ = '-';
+    _log(io_buf); break; }
+  case Value8::LdIncReg8: {
+    char *b = io_buf; *b++ = '*';
+    const char * r = name_of(o.reg16);
+    for(; *r; r++, b++) *b = *r;
+    *b++ = '+'; *b++ = '+';
+    _log(io_buf); break; }
+  case Value8::LdReg8: {    
+    char *b = io_buf; *b++ = '*';
+    const char * r = name_of(o.reg16);
+    for(; *r; r++, b++) *b = *r;
+    _log(io_buf); break; }
   default: _log("value8"); break;
   }
 }
@@ -128,39 +155,19 @@ void _log(Conditions o) {
   default: _log("?Cond?"); break;
   }
 }
-void _log(Register o) {
-  switch(o) {
-#define CASE(X) case X: _log(#X); break;
-  CASE(SP)
-  CASE(BC)
-  CASE(DE)
-  CASE(HL)
-  CASE(AF)
-  CASE(A)
-  CASE(B)
-  CASE(C)
-  CASE(D)
-  CASE(E)
-  CASE(F)
-  CASE(H)
-  CASE(L)
-#undef CASE
-  default: _log("??"); break;
-  }
-}
+
 void _log(Operand o) {
   if (o.type == IMM8) _log(o.data.val8);
   else if (o.type == IMM16) _log(o.data.val16);
-  else if (o.type == REG16) _log((Register) o.data.val8);
-  else if (o.type == REG8) _log((Register) o.data.val8);
+  else if (o.type == REG16) _log((Register16) o.data.val8);
+  else if (o.type == REG8) _log((Register8) o.data.val8);
   else if (o.type == IO_IMM8) { _log("IO:"); _log(o.data.val8); }
-  else if (o.type == IO_REG) { _log("IO:"); _log((Register) o.data.val8); }
-  else if (o.type == Load_REG16) { _log("["); _log((Register) o.data.val8); _log("]"); }
+  else if (o.type == IO_REG) { _log("IO:"); _log((Register8) o.data.val8); }
+  else if (o.type == Load_REG16) { _log("["); _log((Register16) o.data.val8); _log("]"); }
   else if (o.type == Load_IMM16) { _log("["); _log(o.data.val16); _log("]"); }
-  else if (o.type == Inc_REG16) { _log("["); _log((Register) o.data.val8); _log("]++"); }
-  else if (o.type == Dec_REG16) { _log("["); _log((Register) o.data.val8); _log("]--"); }
-  else
-    _log("????????????????????????????????????????op");
+  else if (o.type == Inc_REG16) { _log("["); _log((Register16) o.data.val8); _log("]++"); }
+  else if (o.type == Dec_REG16) { _log("["); _log((Register16) o.data.val8); _log("]--"); }
+  else _log("????????????????????????????????????????op");
 }
 }
 using logs::_log;

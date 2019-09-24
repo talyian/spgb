@@ -60,9 +60,12 @@ extern "C" int emu_main() {
   }
   InstructionDecoder decoder(DMG_ROM_bin, 256, 0);
   int i = 0;
-  while(decoder.pc < decoder.buflen && !decoder.error && i++ < 10000 && decoder.pc < 0xa8) {
-    if (decoder.error) break;
-    if (decoder.ii.error) break;
+  while(decoder.pc < decoder.buflen && decoder.pc < 0xa8) {
+  // while(true) {
+  //   if (decoder.pc >= decoder.buflen) { log("overbuf"); break; }
+  //   if (decoder.pc >= 0xa8) { log("??"); break; }
+    if (decoder.error) { log("decoder error", decoder.error); break; }
+    if (decoder.ii.error) { log("error", decoder.ii.error); break; }
     decoder.decode();
   }
   return 0;

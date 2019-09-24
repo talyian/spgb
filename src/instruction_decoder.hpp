@@ -6,11 +6,11 @@
 struct InstructionDecoder {
   u8 * buf;
   u32 buflen;
-  u32 pc, pc_start;
+  u16 pc, pc_start;
   bool error = 0;
 
-  InstructionPrinter ii;
-  // InstructionRunner ii;
+  // InstructionPrinter ii;
+  InstructionRunner ii;
   
   InstructionDecoder(u8 * buf, u32 len, u32 pos): buf(buf), buflen(len), pc(pos) { }
 
@@ -23,9 +23,30 @@ struct InstructionDecoder {
 
   Value16 Load16(Value16 addr) { return {0}; }
   // Value16 Inc16(Register16 addr);
-  Value8 Inc8(Register16 addr) { return {0}; }
-  Value8 Dec8(Register16 addr) { return {0}; }
-  Value8 Load8(Value16 addr) { return {0}; }
+  Value8 Inc8(Register16 addr) {
+    Value8 v;
+    v.type = Value8::LdIncReg8;
+    v.reg16 = addr;
+    return v;
+  }
+  Value8 Dec8(Register16 addr) {
+    Value8 v;
+    v.type = Value8::LdDecReg8;
+    v.reg16 = addr;
+    return v;
+  }
+  Value8 Load8(u16 addr) {
+    Value8 v;
+    v.type = Value8::Ld8;
+    v.addr = addr;
+    return v;
+  }
+  Value8 Load8(Register16 addr) {
+    Value8 v;
+    v.type = Value8::LdReg8;
+    v.reg16 = addr;
+    return v;
+  }
   Value8 IO(Value8 port) {
     Value8 v = port;
     if (port.type == Value8::REG8) v.type = Value8::IO_R8;
@@ -102,15 +123,17 @@ struct InstructionDecoder {
   
   void decode() {
     if (pc >= buflen) return EOF();
-    _log((u16)pc);
     pc_start = pc;
     u16 op = buf[pc++];
     if (op == 0xcb) op = 0x100 + buf[pc++];
+    ii.PC_ptr = &pc;
+    ii.PC_start_ptr = &pc_start;
     switch(op) {
     #include "generated_instruction_decode_table.inc"
     default:
       log("unknown op", op);
       error = 1;
     }
+    ii.error++;
   }
 };

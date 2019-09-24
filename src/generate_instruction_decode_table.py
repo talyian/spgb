@@ -54,4 +54,5 @@ for row in rows:
         print(f'  log("fallback", {str_action}); // fallback')
         print("  error = 1;");
     # print(f'  if (pc != pc_start + {size}) log("pc error", (i32)pc, (i32)_pc + {size});')
-    print(f' pc = pc_start + {size}; break;')
+    # print(f' pc = pc_start + {size};')
+    print(f' break;')
