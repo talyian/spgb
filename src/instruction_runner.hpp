@@ -9,6 +9,20 @@ struct reg16 {
   reg16() = default;
   reg16(u16 v) { h = v >> 8; l = v; }
   operator u16 () { return (u16)(h * 0x100 + l); }
+  reg16 operator-- () {
+    u16 v = (u16) *this;
+    reg16 r = v - (u16)1;
+    h = r.h;
+    l = r.l;
+    return *this;
+  }
+  reg16 operator++ (int) {
+    u16 u = (u16) *this;
+    reg16 r = u + (u16)1;
+    h = r.h;
+    l = r.l;
+    return u;
+  }
 };
 namespace logs {
   void _log(reg16 v) { _logx16(v.h * 256 + v.l); };
@@ -41,10 +55,27 @@ struct InstructionRunner {
   u16 *PC_start_ptr;
   
   int error = 0;
-
+  int verbose_log = 0;
   u8 memory[64 * 1024 ];
+
+  template<class T, class ...TS>
+  void m_log(T x, TS ... xs) {
+    if (verbose_log)
+      log(x, xs...);
+  }
   
+  void _push(reg16 value) {
+    memory[--registers.SP] = value.h;
+    memory[--registers.SP] = value.l;
+  }
+  u16 _pop() {
+    u16 l = memory[registers.SP++];
+    u16 h = memory[registers.SP++];
+    return h * 0x100 + l;
+  }
   u8 _read8_addr(u16 addr) {
+    if (0xFF00 <= addr && addr < 0xFF80 && addr != 0xFF44  && verbose_log)
+      log("    IO:", addr);
     return memory[addr];
   }
   u8 _read8(Register8 r) {
@@ -65,14 +96,17 @@ struct InstructionRunner {
     switch(v.type) {
     case Value8::IMM8: return v.value;
     case Value8::REG8: return _read8(v.reg);
-    case Value8::LdReg8: return _read8_addr(v.addr);
+    case Value8::LdReg8: return _read8_addr(_read16(v.reg16));
+    case Value8::Ld8: return _read8_addr(v.addr);
+    case Value8::IO_I8: return _read8_addr(0xFF00 + v.value);
+    case Value8::IO_R8: return _read8_addr(0xFF00 + _read8(v.reg));
     default: log("read8"); error = 1; return -1;
     }
   }
   void _write8_addr(u16 target, u8 value) {
     memory[target] = value;
-    if (0xFF00 <= target  && target < 0xFF80) {
-      log("    IO", target, value);
+    if (0xFF00 <= target  && target < 0xFF80 && verbose_log) {
+      log("    IO:", target, "<-", value);
     }
   }
   void _write8_reg(Register8 target, u8 value) {
@@ -91,12 +125,6 @@ struct InstructionRunner {
   }
   void _write8(Value8 target, u8 value) {
     switch(target.type) {
-    case Value8::LdDecReg8: {
-      u16 addr = _read16(target.reg16);
-      _write8_addr(addr, value);
-      _write16(target.reg16, addr - 1);
-      break;
-    }
     case Value8::REG8: {
       _write8_reg(target.reg, value);
       break;
@@ -108,7 +136,22 @@ struct InstructionRunner {
       _write8_addr(0xFF00 + _read8(target.reg), value); break;
     }
     case Value8::LdReg8: {
-      _write8_addr(_read16(target.addr), value); break;
+      _write8_addr(_read16(target.reg16), value); break;
+    }
+    case Value8::LdIncReg8: {
+      u16 addr = _read16(target.reg16);
+      _write8_addr(addr, value);
+      _write16(target.reg16, addr + 1);
+      break;
+    }
+    case Value8::LdDecReg8: {
+      u16 addr = _read16(target.reg16);
+      _write8_addr(addr, value);
+      _write16(target.reg16, addr - 1);
+      break;
+    }
+    case Value8::Ld8: {
+      _write8_addr(target.addr, value); break;
     }
     default:
       log("write8-error", target);
@@ -162,32 +205,37 @@ struct InstructionRunner {
     }
   }
   
-  void NOP() { log(*PC_start_ptr, __FUNCTION__); }
-  void STOP() { log(*PC_start_ptr, __FUNCTION__); }
-  void DAA() { log(*PC_start_ptr, __FUNCTION__); }
+  void NOP() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void STOP() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void DAA() { m_log(*PC_start_ptr, __FUNCTION__); }
 
-  void CPL() { log(*PC_start_ptr, __FUNCTION__); }
-  void SCF() { log(*PC_start_ptr, __FUNCTION__); }
-  void CCF() { log(*PC_start_ptr, __FUNCTION__); }
+  void CPL() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void SCF() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void CCF() { m_log(*PC_start_ptr, __FUNCTION__); }
 
-  void DI() { log(*PC_start_ptr, __FUNCTION__); }
-  void EI() { log(*PC_start_ptr, __FUNCTION__); }
-  void HALT() { log(*PC_start_ptr, __FUNCTION__); }
+  void DI() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void EI() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void HALT() { m_log(*PC_start_ptr, __FUNCTION__); }
 
-  void RLCA() { log(*PC_start_ptr, __FUNCTION__); }
-  void RRCA() { log(*PC_start_ptr, __FUNCTION__); }
-  void RLA() { log(*PC_start_ptr, __FUNCTION__); }
-  void RRA() { log(*PC_start_ptr, __FUNCTION__); }
+  void RLCA() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void RRCA() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void RLA() {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__);
+    u16 v = (_read8(Register8::A) << 1) & fl.C;
+    _write8(Register8::A, v);
+    fl.C = (v >> 8) & 1;
+  }
+  void RRA() { m_log(*PC_start_ptr, __FUNCTION__); }
   
   void LD8(Value8 o, Value8 v) {
     error = -1;
-    log(*PC_start_ptr, __FUNCTION__, o, v);
+    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     _write8(o, _read8(v));
-    // registers.dump();
   }
   void LD16(Value16 o, Value16 v) {
     error = -1;
-    log(*PC_start_ptr, __FUNCTION__, o, v);
+    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     _write16(o, _read16(v));
     // registers.dump();
   }
@@ -196,66 +244,138 @@ struct InstructionRunner {
     if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
     // void BIT(Value8 o, Value8 v) {
     error = -1;
-    // log(*PC_start_ptr, __FUNCTION__, o, v);
+    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u8 val = _read8(v) >> o;
     fl.Z = val == 0;
     fl.N = 0;
     fl.H = 1;
   }
-  void RES(Value8 o, Value8 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
-  void SET(Value8 o, Value8 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
-  void ADD(Value16 o, Value16 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
-  void ADD(Value8 o, Value8 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
-  // void ADD(Operand o, Operand v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
-  void ADC(Value8 o, Value8 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void RES(Value8 o, Value8 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void SET(Value8 o, Value8 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void ADD(Value16 o, Value16 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void ADD(Value8 o, Value8 v) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o, v);
+    u8 a = _read8(o);
+    u8 b = _read8(v);
+    _write8(o, a + b);
+    fl.Z = (u8)(a + b) == 0;
+    fl.C = (u16)a + (u16)b > 0xFF;
+    fl.H = (a & 0xF) + (b & 0xF) > 0xF;
+    fl.N = 0;
+    if (verbose_log) {
+      log("                              ADD", o, (u8)a, (u8)b, (u8)(a + b));
+      registers.dump();
+    }
+  }
+  void ADC(Value8 o, Value8 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
 
   void XOR(Value8 o) {
     error = -1;
-    log(*PC_start_ptr, __FUNCTION__, o);
+    m_log(*PC_start_ptr, __FUNCTION__, o);
     registers.A ^= _read8(o);
   }
-  void AND(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void OR(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void SBC(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void DEC(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); } 
-  void DEC(Register16 o) { log(*PC_start_ptr, __FUNCTION__, o); } 
+  void AND(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void OR(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void SBC(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void DEC(Value8 o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u8 a = _read8(o);
+    u8 v = a - (u8)1;
+    _write8(o, v);
+    fl.Z = a == 1;
+    fl.N = 1;
+    fl.H = (a & 0xF) < 1;
+  } 
+  void DEC(Register16 o) { m_log(*PC_start_ptr, __FUNCTION__, o); } 
   void INC(Value8 o) {
     error = -1;
-    log(*PC_start_ptr, __FUNCTION__, o);
+    m_log(*PC_start_ptr, __FUNCTION__, o);
     _write8(o, _read8(o) + 1);
   }  // INC LoadHL)
-  void INC(Register16 o) { log(*PC_start_ptr, __FUNCTION__, o); } // INC HL
-  void SUB(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  
-  void SRL(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void SRA(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void SLA(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void RRC(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void RLC(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void RL(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void RR(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-
-  void SWAP(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void RST(u8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-
-  void CP(Value8 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void PUSH(Register16 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void POP(Register16 o) { log(*PC_start_ptr, __FUNCTION__, o); }
-
-  void RET(Conditions o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void RETI(Conditions o) { log(*PC_start_ptr, __FUNCTION__, o); }
-  void JR(Conditions o, Value8 v) {
-    // log(*PC_start_ptr, __FUNCTION__, o, v);
-    switch(o) {
-    case Conditions::C: if (fl.C) *PC_ptr += (i8) _read8(v); break;
-    case Conditions::NZ:
-      if (!fl.Z) { *PC_ptr += (i8) _read8(v); }
-      break; 
-    default:
-      error = 100;
-    }
-    error--;
+  void INC(Register16 o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    _write16(o, _read16(o) + 1);
+  } // INC HL
+  void SUB(Value8 o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u8 a = _read8(Register8::A);
+    u8 b = _read8(o);
+    _write8(Register8::A, a - b);
+    fl.Z = a == b;
+    fl.N = 1;
+    fl.C = a < b;
+    fl.H = (a & 0xF) < (b & 0xF);
   }
-  void JP(Conditions o, Value16 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
-  void CALL(Conditions o, Value16 v) { log(*PC_start_ptr, __FUNCTION__, o, v); }
+  
+  void SRL(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void SRA(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void SLA(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void RRC(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void RLC(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void RL(Value8 o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u16 v = (_read8(o) << 1) & fl.C;
+    _write8(o, v);
+    fl.C = (v >> 8) & 1;
+  }
+  void RR(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+
+  void SWAP(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void RST(u8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+
+  void CP(Value8 o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u8 a = registers.A;
+    u8 b = _read8(o);
+    fl.Z = a == b;
+    fl.C = a < b;
+    fl.N = 0;
+    fl.H = (a & 0xF) < (b & 0xF);
+  }
+  void PUSH(Register16 o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    _push(_read16(o));
+  }
+  void POP(Register16 o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    _write16(o, _pop());
+  }
+  
+  bool _check(Conditions o) {
+    switch(o) {
+    case Conditions::T: return true;
+    case Conditions::C: return fl.C;
+    case Conditions::NC: return !fl.C;
+    case Conditions::Z: return fl.Z;
+    case Conditions::NZ: return !fl.Z;
+    }
+    error = 100;
+  }
+  
+  void RET(Conditions o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    if (_check(o)) *PC_ptr = _pop();
+  }
+  void RETI(Conditions o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void JR(Conditions o, Value8 v) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o, v);
+    if (_check(o)) *PC_ptr += (i8) _read8(v); 
+  }
+  void JP(Conditions o, Value16 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void CALL(Conditions o, Value16 v) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o, v);
+    _push(*PC_ptr);
+    *PC_ptr = _read16(v);
+  }
 };

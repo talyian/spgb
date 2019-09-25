@@ -140,6 +140,16 @@ void _log(Value8 o) {
     const char * r = name_of(o.reg16);
     for(; *r; r++, b++) *b = *r;
     _log(io_buf); break; }
+  case Value8::Ld8: {
+    char *b = io_buf; *b++ = '*';
+    u16 addr = o.addr;
+    b = io_buf + 6;
+    *--b = 0;
+    for(int i=0; i<4; i++) { 
+      *--b = (addr % 0x10)["0123456789ABCDEF"];
+      addr /= 0x10;
+    }
+    _log(io_buf); break; }
   default: _log("value8"); break;
   }
 }
