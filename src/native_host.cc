@@ -14,3 +14,7 @@ extern "C" {
 int main() {
   emu_main();
 }
+
+void _push_frame(u32 category, u8 * memory, u32 len) {
+  log("pushframe");
+}

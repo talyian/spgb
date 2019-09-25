@@ -1,25 +1,20 @@
 #include "base.hpp"
 #include "wasm_host.hpp"
+#include "memory_mapper.hpp"
 #include "instruction_printer.hpp"
 #include "instruction_runner.hpp"
 
 struct InstructionDecoder {
-  u8 * buf;
-  u32 buflen;
   u16 pc, pc_start;
   bool error = 0;
 
-  // InstructionPrinter ii;
+  MemoryMapper *mmu=0;  
   InstructionRunner ii;
-  
-  InstructionDecoder(u8 * buf, u32 len, u32 pos): buf(buf), buflen(len), pc(pos) { }
+  InstructionDecoder(u16 pos) : pc(pos) { }
 
-  void EOF() { log(__FUNCTION__); error = 1; }
-
-  u8 Imm8() { return buf[pc++]; }
-  u8 ImmI8() { return buf[pc++]; }
-  u16 Imm16() { u16 v = buf[pc++]; v = v + 256 * buf[pc++]; return v; }
-
+  u8 Imm8() { return (*mmu)[pc++]; }
+  u8 ImmI8() { return (*mmu)[pc++]; }
+  u16 Imm16() { u16 v = (*mmu)[pc++]; v = v + 256 * (*mmu)[pc++]; return v; }
 
   Value16 Load16(Value16 addr) { return {0}; }
   // Value16 Inc16(Register16 addr);
@@ -122,10 +117,9 @@ struct InstructionDecoder {
   Conditions CNZ() { return Conditions::NZ; }
   
   void decode() {
-    if (pc >= buflen) return EOF();
     pc_start = pc;
-    u16 op = buf[pc++];
-    if (op == 0xcb) op = 0x100 + buf[pc++];
+    u16 op = (*mmu)[pc++];
+    if (op == 0xcb) op = 0x100 + (*mmu)[pc++];
     ii.PC_ptr = &pc;
     ii.PC_start_ptr = &pc_start;
     switch(op) {

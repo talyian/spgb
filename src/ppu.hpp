@@ -1,9 +1,10 @@
 #pragma once
 #include "base.hpp"
 #include "wasm_host.hpp"
+#include "memory_mapper.hpp"
 
 struct PPU {
-  u8 * memory = 0;
+  MemoryMapper * memory = 0;
   u32 * ext_timer = 0;
   u32 timer = 0;
   int line = 0;
@@ -29,7 +30,7 @@ struct PPU {
       if (++line == 0x9A) { go_reset(state) } else break;
     default: log("invalid PPU state", state);
     };
-    memory[0xFF44] = line;
+    (*memory)[0xFF44] = line;
   }
   #undef go_next
   #undef go_reset

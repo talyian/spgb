@@ -8,6 +8,7 @@ extern "C" {
   void _logx16(u16 v);
   void _logs(const char * s, u32 len);
   void _showlog();
+  void _push_frame(u32 category, u8 * data, u32 len);
 }
 
 // exports
@@ -18,6 +19,8 @@ extern "C" {
   u32* WASM_EXPORT get_ppu_frame(int ticks_elapsed) ;
   void WASM_EXPORT push_button(int button);
   void WASM_EXPORT release_button(int button);
+  u8 * WASM_EXPORT get_rom_memory();
+  void *memcpy(void *dest, const void *src, size_t n);
 }
 
 i32 strlen(const char * s);

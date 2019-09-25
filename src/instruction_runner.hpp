@@ -1,6 +1,7 @@
 #pragma once
 #include "instructions.hpp"
 #include "wasm_host.hpp"
+#include "memory_mapper.hpp"
 
 // Registers
 using reg8 = u8;
@@ -56,8 +57,8 @@ struct InstructionRunner {
   
   int error = 0;
   int verbose_log = 0;
-  u8 memory[64 * 1024 ];
-
+  MemoryMapper *mmu = 0;
+  
   template<class T, class ...TS>
   void m_log(T x, TS ... xs) {
     if (verbose_log)
@@ -65,18 +66,18 @@ struct InstructionRunner {
   }
   
   void _push(reg16 value) {
-    memory[--registers.SP] = value.h;
-    memory[--registers.SP] = value.l;
+    (*mmu)[--registers.SP] = value.h;
+    (*mmu)[--registers.SP] = value.l;
   }
   u16 _pop() {
-    u16 l = memory[registers.SP++];
-    u16 h = memory[registers.SP++];
+    u16 l = (*mmu)[registers.SP++];
+    u16 h = (*mmu)[registers.SP++];
     return h * 0x100 + l;
   }
   u8 _read8_addr(u16 addr) {
     if (0xFF00 <= addr && addr < 0xFF80 && addr != 0xFF44  && verbose_log)
       log("    IO:", addr);
-    return memory[addr];
+    return (*mmu)[addr];
   }
   u8 _read8(Register8 r) {
     switch(r) {
@@ -104,10 +105,14 @@ struct InstructionRunner {
     }
   }
   void _write8_addr(u16 target, u8 value) {
-    memory[target] = value;
-    if (0xFF00 <= target  && target < 0xFF80 && verbose_log) {
-      log("    IO:", target, "<-", value);
-    }
+    // if (0x8000 <= target  && target < 0x9800)
+    //   log(*PC_start_ptr, "VRAM write", target, "<-", value);
+
+    // if (0xFF00 <= target && target < 0xFF80) {
+    //   if (target != 0xFF42)
+    //     log("    IO:", target, "<-", value);
+    // }
+    (*mmu)[target] = value;
   }
   void _write8_reg(Register8 target, u8 value) {
     switch(target) {
@@ -192,8 +197,8 @@ struct InstructionRunner {
     default: error = 1;
     }}
   void _write16_addr(u16 addr, u16 value) {
-    memory[addr++] = value >> 8;
-    memory[addr] = value;
+    (*mmu)[addr++] = value >> 8;
+    (*mmu)[addr] = value;
   }
   void _write16(Value16 target, u16 value) {
     switch(target.type) {
@@ -232,6 +237,8 @@ struct InstructionRunner {
     error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
     _write8(o, _read8(v));
+    // if (verbose_log)
+    //   registers.dump();
   }
   void LD16(Value16 o, Value16 v) {
     error = -1;
@@ -369,7 +376,10 @@ struct InstructionRunner {
   void JR(Conditions o, Value8 v) {
     error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
-    if (_check(o)) *PC_ptr += (i8) _read8(v); 
+    if (_check(o)) *PC_ptr += (i8) _read8(v);
+    static bool warned = false;
+    if (_check(o) && _read8(v) == 0xfe && !warned)
+      log(*PC_start_ptr, "warning: infinite loop", warned = true);
   }
   void JP(Conditions o, Value16 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
   void CALL(Conditions o, Value16 v) {

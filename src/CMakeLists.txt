@@ -18,14 +18,23 @@ if (WASM)
   add_link_options(
     --export-dynamic
     --no-entry
+    --strip-all
     --gc-sections
     --allow-undefined
     --import-memory)
 
-  add_executable(gb_emulator.wasm main.cc)
+  add_executable(gb_emulator.wasm main.cc platform_utils.cc)
   add_dependencies(gb_emulator.wasm generated_instruction_decode_table.inc)
 else()
-  add_executable(gb_emulator_console main.cc native_host.cc)
+
+  add_compile_options(
+    -std=c++14
+    -Wall
+    -Wno-unused-variable
+    -g
+  )
+  
+  add_executable(gb_emulator_console main.cc platform_utils.cc native_host.cc)
   add_dependencies(
     gb_emulator_console
     generated_instruction_decode_table.inc

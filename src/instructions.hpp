@@ -71,6 +71,7 @@ struct Value8 {
   Value8() = default;
   Value8(u8 v) : type(IMM8), value(v) { }
   Value8(Register8 v) : type(REG8), reg(v) { }
+  static Value8 _Load(Register16 r) { Value8 v; v.type = LdReg8; v.reg16 = r; return v; }
 };
 
 struct Value16 {
