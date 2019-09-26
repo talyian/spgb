@@ -27,13 +27,18 @@ struct emulator_t {
     decoder.ii.mmu = &mmu;
     ppu.memory = &mmu;
   }
-  void step() {
-    if (decoder.error) { log("decoder error"); _stop(); }
-    if (decoder.ii.error) { log("runner error"); _stop(); }
-    decoder.decode();
-    ppu.tick(32); // TODO: timing shoudl we be using
+  void step(i32 ticks) {
+    while(ticks > 0) { 
+      if (decoder.error) { log("decoder error"); _stop(); }
+      if (decoder.ii.error) { log("runner error"); _stop(); }
+      decoder.decode();
+      u32 dt = 16; // TODO: do timing based on actual instruction decodetime
+      ticks -= dt; 
+      ppu.tick(dt);
+    }
   }
 };
+
 #ifdef WASM
 extern "C" void _check_memory_size();
 extern "C" void WASM_EXPORT test_memory() {
@@ -45,14 +50,14 @@ extern "C" void WASM_EXPORT test_memory() {
   log("__builtin_wasm_memory_size", (u32)__builtin_wasm_memory_size(0));
 }
 #endif
-extern "C" void * get_emulator() {
+
+extern "C" emulator_t * WASM_EXPORT get_emulator() {
   return new emulator_t {};
 }
-extern "C" void step_frame(void * emulator_vptr) {
-  auto emulator = (emulator_t*)emulator_vptr;
-  for(int i = 0; i < 16 * 1024; i++) {
-    emulator->step();
-  }
+extern "C" void WASM_EXPORT step_frame(emulator_t * emulator) {
+  #define CLOCK_HZ 8200000
+  #define FPS 60
+  emulator->step(CLOCK_HZ / FPS);
   // _push_frame(0x100, mmu.vram, 0x800);
   // _push_frame(0x101, mmu.vram + 0x800, 0x800);
   // _push_frame(0x102, mmu.vram + 0x1000, 0x800);

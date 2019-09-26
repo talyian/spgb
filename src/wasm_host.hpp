@@ -13,12 +13,7 @@ extern "C" {
   void _stop();
 }
 
-// exports
 #define WASM_EXPORT __attribute__((visibility("default")))
-extern "C" {
-  void * WASM_EXPORT get_emulator();
-  void WASM_EXPORT step_frame(void *);
-}
 
 i32 strlen(const char * s);
 

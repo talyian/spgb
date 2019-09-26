@@ -28,17 +28,20 @@ extern "C" void *memcpy(void *dest, const void *src, size_t n) {
   return dest;
 }
 
-extern "C" u8 * memory;
-const int PAGE_SIZE = 64 * 1024;
-void * gb_malloc(size_t size) {
-  _log("malloc");
-  _log((i32)size);
-  _showlog();
+// memory allocation - WASM doesn't have a heap per-se but it does
+// have a linear grow-only memory region. Not sure if calling LLVM
+// intrinsics is the right way to access these functions but it works.
+extern "C" u8 * memory_base;
+
+const size_t PAGE_SIZE = 64 * 1024;
+
+void * wasm_allocate(size_t size) {
   size_t page_start = __builtin_wasm_memory_grow(0, (size - 1) / PAGE_SIZE + 1);
-  return memory + PAGE_SIZE * page_start;
+  return memory_base + PAGE_SIZE * page_start;
 }
+
 void * operator new(size_t size) {
-  return gb_malloc(size);
+  return wasm_allocate(size);
 }
 #endif
 
