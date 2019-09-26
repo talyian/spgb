@@ -1,8 +1,29 @@
 <!DOCTYPE html>
+<style>
+  body { background:#333; }
+  #tile0 { width:128px; height:64px; }
+  #bg { width:256px; height: 256px; }
+  #cvscreen {
+      width:320px;
+      height:288px;
+      border:1px solid green;
+  }
+  /* copied from https://stackoverflow.com/questions/7615009 */
+  canvas {
+      image-rendering: optimizeSpeed;             /* Older versions of FF          */
+      image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+      image-rendering: -webkit-optimize-contrast; /* Safari                        */
+      image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+      image-rendering: pixelated;                 /* Awesome future-browsers       */
+      -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
+  }
+</style>
+
 <canvas id=tile0 width=128 height=64 style='background:#fed'> </canvas> <!--16 * 8 tiles each at 8*8-->
 <canvas id=tile1 width=128 height=64 style='background:#fed'> </canvas> <!--16 * 8 tiles each at 8*8-->
 <canvas id=tile2 width=128 height=64 style='background:#fed'> </canvas> <!--16 * 8 tiles each at 8*8-->
 <canvas id=bg width=256 height=256 style='background:#def'> </canvas>
+<canvas id=cvscreen width=160 height=144 style='background:#edf'> </canvas>
 <script>
   if (typeof TextDecoder == "undefined") {
     function TextDecoder() {  }
@@ -10,12 +31,25 @@
       return String.fromCharCode.apply(null, new Uint8Array(arr));
     }
   }
+  var emulator = 0;
   var instance, line=[], dec = new TextDecoder();
-  var memory = new WebAssembly.Memory({ initial: 1024 });
-
+  var memory = new WebAssembly.Memory({ initial: 32 });
+  var heap = new WebAssembly.Memory({initial: 3});
+  function draw_display(canvas, data) {
+    var ctx = canvas.getContext("2d"), p = 0, i = 0;
+    var H = 144, W = 160;
+    for(var y = 0; y < H; y++) {
+      for(var x = 0; x < W; x++) {
+        p = data[i++];
+        ctx.fillStyle = ['white', 'blue', 'olive', 'black'][p % 3];
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  
   function draw_vram(canvas, data) {
     var ctx = canvas.getContext("2d");
-    var w = 8, tile_idx = 0, tile_number = 0,sum = 0;
+    var w = 8, tile_idx = 0, tile_number = 0;
     // 0x800 bytes, 0x80 sprites, so each one takes up 0x10 bytes
     for(var y = 0; y < 8; y++) {
       for(var x = 0; x < 16; x++) {
@@ -24,23 +58,21 @@
           var b0 = data[tile_idx++];
           var b1 = data[tile_idx++];
           var w0 = b0 * 0x100 + b1;
-          pp = []
           for(var i = 0; i < 8; i++) {
-            var p = (w0 >> (14 - 2 * i)) & 0x3;
-            pp.push(p);
-            sum += p;
-            ctx.fillStyle = ['blue', 'red', 'yellow', 'black'][p];
+            var p = (w0 >> (15 - i)) & 0x1;
+            p = p << 1;
+            var q = (w0 >> (7 - i)) & 0x1;
+            p = p | q;
+            ctx.fillStyle = ['white', 'blue', 'olive', 'black'][p];
             ctx.fillRect(x * 8 + i, y * 8 + j, 1, 1);
           }
-          if (w0) console.log(w0, pp);
         }
       }
     }
-    console.log('sum',sum);
   }
+  
   function push_frame(category, data, len) {
     var buf = new Uint8Array(memory.buffer.slice(data, data + len));
-    console.log("frame", len);
     if (category == 0x100) { // tile data
       draw_vram(tile0, buf);
     }
@@ -49,6 +81,9 @@
     }
     if (category == 0x102) { // tile data
       draw_vram(tile2, buf);
+    }
+    if (category == 0x300) { // tile data
+      draw_display(cvscreen, buf);
     }
     var ctx = bg.getContext("2d");
     if (category == 0x200) { // background
@@ -61,23 +96,42 @@
       }
     }
   }
-  
+  var error = 0;
   var env = {
     _test: function(foobar) { console.log(foobar); },
     _logf: function(f) { line.push(f); },
     _logx8: function(f) { line.push(('00' + f.toString(16)).substr(-2)); },
     _logx16: function(f) { line.push(('0000' + f.toString(16)).substr(-4)); },
+    _logx32: function(f) { line.push(f.toString(16)); },
     _logs: function(i, len) {
       if (!len) { line.push(i.toString(16)); return; }
-      line.push(dec.decode(memory.buffer.slice(i, i + len))); },
+      line.push(dec.decode(memory.buffer.slice(i, i + len)));
+    },
     _showlog: function() { console.log.apply(console, line); line = []; },
     _push_frame: push_frame,
-    memory:memory
+    _stop: function() { error = 1; },
+    _check_memory_size: function () { 
+      console.log(
+        'byte size', memory.buffer.byteLength,
+        'page size', memory.buffer.byteLength / 64 / 1024);
+    },
+    memory:memory,
   };
   fetch("build/gb_emulator.wasm")
   .then((resp) => resp.arrayBuffer())
   .then((wasm) => WebAssembly.instantiate(wasm, { env: env }))
   .then((module) => {
     instance = module.instance;
-    instance.exports.emu_main(); });
+
+    // instance.exports.test_memory();
+    // return;
+
+      
+    emulator = instance.exports.get_emulator();
+
+    requestAnimationFrame(function loop() {
+      instance.exports.step_frame(emulator);
+      if (!error) requestAnimationFrame(loop);
+    });
+  });
 </script>

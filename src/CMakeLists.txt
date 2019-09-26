@@ -8,12 +8,17 @@ if (WASM)
   set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
 
   add_compile_options(
+    -DWASM=1
     --target=wasm32
     -fvisibility=hidden
     -std=c++14
     -Wall
+    -O2
     -Wno-unused-variable
-    -nostdlib)
+    -nostdlib
+    -ffunction-sections
+    -fdata-sections
+  )
 
   add_link_options(
     --export-dynamic
@@ -21,19 +26,26 @@ if (WASM)
     --strip-all
     --gc-sections
     --allow-undefined
-    --import-memory)
+    --import-memory
+  )
 
   add_executable(gb_emulator.wasm main.cc platform_utils.cc)
   add_dependencies(gb_emulator.wasm generated_instruction_decode_table.inc)
 else()
 
   add_compile_options(
+    -fvisibility=hidden
     -std=c++14
     -Wall
     -Wno-unused-variable
     -g
+    -fsanitize=undefined
   )
-  
+
+  add_link_options(
+      -fsanitize=undefined
+      )
+
   add_executable(gb_emulator_console main.cc platform_utils.cc native_host.cc)
   add_dependencies(
     gb_emulator_console
@@ -52,5 +64,3 @@ add_custom_target(generated_instruction_decode_table.inc
   COMMAND python3 ${CMAKE_SOURCE_DIR}/generate_instruction_decode_table.py > ${CMAKE_SOURCE_DIR}/generated_instruction_decode_table.inc
   DEPENDS ${CMAKE_SOURCE_DIR}/generate_instruction_decode_table.py ${CMAKE_SOURCE_DIR}/generated_instruction_decode_table.inc
   )
-  
-

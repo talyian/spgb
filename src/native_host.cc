@@ -12,9 +12,55 @@ extern "C" {
 }
 
 int main() {
-  emu_main();
+  auto instance = get_emulator();
+  while(true) {
+    step_frame(instance);
+  }
+}
+
+void _show_tile(u8 * memory, u32 len) {
+  printf("Tile Map  ========================================\n");
+  u8 buffer[16 * 8 * 8 * 8];
+  u8 STRIDE = 8 * 8;
+  u8 * tile_data = memory;
+  for(u8 y = 0; y < 8; y++) {
+    for(u8 x = 0; x < 16; x++) {
+      u8 s = 0;
+      for(u8 i = 0; i < 16; i++) s += tile_data[i];
+
+      for(u8 j = 0; j < 8; j++) {
+        for(u8 i = 0; i < 8; i ++) {
+          buffer[STRIDE * (y * 8 + j) + x * 8 + i] = s;
+        }
+      }
+      tile_data += 16;
+    }
+  }
+  u8 * p = buffer;
+  for(u8 y = 0; y < 2 * 8; y++) {
+    for(u8 x = 0; x < 16 * 8; x++) {
+      printf("%c", ' ' + (*p & 0x4f));
+      p++;
+    }
+    printf("\n");
+  }
+}
+void _show_bg_map(u8 * memory, u32 len) {
+  printf("BG Map ========================================\n");
+  u8 * p = memory;
+  for(u8 y = 0; y < 32; y++){ 
+    for(u8 x = 0; x < 32; x++) {
+      printf("%c", ' ' + (*p++ % 32));
+    }
+    printf("\n");
+  }
 }
 
 void _push_frame(u32 category, u8 * memory, u32 len) {
-  log("pushframe");
+  if ((category & ~0xFF) == 0x100)
+    _show_tile(memory,len);
+  else if ((category & 0xFF)  == 0x200)
+    _show_bg_map(memory,len);
+  else
+    log("pushframe");
 }

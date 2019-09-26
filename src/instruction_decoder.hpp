@@ -12,9 +12,9 @@ struct InstructionDecoder {
   InstructionRunner ii;
   InstructionDecoder(u16 pos) : pc(pos) { }
 
-  u8 Imm8() { return (*mmu)[pc++]; }
-  u8 ImmI8() { return (*mmu)[pc++]; }
-  u16 Imm16() { u16 v = (*mmu)[pc++]; v = v + 256 * (*mmu)[pc++]; return v; }
+  u8 Imm8() { return mmu->get(pc++); }
+  u8 ImmI8() { return mmu->get(pc++); }
+  u16 Imm16() { u16 v = mmu->get(pc++); v = v + 256 * mmu->get(pc++); return v; }
 
   Value16 Load16(Value16 addr) { return {0}; }
   // Value16 Inc16(Register16 addr);
@@ -117,9 +117,12 @@ struct InstructionDecoder {
   Conditions CNZ() { return Conditions::NZ; }
   
   void decode() {
+
+    if (ii.verbose_log) ii.registers.dump();
+    
     pc_start = pc;
-    u16 op = (*mmu)[pc++];
-    if (op == 0xcb) op = 0x100 + (*mmu)[pc++];
+    u16 op = mmu->get(pc++);
+    if (op == 0xcb) op = 0x100 + mmu->get(pc++);
     ii.PC_ptr = &pc;
     ii.PC_start_ptr = &pc_start;
     switch(op) {

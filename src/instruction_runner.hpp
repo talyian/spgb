@@ -66,18 +66,18 @@ struct InstructionRunner {
   }
   
   void _push(reg16 value) {
-    (*mmu)[--registers.SP] = value.h;
-    (*mmu)[--registers.SP] = value.l;
+    mmu->set(--registers.SP, value.h);
+    mmu->set(--registers.SP, value.l);
   }
   u16 _pop() {
-    u16 l = (*mmu)[registers.SP++];
-    u16 h = (*mmu)[registers.SP++];
+    u16 l = mmu->get(registers.SP++);
+    u16 h = mmu->get(registers.SP++);
     return h * 0x100 + l;
   }
   u8 _read8_addr(u16 addr) {
     if (0xFF00 <= addr && addr < 0xFF80 && addr != 0xFF44  && verbose_log)
       log("    IO:", addr);
-    return (*mmu)[addr];
+    return mmu->get(addr);
   }
   u8 _read8(Register8 r) {
     switch(r) {
@@ -105,14 +105,7 @@ struct InstructionRunner {
     }
   }
   void _write8_addr(u16 target, u8 value) {
-    // if (0x8000 <= target  && target < 0x9800)
-    //   log(*PC_start_ptr, "VRAM write", target, "<-", value);
-
-    // if (0xFF00 <= target && target < 0xFF80) {
-    //   if (target != 0xFF42)
-    //     log("    IO:", target, "<-", value);
-    // }
-    (*mmu)[target] = value;
+    mmu->set(target, value);
   }
   void _write8_reg(Register8 target, u8 value) {
     switch(target) {
@@ -197,8 +190,8 @@ struct InstructionRunner {
     default: error = 1;
     }}
   void _write16_addr(u16 addr, u16 value) {
-    (*mmu)[addr++] = value >> 8;
-    (*mmu)[addr] = value;
+    mmu->set(addr++, value >> 8);
+    mmu->set(addr, value);
   }
   void _write16(Value16 target, u16 value) {
     switch(target.type) {
@@ -225,11 +218,7 @@ struct InstructionRunner {
   void RLCA() { m_log(*PC_start_ptr, __FUNCTION__); }
   void RRCA() { m_log(*PC_start_ptr, __FUNCTION__); }
   void RLA() {
-    error = -1;
-    m_log(*PC_start_ptr, __FUNCTION__);
-    u16 v = (_read8(Register8::A) << 1) & fl.C;
-    _write8(Register8::A, v);
-    fl.C = (v >> 8) & 1;
+    return RL(Register8::A);
   }
   void RRA() { m_log(*PC_start_ptr, __FUNCTION__); }
   
@@ -270,10 +259,6 @@ struct InstructionRunner {
     fl.C = (u16)a + (u16)b > 0xFF;
     fl.H = (a & 0xF) + (b & 0xF) > 0xF;
     fl.N = 0;
-    if (verbose_log) {
-      log("                              ADD", o, (u8)a, (u8)b, (u8)(a + b));
-      registers.dump();
-    }
   }
   void ADC(Value8 o, Value8 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
 
@@ -326,9 +311,12 @@ struct InstructionRunner {
   void RL(Value8 o) {
     error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
-    u16 v = (_read8(o) << 1) & fl.C;
-    _write8(o, v);
+    u16 v;
+    v = _read8(o);
+    v = v << 1;
+    v = (v & ~1) | fl.C;
     fl.C = (v >> 8) & 1;
+    _write8(o, v);
   }
   void RR(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
 

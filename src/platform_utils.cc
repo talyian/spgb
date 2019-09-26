@@ -7,16 +7,40 @@ i32 strlen(const char * s) {
 
 void logs::_log(u8 v) { _logx8(v); }
 void logs::_log(u16 v) { _logx16(v); }
+void logs::_log(u32 v) { _logx32(v); }
 void logs::_log(i32 v) { _logf(v); }
 void logs::_log(double f) { _logf(f); }
 void logs::_log(const char * s) { _logs(s, strlen(s)); }
 
+#ifdef WASM
+extern "C" void *memset(void *dest, int c, size_t n) {
+  u8 * d = (u8 *)dest;
+  u8 * e = d + n;
+  while(d < e) *d++ = c;
+  return dest;
+}
+
 extern "C" void *memcpy(void *dest, const void *src, size_t n) {
   u8 * d = (u8 *)dest;
   u8 * s = (u8 *)src;
-  for(size_t i = 0; i<n; i++)    *d++ = *s++;
+  u8 * e = d + n;
+  while(d < e) *d++ = *s++;
   return dest;
 }
+
+extern "C" u8 * memory;
+const int PAGE_SIZE = 64 * 1024;
+void * gb_malloc(size_t size) {
+  _log("malloc");
+  _log((i32)size);
+  _showlog();
+  size_t page_start = __builtin_wasm_memory_grow(0, (size - 1) / PAGE_SIZE + 1);
+  return memory + PAGE_SIZE * page_start;
+}
+void * operator new(size_t size) {
+  return gb_malloc(size);
+}
+#endif
 
 struct CartHeader {
   u8 entry_point[4];
@@ -34,20 +58,3 @@ struct CartHeader {
   u8 complement_check;
   u8 checksum[2];
 };
-
-extern "C" void load_rom(u8 * data, u32 len, int option) {
-  
-}
-
-const int w = 160, h = 144;
-u32 frame_buffer [w * h];
-extern "C" u32* get_ppu_frame(int ticks_elapsed) {
-  for(int i=0; i< w * h; i++) { frame_buffer[i] = i; }
-  return frame_buffer;
-};
-
-u8 extern_memory[0x10000];
-
-extern"C" u8 * get_rom_memory() {
-  return extern_memory;
-}
