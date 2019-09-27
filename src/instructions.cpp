@@ -13,8 +13,8 @@ void _log(Register16 r) {
 void _log(Register8 r) { _log(name_of(r)); }
 void _log(Value16 o) {
   switch(o.type) {
-  case REG16: _log(o.reg); break;
-  case IMM16: _logx16(o.value); break;
+  case Value16::REG16: _log(o.reg); break;
+  case Value16::IMM16: _logx16(o.value); break;
   default: _log("value16"); break;
   }
 }
@@ -22,35 +22,35 @@ void _log(Value8 o) {
   char io_buf[10] = "IO:";
   
   switch(o.type) {
-  case REG8: _log(o.reg); break;
-  case IMM8: _log(o.value); break;
-  case Value8::IO_R8: {
+  case Value8::REG8: _log(o.reg); break;
+  case Value8::IMM8: _log(o.value); break;
+  case Value8::IoReg8: {
     const char * r = name_of(o.reg);
     for(char * b = io_buf + 3; *r; r++, b++) *b = *r;
     _log(io_buf); break; }
-  case Value8::IO_I8: {
+  case Value8::IoImm8: {
     io_buf[3] = (o.value >> 4)["0123456789ABCDEF"];
     io_buf[4] = (o.value & 0xF)["0123456789ABCDEF"];
     io_buf[5] = 0;
     _log(io_buf); break; }
-  case Value8::LdDecReg8: {
+  case Value8::Ld8Dec: {
     char *b = io_buf; *b++ = '*';
     const char * r = name_of(o.reg16);
     for(; *r; r++, b++) *b = *r;
     *b++ = '-'; *b++ = '-';
     _log(io_buf); break; }
-  case Value8::LdIncReg8: {
+  case Value8::Ld8Inc: {
     char *b = io_buf; *b++ = '*';
     const char * r = name_of(o.reg16);
     for(; *r; r++, b++) *b = *r;
     *b++ = '+'; *b++ = '+';
     _log(io_buf); break; }
-  case Value8::LdReg8: {    
+  case Value8::Ld8Reg: {    
     char *b = io_buf; *b++ = '*';
     const char * r = name_of(o.reg16);
     for(; *r; r++, b++) *b = *r;
     _log(io_buf); break; }
-  case Value8::Ld8: {
+  case Value8::Ld8Imm: {
     char *b = io_buf; *b++ = '*';
     u16 addr = o.addr;
     b = io_buf + 6;
@@ -76,18 +76,5 @@ void _log(Conditions o) {
   }
 }
 
-void _log(Operand o) {
-  if (o.type == IMM8) _log(o.data.val8);
-  else if (o.type == IMM16) _log(o.data.val16);
-  else if (o.type == REG16) _log((Register16) o.data.val8);
-  else if (o.type == REG8) _log((Register8) o.data.val8);
-  else if (o.type == IO_IMM8) { _log("IO:"); _log(o.data.val8); }
-  else if (o.type == IO_REG) { _log("IO:"); _log((Register8) o.data.val8); }
-  else if (o.type == Load_REG16) { _log("["); _log((Register16) o.data.val8); _log("]"); }
-  else if (o.type == Load_IMM16) { _log("["); _log(o.data.val16); _log("]"); }
-  else if (o.type == Inc_REG16) { _log("["); _log((Register16) o.data.val8); _log("]++"); }
-  else if (o.type == Dec_REG16) { _log("["); _log((Register16) o.data.val8); _log("]--"); }
-  else _log("????????????????????????????????????????op");
-}
 }
 using logs::_log;

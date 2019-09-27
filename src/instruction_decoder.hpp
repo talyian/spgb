@@ -21,7 +21,8 @@ struct InstructionDecoder {
   Value8 Dec8(Register16 addr);
   Value8 Load8(u16 addr);
   Value8 Load8(Register16 addr);
-  Value8 IO(Value8 port);
+  Value8 IO(Register8 port);
+  Value8 IO(u8 port);
   Value16 AddSP(u8 offset);
   Register16 SP() { return Register16::SP; }
   Register16 BC() { return Register16::BC; }

@@ -37,15 +37,9 @@ struct InstructionRunner {
       registers.SP = 0;
   }
   
-  struct { 
-    union { 
-      struct { reg8 B, C, D, E, A, F, H, L; };
-      struct { reg16 BC, DE, AF, HL, SP; };
-    };
-    void dump() {
-      log(". . . . . . . . . A  F  B  C  D  E  HL   SP");
-      log(". . . . . . . . .", A, F, B, C, D, E, HL, SP);
-    }
+  union { 
+    struct { reg8 B, C, D, E, A, F, H, L; };
+    struct { reg16 BC, DE, AF, HL, SP; };
   } registers;
 
   struct {
@@ -53,8 +47,6 @@ struct InstructionRunner {
   } fl;
 
   u8 ime = 0;
-
-
   
   u16 *PC_ptr;
   u16 *PC_start_ptr;
@@ -62,6 +54,14 @@ struct InstructionRunner {
   int error = 0;
   int verbose_log = 0;
   MemoryMapper *mmu = 0;
+
+  void dump() {
+    log(". . . . . . . . . A  F  B  C  D  E  HL   SP");
+    log(". . . . . . . . .", registers.A, registers.F,
+        registers.B, registers.C,
+        registers.D, registers.E,
+        registers.HL, registers.SP);
+  }
   
   template<class T, class ...TS>
   void m_log(T x, TS ... xs) {
@@ -101,10 +101,10 @@ struct InstructionRunner {
     switch(v.type) {
     case Value8::IMM8: return v.value;
     case Value8::REG8: return _read8(v.reg);
-    case Value8::LdReg8: return _read8_addr(_read16(v.reg16));
-    case Value8::Ld8: return _read8_addr(v.addr);
-    case Value8::IO_I8: return _read8_addr(0xFF00 + v.value);
-    case Value8::IO_R8: return _read8_addr(0xFF00 + _read8(v.reg));
+    case Value8::Ld8Reg: return _read8_addr(_read16(v.reg16));
+    case Value8::Ld8Imm: return _read8_addr(v.addr);
+    case Value8::IoImm8: return _read8_addr(0xFF00 + v.value);
+    case Value8::IoReg8: return _read8_addr(0xFF00 + _read8(v.reg));
     default: log("read8"); error = 1; return -1;
     }
   }
@@ -131,28 +131,28 @@ struct InstructionRunner {
       _write8_reg(target.reg, value);
       break;
     }
-    case Value8::IO_I8: {
+    case Value8::IoImm8: {
       _write8_addr(0xFF00 + target.value, value); break;
     }
-    case Value8::IO_R8: {
+    case Value8::IoReg8: {
       _write8_addr(0xFF00 + _read8(target.reg), value); break;
     }
-    case Value8::LdReg8: {
+    case Value8::Ld8Reg: {
       _write8_addr(_read16(target.reg16), value); break;
     }
-    case Value8::LdIncReg8: {
+    case Value8::Ld8Inc: {
       u16 addr = _read16(target.reg16);
       _write8_addr(addr, value);
       _write16(target.reg16, addr + 1);
       break;
     }
-    case Value8::LdDecReg8: {
+    case Value8::Ld8Dec: {
       u16 addr = _read16(target.reg16);
       _write8_addr(addr, value);
       _write16(target.reg16, addr - 1);
       break;
     }
-    case Value8::Ld8: {
+    case Value8::Ld8Imm: {
       _write8_addr(target.addr, value); break;
     }
     default:
@@ -191,8 +191,7 @@ struct InstructionRunner {
     case Register16::DE: registers.DE = value; break;
     case Register16::HL: registers.HL = value; break;
     case Register16::SP: registers.SP = value; break;
-    case Register16::AF:
-      //break;
+    case Register16::AF: registers.AF = value & 0xFFF0; break;
     default: log("write16-err"); error = 1;
     }}
   void _write16_addr(u16 addr, u16 value) {
