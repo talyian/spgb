@@ -9,6 +9,9 @@
 
 #include "data_bgbtest_gb.hpp"
 
+#include "platform_utils.cc"
+#include "instruction_decoder.cpp"
+#include "instructions.cpp"
 u8 rom[0x8000];
 u8 ram[0x8000];
 
