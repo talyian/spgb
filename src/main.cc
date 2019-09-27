@@ -33,10 +33,12 @@ struct emulator_t {
 
   void step(i32 ticks) {
     while(ticks > 0) {
-      if (decoder.pc_start > 0xFF) decoder.ii.verbose_log = true;
+      // if (decoder.pc_start > 0xFF) decoder.ii.verbose_log = true;
       if (decoder.error) { log(decoder.pc_start, "decoder error"); _stop(); }
       if (decoder.ii.error) { log(decoder.pc_start, "runner error"); _stop(); }
-      decoder.decode();
+      if (!decoder.ii.halted) {
+        decoder.decode();
+      }
       u32 dt = 16; // TODO: do timing based on actual instruction decodetime
       ticks -= dt; 
       ppu.tick(dt);

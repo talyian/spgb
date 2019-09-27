@@ -47,6 +47,7 @@ struct InstructionRunner {
   } fl;
 
   u8 ime = 0;
+  u8 halted = 0;
   
   u16 *PC_ptr;
   u16 *PC_start_ptr;
@@ -78,6 +79,7 @@ struct InstructionRunner {
     u16 h = mmu->get(registers.SP++);
     return h * 0x100 + l;
   }
+  
   u8 _read8_addr(u16 addr) {
     if (0xFF00 <= addr && addr < 0xFF80 && addr != 0xFF44  && verbose_log)
       log("    IO:", addr);
@@ -97,6 +99,7 @@ struct InstructionRunner {
 #undef X
     }
   }
+  
   u8 _read8(Value8 v) {
     switch(v.type) {
     case Value8::IMM8: return v.value;
@@ -105,13 +108,25 @@ struct InstructionRunner {
     case Value8::Ld8Imm: return _read8_addr(v.addr);
     case Value8::IoImm8: return _read8_addr(0xFF00 + v.value);
     case Value8::IoReg8: return _read8_addr(0xFF00 + _read8(v.reg));
-    default: log("read8"); error = 1; return -1;
+    case Value8::Ld8Dec: {
+        auto addr = _read16(v.reg16);
+        auto value = _read8_addr(addr);
+        _write16(v.reg16, addr - 1);
+        return value;
+    }
+    case Value8::Ld8Inc: {
+        auto addr = _read16(v.reg16);
+        auto value = _read8_addr(addr);
+        _write16(v.reg16, addr + 1);
+        return value;
+    }
     }
   }
+  
   void _write8_addr(u16 target, u8 value) {
     mmu->set(target, value);
   }
-  void _write8_reg(Register8 target, u8 value) {
+  void _write8(Register8 target, u8 value) {
     switch(target) {
 #define X(RR)     case Register8::RR: registers.RR = value; break;
       X(A);
@@ -125,46 +140,36 @@ struct InstructionRunner {
 #undef X
     }
   }
+
   void _write8(Value8 target, u8 value) {
     switch(target.type) {
+    case Value8::IMM8: { log("error-write-to-imm"); error = 100; return; }
     case Value8::REG8: {
-      _write8_reg(target.reg, value);
-      break;
+      _write8(target.reg, value);
+      return;
     }
-    case Value8::IoImm8: {
-      _write8_addr(0xFF00 + target.value, value); break;
-    }
-    case Value8::IoReg8: {
-      _write8_addr(0xFF00 + _read8(target.reg), value); break;
-    }
-    case Value8::Ld8Reg: {
-      _write8_addr(_read16(target.reg16), value); break;
-    }
+    case Value8::IoImm8: { _write8_addr(0xFF00 + target.value, value); return; }
+    case Value8::IoReg8: { _write8_addr(0xFF00 + _read8(target.reg), value); return; }
+    case Value8::Ld8Reg: { _write8_addr(_read16(target.reg16), value); return; }
     case Value8::Ld8Inc: {
       u16 addr = _read16(target.reg16);
       _write8_addr(addr, value);
       _write16(target.reg16, addr + 1);
-      break;
+      return;
     }
     case Value8::Ld8Dec: {
       u16 addr = _read16(target.reg16);
       _write8_addr(addr, value);
       _write16(target.reg16, addr - 1);
-      break;
+      return;
     }
-    case Value8::Ld8Imm: {
-      _write8_addr(target.addr, value); break;
-    }
-    default:
-      log("write8-error", target);
-      error = 1; return;
+    case Value8::Ld8Imm: { _write8_addr(target.addr, value); return; }
     }
   }
   
   u16 _read16_addr(u16 addr) {
-    log("read16-addr");
-    error = 1;
-    return -1;
+    u16 value = mmu->get(addr++);
+    return value * 0x100 + mmu->get(addr);
   }
   u16 _read16(Register16 r) {
     switch(r) {
@@ -173,17 +178,14 @@ struct InstructionRunner {
     case Register16::HL: return registers.HL; break;
     case Register16::SP: return registers.SP; break;
     case Register16::AF: return registers.AF; break;
-    default: error = 1; return -1; break;
-    }}
+    }
+  }
   u16 _read16(Value16 v) {
     switch(v.type) {
     case Value16::IMM16: return v.value;
     case Value16::REG16: return _read16(v.reg);
     case Value16::SP_d8: return _read16_addr((u16)registers.SP + (i8)v.offset);
     }
-    log("read16");
-    error = 1;
-    return -1;
   }
   void _write16(Register16 r, u16 value) {
     switch(r) {
@@ -191,20 +193,19 @@ struct InstructionRunner {
     case Register16::DE: registers.DE = value; break;
     case Register16::HL: registers.HL = value; break;
     case Register16::SP: registers.SP = value; break;
-    case Register16::AF: registers.AF = value & 0xFFF0; break;
-    default: log("write16-err"); error = 1;
-    }}
+    case Register16::AF: log("warning: write to AF"); registers.AF = value & 0xFFF0; break;
+    }
+  }
   void _write16_addr(u16 addr, u16 value) {
     mmu->set(addr++, value >> 8);
     mmu->set(addr, value);
   }
   void _write16(Value16 target, u16 value) {
     switch(target.type) {
+    case Value16::IMM16: log("err-write-to-imm16"); return;
     case Value16::REG16: return _write16(target.reg, value);
-    case Value16::SP_d8: return _write16_addr((u16)((u16)registers.SP + (i8)target.offset), value);
-    default:
-      log("write16-error", target);
-      error = 1; return;
+    case Value16::SP_d8:
+      return _write16_addr((u16)((u16)registers.SP + (i8)target.offset), value);
     }
   }
   
@@ -229,7 +230,11 @@ struct InstructionRunner {
     error = -1;
     m_log(*PC_start_ptr, __FUNCTION__);
   }
-  void HALT() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void HALT() {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__);
+    halted = 1;
+  }
 
   void RLCA() { m_log(*PC_start_ptr, __FUNCTION__); }
   void RRCA() { m_log(*PC_start_ptr, __FUNCTION__); }
