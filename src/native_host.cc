@@ -68,5 +68,5 @@ void _push_frame(u32 category, u8 * memory, u32 len) {
   else if ((category & 0xFF)  == 0x200)
     _show_bg_map(memory,len);
   else
-    log("pushframe");
+    ; // log("pushframe");
 }

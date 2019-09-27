@@ -9,12 +9,9 @@
 #include "boot_rom.hpp"
 #include "data_bgbtest_gb.hpp"
 
-#ifndef SEPARATE_COMPILATION
 #include "platform_utils.cc"
 #include "instruction_decoder.cpp"
 #include "instructions.cpp"
-#endif
-
 
 struct emulator_t {
   u8 rom[0x8000];
@@ -33,10 +30,12 @@ struct emulator_t {
     decoder.ii.mmu = &mmu;
     ppu.memory = &mmu;
   }
+
   void step(i32 ticks) {
-    while(ticks > 0) { 
-      if (decoder.error) { log("decoder error"); _stop(); }
-      if (decoder.ii.error) { log("runner error"); _stop(); }
+    while(ticks > 0) {
+      if (decoder.pc_start > 0xFF) decoder.ii.verbose_log = true;
+      if (decoder.error) { log(decoder.pc_start, "decoder error"); _stop(); }
+      if (decoder.ii.error) { log(decoder.pc_start, "runner error"); _stop(); }
       decoder.decode();
       u32 dt = 16; // TODO: do timing based on actual instruction decodetime
       ticks -= dt; 
@@ -48,6 +47,7 @@ struct emulator_t {
 extern "C" emulator_t * WASM_EXPORT get_emulator() {
   return new emulator_t {};
 }
+
 extern "C" void WASM_EXPORT step_frame(emulator_t * emulator) {
   #define CLOCK_HZ 8200000
   #define FPS 60

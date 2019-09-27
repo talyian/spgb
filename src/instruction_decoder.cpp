@@ -48,13 +48,15 @@ void InstructionDecoder::decode() {
   if (op == 0xCB) op = 0x100 | mmu->get(pc++);
   ii.PC_ptr = &pc;
   ii.PC_start_ptr = &pc_start;
-  switch(op) { 
+  switch(op) {
+#define LOG(m, op1, op2) do { if (pc_start > 0xFF) log(pc_start, #m, #op1, #op2); } while (false)
+#define LOG(m, op1, op2)
 #define ENTRY0(op, size, cycles, cycles2, flags, mnemonic, op1, op2) \
-  case op: ii.mnemonic(); break;
+    case op: LOG(mnemonic, op1, op2); ii.mnemonic(); break;
 #define ENTRY1(op, size, cycles, cycles2, flags, mnemonic, op1, op2) \
-  case op: ii.mnemonic(op1); break;
+    case op: LOG(mnemonic, op1, op2); ii.mnemonic(op1); break;
 #define ENTRY2(op, size, cycles, cycles2, flags, mnemonic, op1, op2) \
-    case op: ii.mnemonic(op1, op2); break;
+    case op: LOG(mnemonic, op1, op2); ii.mnemonic(op1, op2); break;
 #include "opcodes.inc"
 
   default: log("unknown op", op);
