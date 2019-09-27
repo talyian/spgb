@@ -42,18 +42,6 @@ struct emulator_t {
   }
 };
 
-#ifdef WASM
-extern "C" void _check_memory_size();
-extern "C" void WASM_EXPORT test_memory() {
-  _check_memory_size();
-  log("__builtin_wasm_memory_size", (u32)__builtin_wasm_memory_size(0));
-  __builtin_wasm_memory_grow(0, 3);
-  log("growing 3");
-  _check_memory_size();
-  log("__builtin_wasm_memory_size", (u32)__builtin_wasm_memory_size(0));
-}
-#endif
-
 extern "C" emulator_t * WASM_EXPORT get_emulator() {
   return new emulator_t {};
 }
