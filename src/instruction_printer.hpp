@@ -4,7 +4,6 @@
 
 struct InstructionPrinter {
   int error = 0;
-  
   void NOP() { log(__FUNCTION__); }
   void STOP() { log(__FUNCTION__); }
   void DAA() { log(__FUNCTION__); }
@@ -21,20 +20,15 @@ struct InstructionPrinter {
   void RRCA() { log(__FUNCTION__); }
   void RLA() { log(__FUNCTION__); }
   void RRA() { log(__FUNCTION__); }
-  
-  // void LD(Operand o, Operand v) { log(__FUNCTION__, o, v); }
-  // void LD(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
-  // void LD(Value16 o, Value16 v) { log(__FUNCTION__, o, v); }
-  
+
   void LD8(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
   void LD16(Value16 o, Value16 v) { log(__FUNCTION__, o, v); }
   
   void BIT(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
   void RES(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
   void SET(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
-  void ADD(Value16 o, Value16 v) { log(__FUNCTION__, o, v); }
   void ADD(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
-  // void ADD(Operand o, Operand v) { log(__FUNCTION__, o, v); }
+  void ADD(Value16 o, Value16 v) { log(__FUNCTION__, o, v); }
   void ADC(Value8 o, Value8 v) { log(__FUNCTION__, o, v); }
 
   void XOR(Value8 o) { log(__FUNCTION__, o); }
@@ -43,8 +37,8 @@ struct InstructionPrinter {
   void SBC(Value8 o) { log(__FUNCTION__, o); }
   void DEC(Value8 o) { log(__FUNCTION__, o); } 
   void DEC(Register16 o) { log(__FUNCTION__, o); } 
-  void INC(Value8 o) { log(__FUNCTION__, o); }  // INC Load(HL)
-  void INC(Register16 o) { log(__FUNCTION__, o); } // INC HL
+  void INC(Value8 o) { log(__FUNCTION__, o); }
+  void INC(Register16 o) { log(__FUNCTION__, o); }
   void SUB(Value8 o) { log(__FUNCTION__, o); }
   
   void SRL(Value8 o) { log(__FUNCTION__, o); }
