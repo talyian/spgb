@@ -62,4 +62,4 @@ endif()
 add_custom_target(opcodes.inc
   COMMAND python3 ${CMAKE_SOURCE_DIR}/generate_instruction_decode_table.py > ${CMAKE_SOURCE_DIR}/opcodes.inc
   DEPENDS ${CMAKE_SOURCE_DIR}/generate_instruction_decode_table.py ${CMAKE_SOURCE_DIR}/opcode_table.csv
-  )
+)

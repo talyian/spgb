@@ -1,8 +1,9 @@
 #include "base.hpp"
 #include "wasm_host.hpp"
+#include "emulator.hpp"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 // imports
 extern "C" {
   void _logf(double v) { printf("%f ", v); }
@@ -12,15 +13,49 @@ extern "C" {
   void _logs(const char * s, u32 len) { printf("%.*s ", len, s); }
   void _showlog() { printf("\n"); }
   void _stop() { exit(1); }
+  void _logp(void * v) { printf("%p ", v); }
 }
 
 extern "C" void * get_emulator();
 extern "C" void   step_frame(void * emulator);
 
 int main() {
-  auto instance = get_emulator();
+  emulator_t emu;
+  emu.set_breakpoint(0x40); // vblank interrupt
   while(true) {
-    step_frame(instance);
+    emu.step(42000);
+    if (emu.is_debugging) {
+      printf("%04x >> ", emu.decoder.pc);
+      char * line;
+      size_t n = 0, len = 0;
+      len =getline(&line, &n, stdin);
+      line[len-1] = 0;
+      if (!strcmp(line, "?")) {
+        printf(R"XXX(
+Debug commands:
+ (q) - quit
+
+ (s) - step
+ (c) - run
+ (r) - run to next return
+ (n) - run to next line
+
+ (bra) - add breakpoint
+ (brc) - clear breakpoint
+ (brl) - list breakpoints
+
+ (r) - show registers
+ (d) - disassemble at PC
+ (d xxxx) - disassemble at instruction
+
+)XXX"); }
+      if (!strcmp(line, "q")) { exit(0); }
+      if (!strcmp(line, "c")) { emu.is_debugging = false; }
+      if (!strcmp(line, "s")) {
+        emu.is_stepping = true;
+        emu.is_debugging = false;
+      }
+    }
   }
 }
 

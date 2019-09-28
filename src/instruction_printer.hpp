@@ -3,7 +3,10 @@
 #include "wasm_host.hpp"
 
 struct InstructionPrinter {
+  u16 * PC_ptr = 0;
+  u16 * PC_start_ptr = 0;
   int error = 0;
+  
   void NOP() { log(__FUNCTION__); }
   void STOP() { log(__FUNCTION__); }
   void DAA() { log(__FUNCTION__); }

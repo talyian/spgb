@@ -5,13 +5,10 @@
 #include "instruction_printer.hpp"
 #include "instruction_runner.hpp"
 
-struct InstructionDecoder {
+struct InstructionDecoderBase {
   u16 pc, pc_start;
   bool error = 0;
-
   MemoryMapper *mmu=0;  
-  InstructionRunner ii;
-  InstructionDecoder(u16 pos) : pc(pos) { }
 
   u8 Imm8();
   u8 ImmI8();
@@ -24,6 +21,7 @@ struct InstructionDecoder {
   Value8 IO(Register8 port);
   Value8 IO(u8 port);
   Value16 AddSP(u8 offset);
+
   Register16 SP() { return Register16::SP; }
   Register16 BC() { return Register16::BC; }
   Register16 DE() { return Register16::DE; }
@@ -41,6 +39,31 @@ struct InstructionDecoder {
   Conditions CZ() { return Conditions::Z; }
   Conditions CT() { return Conditions::T; }
   Conditions CNC() { return Conditions::NC; }
-  Conditions CNZ() { return Conditions::NZ; }
-  void decode();
+  Conditions CNZ() { return Conditions::NZ; }  
+};
+
+template<class Handler>
+struct InstructionDecoderT : InstructionDecoderBase {
+  Handler ii;
+  InstructionDecoderT(u16 pos) { this->pc = pos; }  
+  void decode() {
+    pc_start = pc;
+    u16 op = mmu->get(pc++);
+    if (op == 0xCB) op = 0x100 | mmu->get(pc++);
+    ii.PC_ptr = &pc;
+    ii.PC_start_ptr = &pc_start;
+    switch(op) {
+  #define ENTRY0(op, size, cycles, cycles2, flags, mnemonic, op1, op2) \
+      case op: ii.mnemonic(); break;
+  #define ENTRY1(op, size, cycles, cycles2, flags, mnemonic, op1, op2) \
+      case op: ii.mnemonic(op1); break;
+  #define ENTRY2(op, size, cycles, cycles2, flags, mnemonic, op1, op2) \
+      case op: ii.mnemonic(op1, op2); break;
+  #include "opcodes.inc"
+
+    default: log("unknown op", op);
+    }
+    ii.error++;
+  }
+
 };

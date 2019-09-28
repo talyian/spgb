@@ -4,7 +4,7 @@
 #include "memory_mapper.hpp"
 
 // Registers
-using reg8 = u8;
+typedef u8 reg8;
 struct reg16 {
   u8 h, l;
   reg16() = default;
@@ -25,8 +25,19 @@ struct reg16 {
     return u;
   }
 };
+\
+template<int offset>
+struct bit {
+  reg8 &r;
+  bit(reg8 & _register) : r(_register) { }
+  void operator=(bool n) {
+    r ^= (((r >> offset) & 1) ^ n) << offset;
+  }
+  operator bool() { return (r >> offset) & 1; }
+};
+
 namespace logs {
-  void _log(reg16 v) { _logx16(v.h * 256 + v.l); };
+void _log(reg16 v);
 }
 using logs::_log;
 
@@ -42,11 +53,17 @@ struct InstructionRunner {
     struct { reg16 BC, DE, AF, HL, SP; };
   } registers;
 
-  struct {
-    bool Z = 0, C = 0, N = 0, H = 0;
-  } fl;
+  // the `flag<offset> struct` allows us to access
+  // a single bit inside of the F register like a boolean.
+  // "fl.Z = 1; fl.C = 1;" is equivalent to "registers.F & 0b10010000";
+  struct { 
+    bit<7> Z;
+    bit<6> N;
+    bit<5> H;
+    bit<4> C;
+  } fl { registers.F, registers.F, registers.F, registers.F };
 
-  u8 ime = 0;
+  bool ime = 0;
   u8 halted = 0;
   
   u16 *PC_ptr;
@@ -81,7 +98,7 @@ struct InstructionRunner {
   }
   
   u8 _read8_addr(u16 addr) {
-    if (0xFF00 <= addr && addr < 0xFF80 && addr != 0xFF44  && verbose_log)
+    if (0xFF00 <= addr && addr < 0xFF80 && addr != 0xFF44 && addr != 0xFF42)
       log("    IO:", addr);
     return mmu->get(addr);
   }
@@ -109,22 +126,29 @@ struct InstructionRunner {
     case Value8::IoImm8: return _read8_addr(0xFF00 + v.value);
     case Value8::IoReg8: return _read8_addr(0xFF00 + _read8(v.reg));
     case Value8::Ld8Dec: {
-        auto addr = _read16(v.reg16);
-        auto value = _read8_addr(addr);
-        _write16(v.reg16, addr - 1);
-        return value;
-    }
+      auto addr = _read16(v.reg16);
+      auto value = _read8_addr(addr);
+      _write16(v.reg16, addr - 1);
+      return value; }
     case Value8::Ld8Inc: {
-        auto addr = _read16(v.reg16);
-        auto value = _read8_addr(addr);
-        _write16(v.reg16, addr + 1);
-        return value;
-    }
+      auto addr = _read16(v.reg16);
+      auto value = _read8_addr(addr);
+      _write16(v.reg16, addr + 1);
+      return value; }
     }
   }
   
-  void _write8_addr(u16 target, u8 value) {
-    mmu->set(target, value);
+  void _write8_addr(u16 addr, u8 value) {
+    if (*PC_start_ptr > 0x100) { 
+    if (addr == 0xFF42) {
+      log(*PC_start_ptr, "scroll y", value);
+    }
+    if (addr == 0xFF43) {
+      log(*PC_start_ptr, "scroll x", value);
+    }
+    }
+    if (0xFF00 <= addr) _handle_io_write(addr, value);
+    mmu->set(addr, value);
   }
   void _write8(Register8 target, u8 value) {
     switch(target) {
@@ -193,7 +217,7 @@ struct InstructionRunner {
     case Register16::DE: registers.DE = value; break;
     case Register16::HL: registers.HL = value; break;
     case Register16::SP: registers.SP = value; break;
-    case Register16::AF: log("warning: write to AF"); registers.AF = value & 0xFFF0; break;
+    case Register16::AF: registers.AF = value & 0xFFF0; break;
     }
   }
   void _write16_addr(u16 addr, u16 value) {
@@ -208,7 +232,15 @@ struct InstructionRunner {
       return _write16_addr((u16)((u16)registers.SP + (i8)target.offset), value);
     }
   }
-  
+
+  void _handle_io_write(u16 addr, u16 value) {
+    switch(addr) {
+    case 0xFF46: log("    (DMA) IO:", addr, "<-", value); break;
+    case 0xFFFF: log("     (IE) IO:", addr, "<-", value); break;
+    case 0xFF0F: log("     (IF) IO:", addr, "<-", value); break;
+    }
+  }
+
   void NOP() {
     m_log(*PC_start_ptr, __FUNCTION__);
     error = -1;
@@ -286,7 +318,7 @@ struct InstructionRunner {
   void XOR(Value8 o) {
     error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
-    registers.A ^= _read8(o);
+    registers.A = registers.A ^ _read8(o);
     fl.N = 0;
     fl.H = 0;
     fl.C = 0;
@@ -295,7 +327,7 @@ struct InstructionRunner {
   void AND(Value8 o) {
     error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
-    registers.A &= _read8(o);
+    registers.A = registers.A & _read8(o);
     fl.N = 0;
     fl.H = 1;
     fl.C = 0;
@@ -304,7 +336,7 @@ struct InstructionRunner {
   void OR(Value8 o) {
     error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
-    registers.A |= _read8(o);
+    registers.A = registers.A | _read8(o);
     fl.N = 0;
     fl.H = 0;
     fl.C = 0;
@@ -401,7 +433,13 @@ struct InstructionRunner {
     m_log(*PC_start_ptr, __FUNCTION__, o);
     if (_check(o)) *PC_ptr = _pop();
   }
-  void RETI(Conditions o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void RETI(Conditions o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    log(*PC_start_ptr, "reti");
+    ime = 1;
+    *PC_ptr = _pop();
+  }
   void JR(Conditions o, Value8 v) {
     error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);

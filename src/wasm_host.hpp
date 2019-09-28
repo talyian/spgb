@@ -7,6 +7,7 @@ extern "C" {
   void _logx8(u8 v);
   void _logx16(u16 v);
   void _logx32(u32 v);
+  void _logp(void* v);
   void _logs(const char * s, u32 len);
   void _showlog();
   void _push_frame(u32 category, u8 * data, u32 len);
@@ -15,7 +16,11 @@ extern "C" {
 
 #define WASM_EXPORT __attribute__((visibility("default")))
 
-i32 strlen(const char * s);
+#ifdef WASM
+size_t strlen(const char * s);
+#else
+#include <string.h>
+#endif
 
 namespace logs {
 void _log(u8 v);
@@ -24,6 +29,7 @@ void _log(u32 v);
 void _log(i32 v);
 void _log(double f);
 void _log(const char * s);
+void _log(void* s);
 
 template<class T>
 void log(T x) { _log(x); _showlog (); }

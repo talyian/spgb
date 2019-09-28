@@ -58,10 +58,10 @@
     }
     ctx.putImageData(image_buffer, 0, 0);
   }
-  setInterval(function() {
-    console.log("frames / sec", frames);
-    frames = 0;
-  }, 1000);
+  // setInterval(function() {
+  //   console.log("frames / sec", frames);
+  //   frames = 0;
+  // }, 1000);
   function draw_vram(canvas, data) {
     var ctx = canvas.getContext("2d");
     var w = 8, tile_idx = 0, tile_number = 0;

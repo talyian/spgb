@@ -2,30 +2,10 @@
 #include "base.hpp"
 #include "wasm_host.hpp"
 
+
 enum class Conditions : u8 { C, Z, T, NC, NZ, };
 enum class Register16 : u8 { SP, BC, DE, HL, AF };
 enum class Register8 : u8 { A, B, C, D, E, F, H, L };
-const char * name_of(Register16 r) {
-  switch(r) {
-  case Register16::BC: return("BC"); break;
-  case Register16::DE: return("DE"); break;
-  case Register16::HL: return("HL"); break;
-  case Register16::AF: return("AF"); break;
-  case Register16::SP: return("SP"); break;
-  }    
-}
-const char * name_of(Register8 r) {
-  switch(r) {
-  case Register8::A: return("A"); break;
-  case Register8::B: return("B"); break;
-  case Register8::C: return("C"); break;
-  case Register8::D: return("D"); break;
-  case Register8::E: return("E"); break;
-  case Register8::F: return("F"); break;
-  case Register8::H: return("H"); break;
-  case Register8::L: return("L"); break;
-  }
-}
 
 struct Value8 {
   enum {

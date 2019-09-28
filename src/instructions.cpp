@@ -1,5 +1,27 @@
 #include "instructions.hpp"
 
+const char * name_of(Register16 r) {
+  switch(r) {
+  case Register16::BC: return("BC"); break;
+  case Register16::DE: return("DE"); break;
+  case Register16::HL: return("HL"); break;
+  case Register16::AF: return("AF"); break;
+  case Register16::SP: return("SP"); break;
+  }    
+}
+const char * name_of(Register8 r) {
+  switch(r) {
+  case Register8::A: return("A"); break;
+  case Register8::B: return("B"); break;
+  case Register8::C: return("C"); break;
+  case Register8::D: return("D"); break;
+  case Register8::E: return("E"); break;
+  case Register8::F: return("F"); break;
+  case Register8::H: return("H"); break;
+  case Register8::L: return("L"); break;
+  }
+}
+
 namespace logs {
 void _log(Register16 r) {
   switch(r) {
