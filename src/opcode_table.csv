@@ -1,15 +1,15 @@
-opcode,bytes,duration,flags,code
+opcode,bytes,duration,flags,code,nmemonic,Op1,Op2
 0,1,4,----,NOP()
-1,3,12,----,"LD16(BC,Imm16)"
-2,1,8,----,"LD8(Load8(BC),A)"
-3,1,8,----,INC(BC)
-4,1,4,Z0H-,INC(B)
-5,1,4,Z1H-,DEC(B)
-6,2,8,----,"LD8(B,Imm8)"
-7,1,4,000C,RLCA()
-8,3,20,----,"LD16(Load16(Imm16),SP)"
-9,1,8,-0HC,"ADD(HL,BC)"
-A,1,8,----,"LD8(A,Load8(BC))"
+1,3,12,----,"LD16(BC,Imm16)",LD16,BC,Imm16
+2,1,8,----,"LD8(Load8(BC),A)",LD8,Load8 BC,A
+3,1,8,----,INC(BC),INC,BC
+4,1,4,Z0H-,INC(B),INC,B
+5,1,4,Z1H-,DEC(B),DEC,B
+6,2,8,----,"LD8(B,Imm8)",LD8,B,Imm8
+7,1,4,000C,RLCA(),RLCA
+8,3,20,----,"LD16(Load16(Imm16),SP)",LD16,Load16 Imm16,SP
+9,1,8,-0HC,"ADD(HL,BC)",ADD,HL,BC
+A,1,8,----,"LD8(A,Load8(BC))",LD8,A,Load8 BC
 B,1,8,----,DEC(BC)
 C,1,4,Z0H-,INC(C)
 D,1,4,Z1H-,DEC(C)
@@ -202,7 +202,6 @@ C7,1,16,----,RST(0x00)
 C8,1,20/8,----,RET(CZ)
 C9,1,16,----,RET(CT)
 CA,3,16/12,----,"JP(CZ,Imm16)"
-CB,1,4,----,PREFIX___
 CC,3,24/12,----,"CALL(CZ,Imm16)"
 CD,3,24,----,"CALL(CT,Imm16)"
 CE,2,8,Z0HC,"ADC(A,Imm8)"

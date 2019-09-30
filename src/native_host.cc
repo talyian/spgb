@@ -1,15 +1,21 @@
 #include "base.hpp"
 #include "wasm_host.hpp"
 #include <stdio.h>
+#include <stdlib.h>
 
 // imports
 extern "C" {
   void _logf(double v) { printf("%f ", v); }
   void _logx8(u8 v) { printf("%02x ", v); }
   void _logx16(u16 v) { printf("%04x ", v); }
+  void _logx32(u32 v) { printf("%04x ", v); }
   void _logs(const char * s, u32 len) { printf("%.*s ", len, s); }
   void _showlog() { printf("\n"); }
+  void _stop() { exit(1); }
 }
+
+extern "C" void * get_emulator();
+extern "C" void   step_frame(void * emulator);
 
 int main() {
   auto instance = get_emulator();
@@ -62,5 +68,5 @@ void _push_frame(u32 category, u8 * memory, u32 len) {
   else if ((category & 0xFF)  == 0x200)
     _show_bg_map(memory,len);
   else
-    log("pushframe");
+    ; // log("pushframe");
 }

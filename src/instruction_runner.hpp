@@ -52,6 +52,10 @@ struct InstructionRunner {
     bool Z = 0, C = 0, N = 0, H = 0;
   } fl;
 
+  u8 ime = 0;
+
+
+  
   u16 *PC_ptr;
   u16 *PC_start_ptr;
   
@@ -61,7 +65,7 @@ struct InstructionRunner {
   
   template<class T, class ...TS>
   void m_log(T x, TS ... xs) {
-    if (verbose_log)
+    if (verbose_log || error != -1)
       log(x, xs...);
   }
   
@@ -187,7 +191,9 @@ struct InstructionRunner {
     case Register16::DE: registers.DE = value; break;
     case Register16::HL: registers.HL = value; break;
     case Register16::SP: registers.SP = value; break;
-    default: error = 1;
+    case Register16::AF:
+      //break;
+    default: log("write16-err"); error = 1;
     }}
   void _write16_addr(u16 addr, u16 value) {
     mmu->set(addr++, value >> 8);
@@ -203,7 +209,10 @@ struct InstructionRunner {
     }
   }
   
-  void NOP() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void NOP() {
+    m_log(*PC_start_ptr, __FUNCTION__);
+    error = -1;
+  }
   void STOP() { m_log(*PC_start_ptr, __FUNCTION__); }
   void DAA() { m_log(*PC_start_ptr, __FUNCTION__); }
 
@@ -211,8 +220,16 @@ struct InstructionRunner {
   void SCF() { m_log(*PC_start_ptr, __FUNCTION__); }
   void CCF() { m_log(*PC_start_ptr, __FUNCTION__); }
 
-  void DI() { m_log(*PC_start_ptr, __FUNCTION__); }
-  void EI() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void DI() {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__);
+    ime = 0;
+  }
+  void EI() {
+    ime = 1;
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__);
+  }
   void HALT() { m_log(*PC_start_ptr, __FUNCTION__); }
 
   void RLCA() { m_log(*PC_start_ptr, __FUNCTION__); }
@@ -266,9 +283,29 @@ struct InstructionRunner {
     error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     registers.A ^= _read8(o);
+    fl.N = 0;
+    fl.H = 0;
+    fl.C = 0;
+    fl.Z = registers.A = 0;
   }
-  void AND(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
-  void OR(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  void AND(Value8 o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    registers.A &= _read8(o);
+    fl.N = 0;
+    fl.H = 1;
+    fl.C = 0;
+    fl.Z = registers.A = 0;
+  }
+  void OR(Value8 o) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    registers.A |= _read8(o);
+    fl.N = 0;
+    fl.H = 0;
+    fl.C = 0;
+    fl.Z = registers.A = 0;
+  }
   void SBC(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
   void DEC(Value8 o) {
     error = -1;
@@ -369,7 +406,12 @@ struct InstructionRunner {
     if (_check(o) && _read8(v) == 0xfe && !warned)
       log(*PC_start_ptr, "warning: infinite loop", warned = true);
   }
-  void JP(Conditions o, Value16 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
+  void JP(Conditions o, Value16 v) {
+    error = -1;
+    m_log(*PC_start_ptr, __FUNCTION__, o, v);
+    if (_check(o))
+      *PC_ptr = _read16(v);
+  }
   void CALL(Conditions o, Value16 v) {
     error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);

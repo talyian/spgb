@@ -2,57 +2,94 @@
 import csv, os, sys, json, re
 rows = csv.reader(open(os.path.dirname(os.path.abspath(__file__)) + '/opcode_table.csv'))
 
-def parse_code(code):
-
-    operand = "\w+|\w+\(\w+\)"
-    operand1 = "^(\w+)$|^(\w+)\((\w+)\)$"
-    def op_func(n):
-        m = re.match(operand1, n)
-        single = m.group(1)
-        callee = m.group(2)
-        arg = m.group(3)
-        if single:
-            if single.isdigit() or single.startswith('0x'):
-                return single
-            return single + '()'
-        elif not arg:
-            return f'{callee}()'
+class Operand:
+    def __init__(self, source, callee, arg):
+        self.source = source
+        self.callee = callee
+        self.arg = arg
+    def __str__(self):
+        if re.match('((0x[0-9a-fA-F])|[0-9])[0-9a-fA-F]*', self.arg):
+            val = self.arg
         else:
-            return f'{callee}({op_func(arg)})'
+            val = str(self.arg) + "()"
+        
+        if self.callee:
+            return f'{self.callee}({val})'
+        else:
+            return val
+        
+class Action:
+    def __init__(self, callee, args):
+        self.callee = callee
+        self.args = args
+    def __str__(self):
+        return f'  ii.{self.callee}({", ".join(map(str, self.args))})'
+    def get(self, index):
+        if index >= len(self.args): return 0
+        return self.args[index];
+
+class FallbackAction:
+    def __init__(self, msg):
+        self.msg = msg
+        self.callee = msg
+        self.args = []
+    def __str__(self):
+        return f'  log("fallback", {json.dumps(self.msg)}); error = 1'
+    def get(self, index): return ""
+    
+def parse_operand(s):
+    operand1 = "^^(\w+)(?:\((\w+)\))?$"
+    m = re.match(operand1, s)
+    callee = m.group(1)
+    arg = m.group(2)
+    if not arg:
+        return Operand(s, '', callee)
+    else:
+        return Operand(s, callee, arg)
+    
+def parse_code(code):
+    operand = "\w+|\w+\(\w+\)"
 
     m = re.match(rf'(\w+)\(\)', code)
-    if m:
-        return f'ii.{m.group(1)}();'
-    
-    # unary op
+    if m: return Action(m.group(1), []);
+
     m = re.match(rf"(\w+)\(({operand})\)", code)
-    if m:
-        instr = m.group(1)
-        a = m.group(2)
-        return f'ii.{instr}({op_func(a)});'
-    
-    # binary op
+    if m: return Action(m.group(1), [parse_operand(m.group(2))])
+
     m = re.match(rf"(\w+)\(({operand}),({operand})\)", code)
-    if m:
-        instr = m.group(1)
-        a = m.group(2)
-        b = m.group(3)
-        return f'ii.{instr}({op_func(a)}, {op_func(b)});'
+    if m: return Action(m.group(1), [
+            parse_operand(m.group(2)),
+            parse_operand(m.group(3))])
+
+    return FallbackAction("PREFIX__");
 
 for row in rows:
     opcode, size, cycles, flags, action = row[:5]
-    row_str =  ' '.join(row)
     if (opcode == 'opcode'): continue;
     if (size == ''): continue;
 
-    str_action = json.dumps(action)
-    print(f'case 0x{opcode}:  // {row_str}')
-    if parse_code(action):
-        print(f'  {parse_code(action)}', end='')
+    opcode = int(opcode, 16)
+    size = int(size)
+    if '/' in cycles:
+        cycles, cycles2 = cycles.split('/')
     else:
-        print('  _log("    ");');
-        print(f'  log("fallback", {str_action}); // fallback')
-        print("  error = 1;");
-    # print(f'  if (pc != pc_start + {size}) log("pc error", (i32)pc, (i32)_pc + {size});')
-    # print(f' pc = pc_start + {size};')
-    print(f' break;')
+        cycles2 = '-1'
+        
+    row_str =  ' '.join(row)
+
+    str_action = json.dumps(action)
+    call_syntax = parse_code(action)
+    # print(f'case 0x{opcode}:  // {row_str}')
+    # print(call_syntax, end=';')
+    # print(f' break;')
+    if len(call_syntax.args) == 0:
+        macro = "ENTRY0"
+    elif len(call_syntax.args) == 1:
+        macro = "ENTRY1"
+    elif len(call_syntax.args) == 2:
+        macro = "ENTRY2"
+    print(f'  {macro}(0x{opcode:03x}, {size:02}, {cycles:>2}, {cycles2:>2}, "{flags}",'
+          f' {call_syntax.callee:7}, '
+          f'{str(call_syntax.get(0))}, '
+          f'{str(call_syntax.get(1))}'
+          ')')

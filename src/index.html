@@ -19,11 +19,12 @@
   }
 </style>
 
+<canvas id=cvscreen width=160 height=144 style='background:#edf'> </canvas>
+<canvas id=bg width=256 height=256 style='background:#def'> </canvas>
 <canvas id=tile0 width=128 height=64 style='background:#fed'> </canvas> <!--16 * 8 tiles each at 8*8-->
 <canvas id=tile1 width=128 height=64 style='background:#fed'> </canvas> <!--16 * 8 tiles each at 8*8-->
 <canvas id=tile2 width=128 height=64 style='background:#fed'> </canvas> <!--16 * 8 tiles each at 8*8-->
-<canvas id=bg width=256 height=256 style='background:#def'> </canvas>
-<canvas id=cvscreen width=160 height=144 style='background:#edf'> </canvas>
+<!-- <script src=webgl_renderer.js> </script> -->
 <script>
   if (typeof TextDecoder == "undefined") {
     function TextDecoder() {  }
@@ -31,22 +32,36 @@
       return String.fromCharCode.apply(null, new Uint8Array(arr));
     }
   }
-  var emulator = 0;
+
+  var ctx = cvscreen.getContext("2d");
+  var image_buffer = ctx.createImageData(160, 144);
+  
+  var emulator = 0, frames = 0;
   var instance, line=[], dec = new TextDecoder();
   var memory = new WebAssembly.Memory({ initial: 32 });
   var heap = new WebAssembly.Memory({initial: 3});
   function draw_display(canvas, data) {
+    frames++;
     var ctx = canvas.getContext("2d"), p = 0, i = 0;
     var H = 144, W = 160;
+    var idata = image_buffer.data, j = 0;
     for(var y = 0; y < H; y++) {
       for(var x = 0; x < W; x++) {
         p = data[i++];
-        ctx.fillStyle = ['white', 'blue', 'olive', 'black'][p % 3];
-        ctx.fillRect(x, y, 1, 1);
+        idata[j++] = p * 80;
+        idata[j++] = p * 80;
+        idata[j++] = p / 2 ? 0 : 255;
+        idata[j++] = 255;
+        // ctx.fillStyle = ['white', 'blue', 'olive', 'black'][p % 3];
+        // ctx.fillRect(x, y, 1, 1);
       }
     }
+    ctx.putImageData(image_buffer, 0, 0);
   }
-  
+  setInterval(function() {
+    console.log("frames / sec", frames);
+    frames = 0;
+  }, 1000);
   function draw_vram(canvas, data) {
     var ctx = canvas.getContext("2d");
     var w = 8, tile_idx = 0, tile_number = 0;

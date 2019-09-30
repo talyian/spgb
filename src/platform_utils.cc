@@ -31,7 +31,7 @@ extern "C" void *memcpy(void *dest, const void *src, size_t n) {
 u8 memory_zero[1024 * 1024];
 u8 *memory_top = memory_zero;
 void * operator new(size_t size) {
-  u8 top = memory_top;
+  void *top = memory_top;
   memory_top += size;
   return top;
 }
