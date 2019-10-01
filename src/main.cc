@@ -12,8 +12,8 @@ namespace logs {
 
 extern "C" {
   emulator_t * WASM_EXPORT get_emulator() {return new emulator_t {}; }
-  void WASM_EXPORT set_breakpoint(emulator_t * e, u16 addr) {e->set_breakpoint(addr);}
-  void WASM_EXPORT clear_breakpoint(emulator_t * e, u16 addr) {e->clear_breakpoint(addr);}
+  void WASM_EXPORT set_breakpoint(emulator_t * e, u16 addr) {e->debug.set_breakpoint(addr);}
+  void WASM_EXPORT clear_breakpoint(emulator_t * e, u16 addr) {e->debug.clear_breakpoint(addr);}
   void WASM_EXPORT step_frame(emulator_t * emulator) {
   #define CLOCK_HZ 8200000
   #define FPS 60

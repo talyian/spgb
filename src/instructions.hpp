@@ -35,6 +35,19 @@ struct Value8 {
   static Value8 _Load(u16 r) { Value8 v; v.type = Ld8Imm; v.addr = r; return v; }
   static Value8 _Io(u8 val) { Value8 v; v.type = IoImm8; v.value = val; return v; }
   static Value8 _Io(Register8 r) { Value8 v; v.type = IoReg8; v.reg = r; return v; }
+  bool operator == (const Value8 &o) const {
+    if (type != o.type) return false;
+    switch(type) {
+    case REG8: return reg == o.reg;
+    case IMM8: return value == o.value;
+    case Ld8Inc:
+    case Ld8Dec:
+    case Ld8Reg: return reg16 == o.reg16;
+    case Ld8Imm: return addr == o.addr;
+    case IoImm8: return value == o.value;
+    case IoReg8: return reg == o.reg;
+    }
+  }
 };
 
 struct Value16 {

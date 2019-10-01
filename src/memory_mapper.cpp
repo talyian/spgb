@@ -2,17 +2,20 @@
 
 MemoryMapper::MemoryMapper(u8 * rom, u8 * ram) : rom(rom), ram(ram) {
     rom_n = rom;
-    
     vram = ram;
-    bg0 = (u8 (*)[32][32])(ram + 0x1800);
-    bg1 = (u8 (*)[32][32])(ram + 0x1C00);
-
+    bg0 = vram + 0x1800;
+    bg1 = vram + 0x1c00;
     cart_ram = ram + 0x2000;
     work_ram = ram + 0x4000;
     echo_ram = ram + 0x4000;
 
-    oam = ram + 0xFE00;
-    io_port = ram + 0xFF00;
+    oam = ram + 0x7E00;
+    io_port = ram + 0x7F00;
+
+    set(0xFF42, 0);
+    set(0xFF43, 0);
+    set(0xFF44, 0);
+    set(0xFF44, 0);
   }
 u8 MemoryMapper::select_background_tile(u8 x, u8 y) {
     return ram[0x1800 + y * 32 + x];

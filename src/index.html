@@ -33,16 +33,16 @@
     }
   }
 
-  var ctx = cvscreen.getContext("2d");
-  var image_buffer = ctx.createImageData(160, 144);
-  
   var emulator = 0, frames = 0;
   var instance, line=[], dec = new TextDecoder();
   var memory = new WebAssembly.Memory({ initial: 32 });
-  var heap = new WebAssembly.Memory({initial: 3});
   function draw_display(canvas, data) {
     frames++;
-    var ctx = canvas.getContext("2d"), p = 0, i = 0;
+    var p = 0, i = 0;
+    var image_buffer = canvas._buffer;
+    var ctx = canvas.getContext("2d");
+    if (!image_buffer)
+      image_buffer = canvas._buffer = ctx.createImageData(160, 144);
     var H = 144, W = 160;
     var idata = image_buffer.data, j = 0;
     for(var y = 0; y < H; y++) {
@@ -52,8 +52,6 @@
         idata[j++] = p * 80;
         idata[j++] = p / 2 ? 0 : 255;
         idata[j++] = 255;
-        // ctx.fillStyle = ['white', 'blue', 'olive', 'black'][p % 3];
-        // ctx.fillRect(x, y, 1, 1);
       }
     }
     ctx.putImageData(image_buffer, 0, 0);
@@ -64,6 +62,11 @@
   // }, 1000);
   function draw_vram(canvas, data) {
     var ctx = canvas.getContext("2d");
+    var image_buffer = canvas._buffer;
+    if (!image_buffer)
+      image_buffer = canvas._buffer = ctx.createImageData(canvas.width, canvas.height);
+    
+    var idata = image_buffer.data, k = 0;
     var w = 8, tile_idx = 0, tile_number = 0;
     // 0x800 bytes, 0x80 sprites, so each one takes up 0x10 bytes
     for(var y = 0; y < 8; y++) {
@@ -78,12 +81,16 @@
             p = p << 1;
             var q = (w0 >> (7 - i)) & 0x1;
             p = p | q;
-            ctx.fillStyle = ['white', 'blue', 'olive', 'black'][p];
-            ctx.fillRect(x * 8 + i, y * 8 + j, 1, 1);
+            k = 4 * ((y * 8 + j) * canvas.width + x * 8 + i);
+            idata[k++] = p * 80;
+            idata[k++] = p * 80;
+            idata[k++] = p / 2 ? 0 : 255;
+            idata[k++] = 255;
           }
         }
       }
     }
+    ctx.putImageData(image_buffer, 0, 0);
   }
   
   function push_frame(category, data, len) {
@@ -98,17 +105,33 @@
       draw_vram(tile2, buf);
     }
     if (category == 0x300) { // tile data
-      draw_display(cvscreen, buf);
+      draw_display(cvscreen, buf, len);
     }
-    var ctx = bg.getContext("2d");
     if (category == 0x200) { // background
+      var ctx = bg.getContext("2d");
+      var image_buffer = bg._buffer, k = 0;
+      var ctx = bg.getContext("2d");
+      if (!image_buffer)
+        image_buffer = bg._buffer = ctx.createImageData(160, 144);
+      var idata = image_buffer.data;
       var w = 8, i = 0, cc = {};
       for(var y = 0; y < 32; y++) {
         for(var x = 0; x < 32; x++) {
-          ctx.fillStyle = ['red', 'blue','green', 'pink'][buf[i++] % 4]
-          ctx.fillRect(x * w, y * w, w, w);
+          for(var i = 0; i < 8; i++) {
+            for(var j = 0; j < 8; j++) {
+
+            }
+          }
+          // ctx.fillStyle = ['red', 'blue','green', 'pink'][buf[i++] % 4]
+          // ctx.fillRect(x * w, y * w, w, w);
+          var p = buf[i++] % 4;
+          idata[k++] = p * 80;
+          idata[k++] = p * 80;
+          idata[k++] = p / 2 ? 0 : 255;
+          idata[k++] = 255;
         }
       }
+      ctx.putImageData(image_buffer, 0, 0);
     }
   }
   var error = 0;
@@ -138,10 +161,6 @@
   .then((module) => {
     instance = module.instance;
 
-    // instance.exports.test_memory();
-    // return;
-
-      
     emulator = instance.exports.get_emulator();
 
     requestAnimationFrame(function loop() {

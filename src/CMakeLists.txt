@@ -39,6 +39,7 @@ else()
     -Wall
     -Wno-unused-variable
     -g
+    -O2
     -fsanitize=undefined
   )
 

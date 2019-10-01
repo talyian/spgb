@@ -45,7 +45,8 @@ struct InstructionDecoderBase {
 template<class Handler>
 struct InstructionDecoderT : InstructionDecoderBase {
   Handler ii;
-  InstructionDecoderT(u16 pos) { this->pc = pos; }  
+  InstructionDecoderT(Handler hh) : ii(hh) { pc = 0; }
+  
   void decode() {
     pc_start = pc;
     u16 op = mmu->get(pc++);
@@ -63,7 +64,6 @@ struct InstructionDecoderT : InstructionDecoderBase {
 
     default: log("unknown op", op);
     }
-    ii.error++;
   }
 
 };

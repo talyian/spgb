@@ -2,69 +2,18 @@
 #include "instructions.hpp"
 #include "wasm_host.hpp"
 #include "memory_mapper.hpp"
+#include "cpu.hpp"
 
-// Registers
-typedef u8 reg8;
-struct reg16 {
-  u8 h, l;
-  reg16() = default;
-  reg16(u16 v) { h = v >> 8; l = v; }
-  operator u16 () { return (u16)(h * 0x100 + l); }
-  reg16 operator-- () {
-    u16 v = (u16) *this;
-    reg16 r = v - (u16)1;
-    h = r.h;
-    l = r.l;
-    return *this;
-  }
-  reg16 operator++ (int) {
-    u16 u = (u16) *this;
-    reg16 r = u + (u16)1;
-    h = r.h;
-    l = r.l;
-    return u;
-  }
-};
-\
-template<int offset>
-struct bit {
-  reg8 &r;
-  bit(reg8 & _register) : r(_register) { }
-  void operator=(bool n) {
-    r ^= (((r >> offset) & 1) ^ n) << offset;
-  }
-  operator bool() { return (r >> offset) & 1; }
-};
-
-namespace logs {
-void _log(reg16 v);
-}
-using logs::_log;
-
-struct InstructionRunner {
-  InstructionRunner() {
-    registers.BC = registers.DE =
-      registers.AF = registers.HL =
-      registers.SP = 0;
-  }
   
-  union { 
-    struct { reg8 B, C, D, E, A, F, H, L; };
-    struct { reg16 BC, DE, AF, HL, SP; };
-  } registers;
-
-  // the `flag<offset> struct` allows us to access
-  // a single bit inside of the F register like a boolean.
-  // "fl.Z = 1; fl.C = 1;" is equivalent to "registers.F & 0b10010000";
-  struct { 
-    bit<7> Z;
-    bit<6> N;
-    bit<5> H;
-    bit<4> C;
-  } fl { registers.F, registers.F, registers.F, registers.F };
-
-  bool ime = 0;
-  u8 halted = 0;
+struct InstructionRunner {
+  InstructionRunner(CPU &cpu) :
+    cpu(cpu),
+    registers(cpu.registers),
+    fl(cpu.flags) {  }
+  
+  CPU &cpu;
+  Registers &registers;
+  Flags &fl;
   
   u16 *PC_ptr;
   u16 *PC_start_ptr;
@@ -83,8 +32,8 @@ struct InstructionRunner {
   
   template<class T, class ...TS>
   void m_log(T x, TS ... xs) {
-    if (verbose_log || error != -1)
-      log(x, xs...);
+    // if (verbose_log || error)
+    //   log(x, xs...);
   }
   
   void _push(reg16 value) {
@@ -98,8 +47,8 @@ struct InstructionRunner {
   }
   
   u8 _read8_addr(u16 addr) {
-    if (0xFF00 <= addr && addr < 0xFF80 && addr != 0xFF44 && addr != 0xFF42)
-      log("    IO:", addr);
+    // if (0xFF00 <= addr && addr < 0xFF80 && addr != 0xFF44 && addr != 0xFF42)
+    //   log("    IO:", addr);
     return mmu->get(addr);
   }
   u8 _read8(Register8 r) {
@@ -139,14 +88,15 @@ struct InstructionRunner {
   }
   
   void _write8_addr(u16 addr, u8 value) {
-    if (*PC_start_ptr > 0x100) { 
-    if (addr == 0xFF42) {
-      log(*PC_start_ptr, "scroll y", value);
-    }
-    if (addr == 0xFF43) {
-      log(*PC_start_ptr, "scroll x", value);
-    }
-    }
+    // sprite table 1
+    // if (0x8000 <= addr && addr < 0x8800) {
+    //   log(*PC_start_ptr, addr, "<-", value);
+    // }
+    
+    // if (*PC_start_ptr > 0x100) { 
+    // // if (addr == 0xFF42) { log(*PC_start_ptr, "scroll y", value); }
+    // // if (addr == 0xFF43) { log(*PC_start_ptr, "scroll x", value); }
+    // }
     if (0xFF00 <= addr) _handle_io_write(addr, value);
     mmu->set(addr, value);
   }
@@ -235,75 +185,121 @@ struct InstructionRunner {
 
   void _handle_io_write(u16 addr, u16 value) {
     switch(addr) {
-    case 0xFF46: log("    (DMA) IO:", addr, "<-", value); break;
-    case 0xFFFF: log("     (IE) IO:", addr, "<-", value); break;
-    case 0xFF0F: log("     (IF) IO:", addr, "<-", value); break;
+    case 0xFF50: mmu->bios_active = false; break;
+    // case 0xFF46: log(*PC_start_ptr, "    (DMA) IO:", addr, "<-", value); break;
+    // case 0xFFFF: log(*PC_start_ptr, "     (IE) IO:", addr, "<-", value); break;
+    // case 0xFF0F: log(*PC_start_ptr, "     (IF) IO:", addr, "<-", value); break;
     }
   }
 
-  void NOP() {
+  void NOP() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void STOP() {
     m_log(*PC_start_ptr, __FUNCTION__);
-    error = -1;
+    cpu.stopped = 1;
+    error = 5;
   }
-  void STOP() { m_log(*PC_start_ptr, __FUNCTION__); }
-  void DAA() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void DAA() { m_log(*PC_start_ptr, __FUNCTION__);     error = 5;
+}
 
-  void CPL() { m_log(*PC_start_ptr, __FUNCTION__); }
-  void SCF() { m_log(*PC_start_ptr, __FUNCTION__); }
-  void CCF() { m_log(*PC_start_ptr, __FUNCTION__); }
+  // Complement A
+  void CPL() {
+    m_log(*PC_start_ptr, __FUNCTION__);
+    registers.A = ~registers.A;
+    fl.N = 1;
+    fl.H = 1;
+  }
 
+  // Set Carry Flag
+  void SCF() {
+    m_log(*PC_start_ptr, __FUNCTION__);
+    fl.N = 0;
+    fl.H = 0;
+    fl.C = 1;
+  }
+
+  // Complement Carry Flag
+  void CCF() {
+    m_log(*PC_start_ptr, __FUNCTION__);
+    fl.N = 0;
+    fl.H = 0;
+    fl.C = ~fl.C;
+  }
+
+  // Disable Interrupts
   void DI() {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__);
-    ime = 0;
-  }
-  void EI() {
-    ime = 1;
-    error = -1;
-    m_log(*PC_start_ptr, __FUNCTION__);
-  }
-  void HALT() {
-    error = -1;
-    m_log(*PC_start_ptr, __FUNCTION__);
-    halted = 1;
+    cpu.IME = 0;
   }
 
-  void RLCA() { m_log(*PC_start_ptr, __FUNCTION__); }
-  void RRCA() { m_log(*PC_start_ptr, __FUNCTION__); }
+  // Enable Interrupts
+  void EI() {
+    m_log(*PC_start_ptr, __FUNCTION__);
+    cpu.IME = 1;
+  }
+
+  void HALT() {
+    m_log(*PC_start_ptr, __FUNCTION__);
+    cpu.halted = 1;
+  }
+
+  void RLCA() {
+    m_log(*PC_start_ptr, __FUNCTION__);
+    return RLC(Register8::A);
+  }
+  void RRCA() {
+    m_log(*PC_start_ptr, __FUNCTION__);
+    return RRC(Register8::A);
+  }
   void RLA() {
     return RL(Register8::A);
   }
-  void RRA() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void RRA() {
+    m_log(*PC_start_ptr, __FUNCTION__);
+    return RR(Register8::A);
+  }
   
   void LD8(Value8 o, Value8 v) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
     _write8(o, _read8(v));
-    // if (verbose_log)
-    //   registers.dump();
   }
   void LD16(Value16 o, Value16 v) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
     _write16(o, _read16(v));
-    // registers.dump();
   }
 
   void BIT(u8 o, Value8 v) {
     if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
-    // void BIT(Value8 o, Value8 v) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u8 val = _read8(v) >> o;
     fl.Z = val == 0;
     fl.N = 0;
     fl.H = 1;
   }
-  void RES(Value8 o, Value8 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
-  void SET(Value8 o, Value8 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
-  void ADD(Value16 o, Value16 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
+
+  void RES(u8 o, Value8 v) {
+    if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
+    m_log(*PC_start_ptr, __FUNCTION__, o, v);
+    u8 val = _read8(v) & ~(1 << 0);
+    _write8(v, val);
+  }
+  void SET(u8 o, Value8 v) {
+    if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
+    m_log(*PC_start_ptr, __FUNCTION__, o, v);
+    u8 val = _read8(v) | (1 << 0);
+    _write8(v, val);
+  }
+  void ADD(Value16 o, Value16 v) {
+    // TODO: addSP has different flags and timing!
+    m_log(*PC_start_ptr, __FUNCTION__, o, v); 
+    u16 a = _read16(o);
+    u16 b = _read16(v);
+    _write16(o, a + b);
+    fl.N = 0;
+    fl.C = a > ~b;
+    fl.H = (a & 0xFFF) > ~(b & 0xFFF);
+  }
+
   void ADD(Value8 o, Value8 v) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u8 a = _read8(o);
     u8 b = _read8(v);
@@ -313,10 +309,20 @@ struct InstructionRunner {
     fl.H = (a & 0xF) + (b & 0xF) > 0xF;
     fl.N = 0;
   }
-  void ADC(Value8 o, Value8 v) { m_log(*PC_start_ptr, __FUNCTION__, o, v); }
+
+  void ADC(Value8 o, Value8 v) {
+    m_log(*PC_start_ptr, __FUNCTION__, o, v);
+    u8 a = _read8(o);
+    u8 b = _read8(v);
+    u16 d = a + b + fl.C;
+    _write8(o, d);
+    fl.Z = (u8)d == 0;
+    fl.C = d > 0xFF;
+    fl.H = (a & 0xF) + (b & 0xF) + fl.C > 0xF;
+    fl.N = 0;
+  }
 
   void XOR(Value8 o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     registers.A = registers.A ^ _read8(o);
     fl.N = 0;
@@ -325,7 +331,6 @@ struct InstructionRunner {
     fl.Z = registers.A = 0;
   }
   void AND(Value8 o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     registers.A = registers.A & _read8(o);
     fl.N = 0;
@@ -334,7 +339,6 @@ struct InstructionRunner {
     fl.Z = registers.A = 0;
   }
   void OR(Value8 o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     registers.A = registers.A | _read8(o);
     fl.N = 0;
@@ -342,9 +346,8 @@ struct InstructionRunner {
     fl.C = 0;
     fl.Z = registers.A = 0;
   }
-  void SBC(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+
   void DEC(Value8 o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 a = _read8(o);
     u8 v = a - (u8)1;
@@ -353,19 +356,29 @@ struct InstructionRunner {
     fl.N = 1;
     fl.H = (a & 0xF) < 1;
   } 
-  void DEC(Register16 o) { m_log(*PC_start_ptr, __FUNCTION__, o); } 
-  void INC(Value8 o) {
-    error = -1;
+  void DEC(Register16 o) {
     m_log(*PC_start_ptr, __FUNCTION__, o);
-    _write8(o, _read8(o) + 1);
+    u16 v = _read16(o);
+    _write16(o, v - 1);
+    // no flags
+  }
+  
+  void INC(Value8 o) {
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u8 v = _read8(o);
+    _write8(o, v + 1);
+    fl.N = 0;
+    fl.H = (v & 0xF) == 0xF;
+    fl.Z = v == 0xFF;
   }  // INC LoadHL)
+
   void INC(Register16 o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     _write16(o, _read16(o) + 1);
+    // no flags
   } // INC HL
+
   void SUB(Value8 o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 a = _read8(Register8::A);
     u8 b = _read8(o);
@@ -375,29 +388,115 @@ struct InstructionRunner {
     fl.C = a < b;
     fl.H = (a & 0xF) < (b & 0xF);
   }
-  
-  void SRL(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
-  void SRA(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
-  void SLA(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
-  void RRC(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
-  void RLC(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
-  void RL(Value8 o) {
-    error = -1;
+
+  void SBC(Value8 o) {
     m_log(*PC_start_ptr, __FUNCTION__, o);
-    u16 v;
-    v = _read8(o);
-    v = v << 1;
-    v = (v & ~1) | fl.C;
-    fl.C = (v >> 8) & 1;
+    u8 a = _read8(Register8::A);
+    u8 b = _read8(o);
+    u8 c = a - b - fl.C;
+    _write8(Register8::A, c);
+    fl.Z = a == b + fl.C;
+    fl.N = 1;
+    fl.C = a < b + fl.C;
+    fl.H = (a & 0xF) < ((b + fl.C) & 0xF);
+    
+  }
+
+  // unsigned right-shift
+  void SRL(Value8 o) {
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u8 v = _read8(o);
+    fl.C = v & 1;
+    fl.N = 0;
+    fl.H = 0;
+    fl.Z = (v >> 1) == 0;
+    _write8(o, v >> 1);
+  }
+
+  // signed right-shift
+  void SRA(Value8 o) {
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u8 v = _read8(o);
+    fl.C = v & 1;
+    fl.H = 0;
+    fl.N = 0;
+    fl.Z = (((i8)v) >> 1) == 0;
+    _write8(o, ((i8)v) >> 1);
+  }
+
+  // left shift
+  void SLA(Value8 o) {
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u8 v = _read8(o);
+    u8 v2 = v << 1;
+    fl.C = v & 0x80;
+    fl.H = 0;
+    fl.N = 0;
+    fl.Z = v2 == 0;
+    _write8(o, v2);
+  }
+
+  // 8-bit Right Rotate
+  void RRC(Value8 o) {
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u8 v = _read8(o);
+    fl.Z = v == 0;
+    fl.C = v & 1;
+    fl.N = 0;
+    fl.H = 0;
+    _write8(o, (v >> 1) | (v << 7));
+  }
+
+  void RLC(Value8 o) {
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u8 v = _read8(o);
+    fl.C = v & 0x80;
+    v = (v << 1) | (v >> 7);
+    fl.N = 0;
+    fl.H = 0;
+    fl.Z = v == 0;
     _write8(o, v);
   }
-  void RR(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
 
-  void SWAP(Value8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
-  void RST(u8 o) { m_log(*PC_start_ptr, __FUNCTION__, o); }
+  // 9-bit rotate-left-through-carry
+  void RL(Value8 o) {
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u16 v = (_read8(o) << 1) | fl.C;
+    fl.C = (v >> 8) & 1;
+    fl.N = 0;
+    fl.H = 0;
+    fl.Z = v == 0;
+    _write8(o, v);
+  }
+  
+  // 9-bit rotate-right-through-carry
+  void RR(Value8 o) {
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u16 v = _read8(o) | (fl.C << 8);
+    fl.C = v & 1;
+    v = v >> 1;
+    fl.N = 0;
+    fl.H = 0;
+    fl.Z = v == 0;
+    _write8(o, v);
+  }
+
+  void SWAP(Value8 o) {
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    u8 value = _read8(o);
+    value = value << 4 | (value >> 4);
+    _write8(o, value);
+    registers.F = 0;
+    fl.Z = value == 0;
+  }
+  
+  void RST(u8 o) {
+    m_log(*PC_start_ptr, __FUNCTION__, o);
+    _push(*PC_ptr);
+    *PC_ptr = _read8(o);
+  }
 
   void CP(Value8 o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 a = registers.A;
     u8 b = _read8(o);
@@ -407,12 +506,10 @@ struct InstructionRunner {
     fl.H = (a & 0xF) < (b & 0xF);
   }
   void PUSH(Register16 o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     _push(_read16(o));
   }
   void POP(Register16 o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     _write16(o, _pop());
   }
@@ -429,19 +526,16 @@ struct InstructionRunner {
   }
   
   void RET(Conditions o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     if (_check(o)) *PC_ptr = _pop();
   }
   void RETI(Conditions o) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o);
     log(*PC_start_ptr, "reti");
-    ime = 1;
+    cpu.IME = 1;
     *PC_ptr = _pop();
   }
   void JR(Conditions o, Value8 v) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
     if (_check(o)) *PC_ptr += (i8) _read8(v);
     static bool warned = false;
@@ -449,13 +543,11 @@ struct InstructionRunner {
       log(*PC_start_ptr, "warning: infinite loop", warned = true);
   }
   void JP(Conditions o, Value16 v) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
     if (_check(o))
       *PC_ptr = _read16(v);
   }
   void CALL(Conditions o, Value16 v) {
-    error = -1;
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
     _push(*PC_ptr);
     *PC_ptr = _read16(v);

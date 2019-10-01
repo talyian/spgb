@@ -17,7 +17,11 @@ extern "C" {
 #define WASM_EXPORT __attribute__((visibility("default")))
 
 #ifdef WASM
+extern "C" {
 size_t strlen(const char * s);
+void *memset(void *dest, int c, size_t n);
+void *memcpy(void *dest, const void *src, size_t n);
+}
 #else
 #include <string.h>
 #endif

@@ -45,11 +45,10 @@ struct PPU {
     case HSCAN: // horizontal scan
       if (line_timer < 0x1C8) { break; }
       line_timer -= 0x1C8;
-      memory->set(0xFF44, line); // hblank
-      if (line < 144) scan_line();
-      if (line == 144) push_frame();
-      line++;
-      if (line == 154) { line = 0; }
+      if (line < 144) scan_line(); // [0 - 144) -- scan line
+      if (line == 143) push_frame(); // [144]
+      memory->set(0xFF44, ++line);
+      if (line == 154) { line = 0; } // [144 - 154) -- overscan
       state = OAM_SCAN;
       goto START;
     default: log("invalid PPU state", state); state = OAM_SCAN;
@@ -62,6 +61,10 @@ struct PPU {
       // log("oam", i / 4, oam_entry.x, oam_entry.y, oam_entry.tile);
     }
     _push_frame(0x300, display, DISPLAY_W * DISPLAY_H);
+    _push_frame(0x200, memory->bg0, 32 * 32);
+    _push_frame(0x100, memory->vram, 0x800);
+    _push_frame(0x101, memory->vram + 0x800, 0x800);
+    _push_frame(0x102, memory->vram + 0x1000, 0x800);
     memory->get_ref(0xFF0F) |= 0x01; 
   }
   void scan_line() {
