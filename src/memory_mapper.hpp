@@ -2,6 +2,10 @@
 #include "base.hpp"
 #include "wasm_host.hpp"
 
+struct IO {
+  const static u16 DMA = 0xFF46;
+};
+
 struct MemoryMapper {
   MemoryMapper(u8 * rom, u8 * ram);
   

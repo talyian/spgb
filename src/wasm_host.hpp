@@ -17,6 +17,8 @@ extern "C" {
 #define WASM_EXPORT __attribute__((visibility("default")))
 
 #ifdef WASM
+// if we're freestanding, we write our own string.h functions here
+// memset/memcpy are assumed to be provided as part of the runtime
 extern "C" {
 size_t strlen(const char * s);
 void *memset(void *dest, int c, size_t n);

@@ -44,8 +44,8 @@ struct InstructionDecoderBase {
 
 template<class Handler>
 struct InstructionDecoderT : InstructionDecoderBase {
-  Handler ii;
-  InstructionDecoderT(Handler hh) : ii(hh) { pc = 0; }
+  Handler &ii;
+  InstructionDecoderT(Handler &hh) : ii(hh) { pc = 0; }
   
   void decode() {
     pc_start = pc;

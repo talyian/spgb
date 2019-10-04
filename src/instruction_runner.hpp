@@ -23,11 +23,11 @@ struct InstructionRunner {
   MemoryMapper *mmu = 0;
 
   void dump() {
-    log(". . . . . . . . . A  F  B  C  D  E  HL   SP");
+    log(". . . . . . . . . A  F  B  C  D  E  HL   SP   PC");
     log(". . . . . . . . .", registers.A, registers.F,
         registers.B, registers.C,
         registers.D, registers.E,
-        registers.HL, registers.SP);
+        registers.HL, registers.SP, *PC_start_ptr);
   }
   
   template<class T, class ...TS>
@@ -328,7 +328,7 @@ struct InstructionRunner {
     fl.N = 0;
     fl.H = 0;
     fl.C = 0;
-    fl.Z = registers.A = 0;
+    fl.Z = registers.A == 0;
   }
   void AND(Value8 o) {
     m_log(*PC_start_ptr, __FUNCTION__, o);
@@ -336,7 +336,7 @@ struct InstructionRunner {
     fl.N = 0;
     fl.H = 1;
     fl.C = 0;
-    fl.Z = registers.A = 0;
+    fl.Z = registers.A == 0;
   }
   void OR(Value8 o) {
     m_log(*PC_start_ptr, __FUNCTION__, o);
@@ -344,7 +344,7 @@ struct InstructionRunner {
     fl.N = 0;
     fl.H = 0;
     fl.C = 0;
-    fl.Z = registers.A = 0;
+    fl.Z = registers.A == 0;
   }
 
   void DEC(Value8 o) {

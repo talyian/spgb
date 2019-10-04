@@ -19,12 +19,15 @@
   }
 </style>
 
+
 <canvas id=cvscreen width=160 height=144 style='background:#edf'> </canvas>
+<!--Background map preview - 32x32 tiles * 8x8 tile size = 256 * 256 -->
 <canvas id=bg width=256 height=256 style='background:#def'> </canvas>
-<canvas id=tile0 width=128 height=64 style='background:#fed'> </canvas> <!--16 * 8 tiles each at 8*8-->
-<canvas id=tile1 width=128 height=64 style='background:#fed'> </canvas> <!--16 * 8 tiles each at 8*8-->
-<canvas id=tile2 width=128 height=64 style='background:#fed'> </canvas> <!--16 * 8 tiles each at 8*8-->
-<!-- <script src=webgl_renderer.js> </script> -->
+<!--Tile map preview: 16 * 8 tiles each at 8*8-->
+<canvas id=tile0 width=128 height=64 style='background:#fed'> </canvas> 
+<canvas id=tile1 width=128 height=64 style='background:#fed'> </canvas>
+<canvas id=tile2 width=128 height=64 style='background:#fed'> </canvas>
+
 <script>
   if (typeof TextDecoder == "undefined") {
     function TextDecoder() {  }
