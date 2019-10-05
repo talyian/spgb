@@ -7,7 +7,13 @@ struct OamEntry {
   u8 y;
   u8 x;
   u8 tile;
-  u8 flags;
+  struct OamFlags {
+    u8 value;
+    bool priority() const { return value & 0x80; }
+    bool flip_y() const { return value & 0x40; }
+    bool flip_x() const { return value & 0x20; }
+    bool dmg_pal() const { return value & 0x10; }
+  } flags;
 };
 
 struct PPU {
@@ -79,19 +85,29 @@ struct PPU {
       u8 bg_y = line + bg_y_offset;
       u8 bg_tile_x = bg_x / 8;
       u8 bg_tile_y = bg_y / 8;
-      
-      u8 tile_index = memory->select_background_tile(bg_tile_x, bg_tile_y);
-      u8 tile_pixel = memory->select_tile_pixel(tile_index, bg_x % 8, bg_y % 8);
 
-      u8 pixel = tile_pixel & 0x3;
+      u8 pixel = 0;
+      {
+        u8 tile_index = memory->select_background_tile(bg_tile_x, bg_tile_y);
+        u8 tile_pixel = memory->select_tile_pixel(tile_index, bg_x % 8, bg_y % 8);
+        pixel = tile_pixel & 0x3;
+      }
 
       // draw foreground
       // TODO: better way of scanning sprites
       for(u8 i = 0; i < 0xA0; i += 4) {
-        OamEntry oam_entry = *(OamEntry*)(memory->oam + i - 0x8000);
-        if (oam_entry.y <= line && line < oam_entry.y + 8) {
-          if (oam_entry.x <= screen_x && screen_x < oam_entry.x + 8) {
-            pixel = 3;
+        OamEntry oam_entry = *(OamEntry*)(memory->oam + i);
+        u8 y = line - oam_entry.y + 16;
+        u8 x = screen_x - oam_entry.x + 8;
+
+        if (0 <= y && y < 8) {
+          if (x < 8) {
+            u8 tile_index = oam_entry.tile;
+            if (oam_entry.flags.flip_x()) x = 7 - x;
+            if (oam_entry.flags.flip_y()) y = 7 - y; 
+            auto tile_pixel = memory->select_tile_pixel(tile_index, x, y);
+            if (tile_pixel)
+              pixel = tile_pixel;
           }
         }
       }
