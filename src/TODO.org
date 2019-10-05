@@ -1,2 +1,13 @@
-** Handle Interrupts
-** Handle DMA (FF46)
+** [0/2] Handle Interrupts
+*** DONE vblank
+*** TODO other interrupts
+** TODO Sound
+** TODO Palettes
+*** TODO DMG Palettes
+*** TODO CGB Palettes
+** DONE Handle DMA (FF46)
+** TODO Draw Timing for BGB TEST
+* [0/3] Blargg Tests
+** TODO Blargg CPU Test 04
+** TODO Blargg CPU Test 05
+** TODO Blargg CPU Test 06
