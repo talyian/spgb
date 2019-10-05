@@ -5,6 +5,7 @@
 #include "instruction_decoder.hpp"
 #include "ppu.hpp"
 #include "debugger.hpp"
+#include "joypad.hpp"
 
 using RunnerDecoder = InstructionDecoderT<InstructionRunner>;
 using PrinterDecoder = InstructionDecoderT<InstructionPrinter>;
@@ -23,6 +24,7 @@ struct emulator_t {
   RunnerDecoder decoder {_runner};
   PrinterDecoder printer {_printer};
   Debugger debug {&mmu, &decoder, &cpu};
+  Joypad joypad {mmu};
   
   emulator_t();
 

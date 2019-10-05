@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <style>
-  body { background:#333; }
+  body { background:#333; color:#fff; }
   #tile0 { width:128px; height:64px; }
   #bg { width:256px; height: 256px; }
   #cvscreen {
@@ -19,7 +19,8 @@
   }
 </style>
 
-
+<input type=checkbox id=chkPaused><label for=chkPaused>Pause</label></input>
+<input type=button id=btnStep value=Step></input>
 <canvas id=cvscreen width=160 height=144 style='background:#edf'> </canvas>
 <!--Background map preview - 32x32 tiles * 8x8 tile size = 256 * 256 -->
 <canvas id=bg width=256 height=256 style='background:#def'> </canvas>
@@ -150,7 +151,7 @@
     },
     _showlog: function() { console.log.apply(console, line); line = []; },
     _push_frame: push_frame,
-    _stop: function() { error = 1; },
+    _stop: function() { chkPaused.checked = true; },
     _check_memory_size: function () { 
       console.log(
         'byte size', memory.buffer.byteLength,
@@ -166,9 +167,45 @@
 
     emulator = instance.exports.get_emulator();
 
-    requestAnimationFrame(function loop() {
+    function loop() {
       instance.exports.step_frame(emulator);
-      if (!error) requestAnimationFrame(loop);
+      if (!error && !chkPaused.checked) requestAnimationFrame(loop);
+    }    
+    requestAnimationFrame(loop);
+    chkPaused.addEventListener("change", loop);
+    console.log(loop);
+
+    var RIGHT = 0, LEFT = 1, UP = 2, DOWN = 3,
+        A = 4, B = 5, SELECT = 6, START = 7,
+        key_map = {
+          65: LEFT,
+          83: DOWN,
+          68: RIGHT,
+          87: UP,
+          74: B,
+          75: A,
+          16: SELECT,
+          13: START,
+        };
+    document.addEventListener("keydown", e => {
+      if (e.key == " ") {
+        instance.exports.step_instruction(emulator);
+        e.preventDefault();
+        return false;
+      }
+      else if (e.key == "Pause") {
+        chkPaused.click();
+      }
+      else if (e.keyCode in key_map)
+        instance.exports.button_down(emulator, key_map[e.keyCode]);
+      else
+        console.log("keydown", e.key, e.keyCode);
     });
+    document.addEventListener("keyup", e => {
+      if (e.keyCode in key_map)
+        instance.exports.button_up(emulator, key_map[e.keyCode]);
+    });
+    
   });
+
 </script>

@@ -40,6 +40,8 @@ u32 emulator_t::single_step() {
   if (decoder.error) { log(decoder.pc_start, "decoder error"); _stop(); }
   if (decoder.ii.error) { log(decoder.pc_start, "runner error"); _stop(); }
 
+  joypad.tick();
+  
   if (mmu.get(IO::DMA)) {
     // technically this won't work if we transfer from 0
     // but that seems highly unlikely
@@ -59,15 +61,25 @@ u32 emulator_t::single_step() {
 void emulator_t::step(i32 ticks) {
   // _runner.verbose_log = true;
   while(ticks > 0) {
-    // debug.step();
-    // if (debug.is_debugging) {
-    //   printer.pc = decoder.pc;
-    //   decoder.ii.dump();
-    //   _log(decoder.pc);
-    //   printer.decode();
-    //   break;
-    // }
+    debug.step();
+
+    // is_debugging means we don't run any code
+    if (debug.is_debugging) {
+      printer.pc = decoder.pc_start;
+      decoder.ii.dump();
+      _log("breakpoint");
+      _log(decoder.pc_start);
+      printer.decode();
+      _stop(); // stop core run loop
+      break;
+    }
     ticks -= single_step();
-    // if (debug.is_stepping) { debug.is_stepping = false; debug.is_debugging = true; } 
+
+    // stepping means we run one instruction and go back into debug
+    if (debug.is_stepping) {
+      debug.is_stepping = false;
+      debug.is_debugging = true;
+    } 
   }
 }
+

@@ -14,9 +14,24 @@ extern "C" {
   emulator_t * WASM_EXPORT get_emulator() {return new emulator_t {}; }
   void WASM_EXPORT set_breakpoint(emulator_t * e, u16 addr) {e->debug.set_breakpoint(addr);}
   void WASM_EXPORT clear_breakpoint(emulator_t * e, u16 addr) {e->debug.clear_breakpoint(addr);}
-  void WASM_EXPORT step_frame(emulator_t * emulator) {
-  #define CLOCK_HZ 8200000
-  #define FPS 60
-  emulator->step(CLOCK_HZ / FPS);
+  void WASM_EXPORT button_down(emulator_t * e, u16 button) { e->joypad.button_down((Buttons)button); }
+  void WASM_EXPORT button_up(emulator_t * e, u16 button) { e->joypad.button_up((Buttons)button); }
+
+  void WASM_EXPORT step_instruction(emulator_t * e) {
+    e->printer.pc = e->decoder.pc_start;
+    e->printer.decode();
+    e->_runner.dump();
+    e->single_step();
+  }
+  
+  void WASM_EXPORT continue_instr(emulator_t * e) {
+    e->debug.is_debugging = false;
+    e->debug.is_stepping = false;
+  }
+  
+  void WASM_EXPORT step_frame(emulator_t * e) {
+    #define CLOCK_HZ 8200000
+    #define FPS 60
+    e->step(CLOCK_HZ / FPS);
   }
 }

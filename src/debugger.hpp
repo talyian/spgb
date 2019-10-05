@@ -24,12 +24,11 @@ struct Debugger {
   void set_breakpoint(u16 v) { breakpoints[break_n++] = v; }
 
   void clear_breakpoint(u16 v) {
-    for(int i=0; i<break_n; i++)
+    for(int i=break_n; i-- > 0;)
       if (breakpoints[i] == v)
         breakpoints[i] = breakpoints[--break_n];
   }
 
-  
   int step() {
     if (!mmu->bios_active && !is_stepping) {
       for(int i=0; i<break_n; i++) {

@@ -270,7 +270,7 @@ struct InstructionRunner {
   void BIT(u8 o, Value8 v) {
     if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
-    u8 val = _read8(v) >> o;
+    u8 val = _read8(v) & (1 << o);
     fl.Z = val == 0;
     fl.N = 0;
     fl.H = 1;
@@ -279,15 +279,16 @@ struct InstructionRunner {
   void RES(u8 o, Value8 v) {
     if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
-    u8 val = _read8(v) & ~(1 << 0);
+    u8 val = _read8(v) & ~(1 << o);
     _write8(v, val);
   }
   void SET(u8 o, Value8 v) {
     if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
-    u8 val = _read8(v) | (1 << 0);
+    u8 val = _read8(v) | (1 << o);
     _write8(v, val);
   }
+  
   void ADD(Value16 o, Value16 v) {
     // TODO: addSP has different flags and timing!
     m_log(*PC_start_ptr, __FUNCTION__, o, v); 
@@ -531,7 +532,7 @@ struct InstructionRunner {
   }
   void RETI(Conditions o) {
     m_log(*PC_start_ptr, __FUNCTION__, o);
-    log(*PC_start_ptr, "reti");
+    // log(*PC_start_ptr, "reti");
     cpu.IME = 1;
     *PC_ptr = _pop();
   }
