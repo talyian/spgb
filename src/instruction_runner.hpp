@@ -323,11 +323,12 @@ struct InstructionRunner {
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u8 a = _read8(o);
     u8 b = _read8(v);
-    u16 d = a + b + fl.C;
+    u8 c = fl.C;
+    u16 d = a + b + c;
     _write8(o, d);
     fl.Z = (u8)d == 0;
     fl.C = d > 0xFF;
-    fl.H = (a & 0xF) + (b & 0xF) + fl.C > 0xF;
+    fl.H = (a & 0xF) + (b & 0xF) + c > 0xF;
     fl.N = 0;
   }
 
@@ -402,13 +403,13 @@ struct InstructionRunner {
     m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 a = _read8(Register8::A);
     u8 b = _read8(o);
-    u8 c = a - b - fl.C;
-    _write8(Register8::A, c);
-    fl.Z = a == b + fl.C;
+    u8 c = fl.C;
+    u8 d = a - b - c;
+    _write8(Register8::A, d);
+    fl.Z = a == (u8)(b + c);
     fl.N = 1;
-    fl.C = a < b + fl.C;
-    fl.H = (a & 0xF) < ((b + fl.C) & 0xF);
-    
+    fl.C = (u16)a < (u16)b + c;
+    fl.H = (a & 0xF) < (b & 0xF) + c;
   }
 
   // unsigned right-shift
@@ -511,7 +512,7 @@ struct InstructionRunner {
     u8 b = _read8(o);
     fl.Z = a == b;
     fl.C = a < b;
-    fl.N = 0;
+    fl.N = 1;
     fl.H = (a & 0xF) < (b & 0xF);
   }
   void PUSH(Register16 o) {
