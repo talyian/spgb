@@ -8,7 +8,19 @@
 ** DONE Handle DMA (FF46)
 ** TODO Draw Timing for BGB TEST
 ** TODO Cart Memory Banking
-* [0/3] Blargg Tests
-** TODO Blargg CPU Test 04
-** TODO Blargg CPU Test 05
-** TODO Blargg CPU Test 06
+* [6/11] Blargg Tests
+** DONE Blargg CPU Test 01
+** TODO Blargg CPU Test 02
+** TODO Blargg CPU Test 03 - fails
+** DONE Blargg CPU Test 04
+   - State "DONE"       from "TODO"       [2019-10-06 Sun 10:00]
+** DONE Blargg CPU Test 05
+   - State "DONE"       from "TODO"       [2019-10-06 Sun 10:00]
+** DONE Blargg CPU Test 06
+   - State "DONE"       from "TODO"       [2019-10-06 Sun 09:59]
+** TODO Blargg CPU Test 07 -- many fails
+** DOING Blargg CPU Test 08
+currently the rom repeats the header instead of showing passed
+** TODO Blargg CPU Test 09 -- some fails
+** DONE Blargg CPU Test 10
+** DONE Blargg CPU Test 11

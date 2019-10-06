@@ -205,7 +205,7 @@ struct InstructionRunner {
   void STOP() {
     m_log(*PC_start_ptr, __FUNCTION__);
     cpu.stopped = 1;
-    error = 8;
+    cpu.halted = 1;
   }
   void DAA() {
     m_log(*PC_start_ptr, __FUNCTION__);
