@@ -3,7 +3,6 @@
 #include "wasm_host.hpp"
 #include "memory_mapper.hpp"
 #include "cpu.hpp"
-
   
 struct InstructionRunner {
   InstructionRunner(CPU &cpu) :
@@ -180,7 +179,7 @@ struct InstructionRunner {
 
   void _write16(Value16 target, u16 value) {
     switch(target.type) {
-    case Value16::IMM16: log("err-write-to-imm16"); return;
+    case Value16::IMM16: return _write16_addr(target.value, value);
     case Value16::REG16: return _write16(target.reg, value);
     case Value16::SP_d8:
       return _write16_addr((u16)((u16)registers.SP + (i8)target.offset), value);
@@ -188,8 +187,14 @@ struct InstructionRunner {
   }
 
   void _handle_io_write(u16 addr, u16 value) {
+    char buf[2] = {0, 0};
     switch(addr) {
     case 0xFF50: mmu->bios_active = false; break;
+    // case 0xFF00: log(*PC_start_ptr, "   (JOYP) IO:", addr, "<-", value); break;
+    case 0xFF01:
+      buf[0] = value;
+      log(*PC_start_ptr, " (SERIAL) IO:", addr, "<-", buf); break;
+    // case 0xFF02: log(*PC_start_ptr, " (SERCTL) IO:", addr, "<-", value); break;
     // case 0xFF46: log(*PC_start_ptr, "    (DMA) IO:", addr, "<-", value); break;
     // case 0xFFFF: log(*PC_start_ptr, "     (IE) IO:", addr, "<-", value); break;
     // case 0xFF0F: log(*PC_start_ptr, "     (IF) IO:", addr, "<-", value); break;
@@ -528,6 +533,8 @@ struct InstructionRunner {
     case Conditions::NZ: return !fl.Z;
     }
     error = 100;
+    log("error condition", o);
+    return false;
   }
   
   void RET(Conditions o) {

@@ -49,12 +49,8 @@ class FileList {
         let rom = new Uint8Array(memory.buffer);
         console.log("js-loading", index, file_name, rom_ptr);
         for(let i = 0; i < file_data.byteLength; i++) {
-          if (i < 0x10) console.log(i, rom_ptr + i, file_data[i]);
           rom[rom_ptr + i] = file_data[i];
-          rom[0] = 0xca;
         }
-        console.log("js-loading", "file_data", file_data.slice(0, 256));
-        console.log("js-loading", "memory.buffer", memory.buffer.slice(rom_ptr, rom_ptr + 256));
         instance.exports.reset(emulator, rom_ptr, file_data.byteLength);
         return false;
       });

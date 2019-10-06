@@ -9,7 +9,10 @@ u16 InstructionDecoderBase::Imm16() {
   return v;
 }
 
-Value16 InstructionDecoderBase::Load16(Value16 addr) { error = 100; return {0}; }
+Value16 InstructionDecoderBase::Load16(Value16 addr) {
+  log(pc_start, "error: load16", addr);
+  error = 0x16; return {0};
+}
 Value8 InstructionDecoderBase::Inc8(Register16 addr) { return Value8::_Inc(addr); }
 Value8 InstructionDecoderBase::Dec8(Register16 addr) { return Value8::_Dec(addr); }
 Value8 InstructionDecoderBase::Load8(u16 addr) { return Value8::_Load(addr); }

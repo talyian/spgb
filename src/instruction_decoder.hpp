@@ -7,7 +7,7 @@
 
 struct InstructionDecoderBase {
   u16 pc, pc_start;
-  bool error = 0;
+  u16 error = 0;
   MemoryMapper *mmu=0;  
 
   u8 Imm8();

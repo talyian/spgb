@@ -26,11 +26,14 @@ extern "C" void * get_emulator();
 extern "C" void   step_frame(void * emulator);
 
 int main() {
-  emulator_t emu { __blargg_03_gb, __blargg_03_gb_len };
+  // emulator_t emu { __blargg_03_gb, __blargg_03_gb_len };
+  // emulator_t emu { __blargg_03_gb, __blargg_03_gb_len };
+  // emulator_t emu { __blargg_03_gb, __blargg_03_gb_len };
+  emulator_t emu { __blargg_05_gb, __blargg_05_gb_len };
   
   // emu.set_breakpoint(0x40); // vblank interrupt
   // emu.set_breakpoint(0xFF80); // high memory DMA loading thunk
-  emu.debug.is_debugging = true;
+  // emu.debug.is_debugging = true;
   while(true) {
     emu.step(42000);
     if (emu.debug.is_debugging) {

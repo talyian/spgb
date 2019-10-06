@@ -71,7 +71,7 @@ struct PPU {
     _push_frame(0x100, memory->vram, 0x800);
     _push_frame(0x101, memory->vram + 0x800, 0x800);
     _push_frame(0x102, memory->vram + 0x1000, 0x800);
-    memory->get_ref(0xFF0F) |= 0x01; 
+    memory->set(0xFF0F, memory->get(0xFF0F) | 0x01);
   }
   void scan_line() {
     // read background line by LY + SCY

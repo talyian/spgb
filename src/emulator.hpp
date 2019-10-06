@@ -6,14 +6,14 @@
 #include "ppu.hpp"
 #include "debugger.hpp"
 #include "joypad.hpp"
+#include "cart.hpp"
 
 using RunnerDecoder = InstructionDecoderT<InstructionRunner>;
 using PrinterDecoder = InstructionDecoderT<InstructionPrinter>;
 
 struct emulator_t {
   // Hardware resources
-  u8 *cart_data = 0;
-  u32 cart_len = 0;
+  Cart cart {0, 0};
   u8 rom[0x8000];
   u8 ram[0x8000];
   CPU cpu;

@@ -7,7 +7,7 @@ opcode,bytes,duration,flags,code,nmemonic,Op1,Op2
 5,1,4,Z1H-,DEC(B),DEC,B
 6,2,8,----,"LD8(B,Imm8)",LD8,B,Imm8
 7,1,4,000C,RLCA(),RLCA
-8,3,20,----,"LD16(Load16(Imm16),SP)",LD16,Load16 Imm16,SP
+8,3,20,----,"LD16(Imm16,SP)",LD16,Imm16,SP
 9,1,8,-0HC,"ADD(HL,BC)",ADD,HL,BC
 A,1,8,----,"LD8(A,Load8(BC))",LD8,A,Load8 BC
 B,1,8,----,DEC(BC)
@@ -231,7 +231,7 @@ E5,1,16,----,PUSH(HL)
 E6,2,8,Z010,AND(Imm8)
 E7,1,16,----,RST(0x20)
 E8,2,16,00HC,"LD16(SP,AddSP(ImmI8))","LDSP, SP+Imm8/ADDSP Imm8"
-E9,1,4,----,"JP(CT,Load16(HL))"
+E9,1,4,----,"JP(CT,HL)"
 EA,3,16,----,"LD8(Load8(Imm16),A)"
 EB,,,,ERR()
 EC,,,,ERR()

@@ -1,9 +1,5 @@
 #include "emulator.hpp"
 #include "data/dmg_boot.hpp"
-#include "data/bgbtest.hpp"
-// #include "data/04-op r,imm.gb.hpp"
-// #include "data/05-op rp.gb.hpp"
-// #include "data/06-ld r,r.gb.hpp"
 
 emulator_t::emulator_t(u8 * cart_data, u32 cart_len): mmu(rom, ram) {
   mmu.bios_rom = DMG_ROM_bin;
@@ -14,11 +10,10 @@ emulator_t::emulator_t(u8 * cart_data, u32 cart_len): mmu(rom, ram) {
   load_cart(cart_data, cart_len);
 }
 
-emulator_t::emulator_t() : emulator_t(___data_bgbtest_gb, ___data_bgbtest_gb_len) { }
+emulator_t::emulator_t() : emulator_t(0, 0) { }
 
 void emulator_t::load_cart(u8 * cart_data, u32 cart_len) {
-  this->cart_data = cart_data;
-  this->cart_len = cart_len;
+  this->cart = Cart {cart_data, cart_len};
   this->cpu.clear();
   this->mmu.bios_active = true;
   this->mmu.clear();
@@ -41,14 +36,12 @@ u32 emulator_t::single_step() {
     } else {
       log("interrupt", interrupt);
     }
-    // TODO: does this actually take zero time?    
+    // TODO: does this actually take zero time?
     return 0;
   }
-  if (decoder.error) { log(decoder.pc_start, "decoder error"); _stop(); }
-  if (decoder.ii.error) { log(decoder.pc_start, "runner error"); _stop(); }
 
   joypad.tick();
-  
+
   if (mmu.get(IO::DMA)) {
     // technically this won't work if we transfer from 0
     // but that seems highly unlikely
@@ -58,6 +51,13 @@ u32 emulator_t::single_step() {
 
   if (!cpu.halted) {
     decoder.decode();
+
+    if (decoder.error) {
+      log(decoder.pc_start, "decoder error", decoder.error); _stop(); return 0;
+    }
+    if (decoder.ii.error) {
+      log(decoder.pc_start, "runner error", decoder.ii.error); _stop(); return 0;
+    }
   }
 
   u32 dt = 16;              // TODO: do timing based on actual instruction decodetime
@@ -68,6 +68,8 @@ u32 emulator_t::single_step() {
 void emulator_t::step(i32 ticks) {
   // _runner.verbose_log = true;
   while(ticks > 0) {
+    if (decoder.error || decoder.ii.error) break;
+
     debug.step();
 
     // is_debugging means we don't run any code
@@ -81,12 +83,10 @@ void emulator_t::step(i32 ticks) {
       break;
     }
     ticks -= single_step();
-
     // stepping means we run one instruction and go back into debug
     if (debug.is_stepping) {
       debug.is_stepping = false;
       debug.is_debugging = true;
-    } 
+    }
   }
 }
-

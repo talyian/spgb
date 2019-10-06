@@ -167,7 +167,7 @@ fetch("build/gb_emulator.wasm")
       else if (e.keyCode in key_map)
         instance.exports.button_down(emulator, key_map[e.keyCode]);
       else
-        console.log("keydown", e.key, e.keyCode);
+        ; // console.log("keydown", e.key, e.keyCode);
     });
     document.addEventListener("keyup", e => {
       if (e.keyCode in key_map)
