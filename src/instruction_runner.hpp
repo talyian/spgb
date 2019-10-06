@@ -205,10 +205,21 @@ struct InstructionRunner {
   void STOP() {
     m_log(*PC_start_ptr, __FUNCTION__);
     cpu.stopped = 1;
-    error = 5;
+    error = 8;
   }
-  void DAA() { m_log(*PC_start_ptr, __FUNCTION__);     error = 5;
-}
+  void DAA() {
+    m_log(*PC_start_ptr, __FUNCTION__);
+    if (fl.N) {
+      if (fl.C) { registers.A -= 0x60; }
+      if (fl.H) { registers.A -= 0x06; }
+    }
+    else {
+      if (fl.C || registers.A > 0x99) { registers.A += 0x60; fl.C = 1; }
+      if (fl.H || (registers.A & 0xF) > 0x9) { registers.A += 0x06; }
+    }
+    fl.Z = registers.A == 0;
+    fl.H = 0;
+  }
 
   // Complement A
   void CPL() {
@@ -384,8 +395,8 @@ struct InstructionRunner {
 
   void INC(Register16 o) {
     m_log(*PC_start_ptr, __FUNCTION__, o);
-    _write16(o, _read16(o) + 1);
-    // no flags
+    u16 v = _read16(o) + 1;
+    _write16(o, v);
   } // INC HL
 
   void SUB(Value8 o) {
@@ -472,10 +483,10 @@ struct InstructionRunner {
   void RL(Value8 o) {
     m_log(*PC_start_ptr, __FUNCTION__, o);
     u16 v = (_read8(o) << 1) | fl.C;
-    fl.C = (v >> 8) & 1;
+    fl.C = v & 0x100;
     fl.N = 0;
     fl.H = 0;
-    fl.Z = v == 0;
+    fl.Z = (u8)v == 0;
     _write8(o, v);
   }
   

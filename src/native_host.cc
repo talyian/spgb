@@ -3,9 +3,6 @@
 #include "emulator.hpp"
 
 #include "data/blargg-03.hpp"
-#include "data/blargg-04.hpp"
-#include "data/blargg-05.hpp"
-#include "data/blargg-06.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,12 +22,20 @@ extern "C" {
 extern "C" void * get_emulator();
 extern "C" void   step_frame(void * emulator);
 
-int main() {
-  // emulator_t emu { __blargg_03_gb, __blargg_03_gb_len };
-  // emulator_t emu { __blargg_03_gb, __blargg_03_gb_len };
-  // emulator_t emu { __blargg_03_gb, __blargg_03_gb_len };
-  emulator_t emu { __blargg_05_gb, __blargg_05_gb_len };
-  
+int main(int argc, char ** argv) {
+  emulator_t emu { __blargg_03_gb, __blargg_03_gb_len };
+
+  if (argc > 1) {
+    FILE * f = fopen(argv[1], "r");
+    fseek(f,0,SEEK_END);
+    size_t len = ftell(f);
+    fseek(f,0,0);
+    u8 * buf = new u8[len];
+    fread(buf, 1, len, f);
+    fclose(f);
+    emu.load_cart(buf, len);
+  }
+
   // emu.set_breakpoint(0x40); // vblank interrupt
   // emu.set_breakpoint(0xFF80); // high memory DMA loading thunk
   // emu.debug.is_debugging = true;
