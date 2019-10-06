@@ -242,7 +242,7 @@ struct InstructionRunner {
     m_log(*PC_start_ptr, __FUNCTION__);
     fl.N = 0;
     fl.H = 0;
-    fl.C = ~fl.C;
+    fl.C = 1 - fl.C;
   }
 
   // Disable Interrupts
@@ -264,18 +264,22 @@ struct InstructionRunner {
 
   void RLCA() {
     m_log(*PC_start_ptr, __FUNCTION__);
-    return RLC(Register8::A);
+    RLC(Register8::A);
+    fl.Z = 0;
   }
   void RRCA() {
     m_log(*PC_start_ptr, __FUNCTION__);
-    return RRC(Register8::A);
+    RRC(Register8::A);
+    fl.Z = 0;
   }
   void RLA() {
-    return RL(Register8::A);
+    RL(Register8::A);
+    fl.Z = 0;
   }
   void RRA() {
     m_log(*PC_start_ptr, __FUNCTION__);
-    return RR(Register8::A);
+    RR(Register8::A);
+    fl.Z = 0;
   }
   
   void LD8(Value8 o, Value8 v) {
