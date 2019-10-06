@@ -11,7 +11,7 @@ struct InstructionDecoderBase {
   MemoryMapper *mmu=0;  
 
   u8 Imm8();
-  u8 ImmI8();
+  i8 ImmI8();
   u16 Imm16();
   Value16 Load16(Value16 addr);
   Value8 Inc8(Register16 addr);
@@ -20,7 +20,7 @@ struct InstructionDecoderBase {
   Value8 Load8(Register16 addr);
   Value8 IO(Register8 port);
   Value8 IO(u8 port);
-  Value16 AddSP(u8 offset);
+  Value16 AddSP(i8 offset);
 
   Register16 SP() { return Register16::SP; }
   Register16 BC() { return Register16::BC; }
@@ -53,17 +53,18 @@ struct InstructionDecoderT : InstructionDecoderBase {
     if (op == 0xCB) op = 0x100 | mmu->get(pc++);
     ii.PC_ptr = &pc;
     ii.PC_start_ptr = &pc_start;
-    switch(op) {
-  #define ENTRY0(op, size, cycles, cycles2, flags, mnemonic, op1, op2) \
-      case op: ii.mnemonic(); break;
-  #define ENTRY1(op, size, cycles, cycles2, flags, mnemonic, op1, op2) \
-      case op: ii.mnemonic(op1); break;
-  #define ENTRY2(op, size, cycles, cycles2, flags, mnemonic, op1, op2) \
-      case op: ii.mnemonic(op1, op2); break;
-  #include "opcodes.inc"
 
+    u8 op_size = 0;
+    u8 op_cycles = 0;
+    switch(op) {
+  #define ENTRY0(OP, size, cycles, cycles2, flags, MNEMONIC, op1, op2) \
+      case OP: op_size = size; ii.MNEMONIC(); break;
+  #define ENTRY1(OP, size, cycles, cycles2, flags, MNEMONIC, op1, op2) \
+      case OP: op_size = size; ii.MNEMONIC(op1); break;
+  #define ENTRY2(OP, size, cycles, cycles2, flags, MNEMONIC, op1, op2) \
+      case OP: op_size = size; ii.MNEMONIC(op1, op2); break;
+  #include "opcodes.inc"
     default: log("unknown op", op);
     }
   }
-
 };

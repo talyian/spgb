@@ -20,15 +20,14 @@ struct MemoryMapper {
   // u8 ram[0x8000];
   u8 * ram = 0;
   u8 *vram = ram;
-  u8 *tile_data;
-  u8 *bg0, *bg1;
-  
-  u8 *cart_ram = ram + 0x2000;
-  u8 *work_ram = ram + 0x4000;
-  u8 *echo_ram = ram + 0x4000;
 
-  u8 *oam = ram + 0x7E00;
-  u8 *io_port = ram + 0x7F00;
+  u8 *bg0, *bg1;
+  u8 *cart_ram;
+  u8 *work_ram;
+  u8 *echo_ram;
+
+  u8 *oam;
+  u8 *io_port;
   u8 error;
 
   u8 select_background_tile(u8 x, u8 y);
@@ -45,5 +44,9 @@ struct MemoryMapper {
   u8 get(u16 index) { return get_ref(index); }
   void set(u16 index, u8 val) {
     get_ref(index) = val;
+  }
+
+  void clear() {
+    memset(ram + 0x7F00, 0, 0x80);
   }
 };

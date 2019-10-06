@@ -12,6 +12,8 @@ using PrinterDecoder = InstructionDecoderT<InstructionPrinter>;
 
 struct emulator_t {
   // Hardware resources
+  u8 *cart_data = 0;
+  u32 cart_len = 0;
   u8 rom[0x8000];
   u8 ram[0x8000];
   CPU cpu;
@@ -25,9 +27,11 @@ struct emulator_t {
   PrinterDecoder printer {_printer};
   Debugger debug {&mmu, &decoder, &cpu};
   Joypad joypad {mmu};
-  
-  emulator_t();
 
+  emulator_t(u8 *, u32);
+  emulator_t();
+  void load_cart(u8 * data, u32 len);
+  
   u32 single_step();
   void step(i32 ticks);
 

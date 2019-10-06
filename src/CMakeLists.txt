@@ -44,13 +44,10 @@ else()
   )
 
   add_link_options(
-      -fsanitize=undefined
-      )
+    -fsanitize=undefined
+  )
 
   add_executable(gb_emulator_console main.cc native_host.cc)
-  # add_dependencies(
-  #   gb_emulator_console
-  #   )
   add_custom_target(run
     COMMAND ./gb_emulator_console
     DEPENDS gb_emulator_console)

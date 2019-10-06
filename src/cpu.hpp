@@ -69,4 +69,9 @@ struct CPU {
   u8 halted = 0;
   // STOP - stop the machine.
   u8 stopped = 0;
+
+  void clear() {
+    memset(&registers, 0, sizeof(registers));
+    IME = halted = stopped = 0;
+  }
 };

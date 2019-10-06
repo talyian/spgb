@@ -5,18 +5,25 @@
 // #include "data/05-op rp.gb.hpp"
 // #include "data/06-ld r,r.gb.hpp"
 
-emulator_t::emulator_t() : mmu(rom, ram) {
+emulator_t::emulator_t(u8 * cart_data, u32 cart_len): mmu(rom, ram) {
   mmu.bios_rom = DMG_ROM_bin;
-  u8 * _gb = ___data_bgbtest_gb;
-  int _gb_len = ___data_bgbtest_gb_len;
-  // u8 * _gb = ______data_cpu_instrs_individual_06_ld_r_r_gb;
-  // int _gb_len = ______data_cpu_instrs_individual_06_ld_r_r_gb_len;
-  mmu.load_cart(_gb, _gb_len);
-  
   decoder.mmu = &mmu;
   decoder.ii.mmu = &mmu;
   ppu.memory = &mmu;
   printer.mmu = &mmu;
+  load_cart(cart_data, cart_len);
+}
+
+emulator_t::emulator_t() : emulator_t(___data_bgbtest_gb, ___data_bgbtest_gb_len) { }
+
+void emulator_t::load_cart(u8 * cart_data, u32 cart_len) {
+  this->cart_data = cart_data;
+  this->cart_len = cart_len;
+  this->cpu.clear();
+  this->mmu.bios_active = true;
+  this->mmu.clear();
+  this->decoder.pc = this->decoder.pc_start = 0;
+  mmu.load_cart(cart_data, cart_len);
 }
 
 u32 emulator_t::single_step() {

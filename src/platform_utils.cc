@@ -29,12 +29,19 @@ extern "C" void *memcpy(void *dest, const void *src, size_t n) {
   return dest;
 }
 
-u8 memory_zero[1024 * 1024];
-u8 *memory_top = memory_zero;
+extern "C" u8 * memory;
+const size_t PAGE_SIZE = 64 * 1024;
+u8 *wasm_allocate(size_t size) {
+  log("wasm-allocate", (int)size);
+  size_t page_start = __builtin_wasm_memory_grow(0, (size - 1) / PAGE_SIZE + 1);
+  return memory + PAGE_SIZE * page_start;
+}
+
+void * operator new[](size_t size) {
+  return wasm_allocate(size);
+}
 void * operator new(size_t size) {
-  void *top = memory_top;
-  memory_top += size;
-  return top;
+  return wasm_allocate(size);
 }
 
 #endif

@@ -57,11 +57,11 @@ struct Value16 {
     SP_d8
   } type;
   union {
-    u8 offset;
+    i8 offset;
     u16 value;
     Register16 reg;
   };
-  static Value16 SP_offset(u8 v) { Value16 k; k.type = SP_d8; k.offset = v; return k; }
+  static Value16 SP_offset(i8 v) { Value16 k; k.type = SP_d8; k.offset = v; return k; }
   Value16() = default;
   Value16(u16 v) : type(IMM16), value(v) { }
   Value16(Register16 v) : type(REG16), reg(v) { }

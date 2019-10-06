@@ -17,6 +17,7 @@ struct InstructionRunner {
   
   u16 *PC_ptr;
   u16 *PC_start_ptr;
+  u16 cycles = 0;
   
   int error = 0;
   int verbose_log = 0;
@@ -161,6 +162,7 @@ struct InstructionRunner {
     case Value16::SP_d8: return _read16_addr((u16)registers.SP + (i8)v.offset);
     }
   }
+  
   void _write16(Register16 r, u16 value) {
     switch(r) {
     case Register16::BC: registers.BC = value; break;
@@ -170,10 +172,12 @@ struct InstructionRunner {
     case Register16::AF: registers.AF = value & 0xFFF0; break;
     }
   }
+
   void _write16_addr(u16 addr, u16 value) {
     mmu->set(addr++, value >> 8);
     mmu->set(addr, value);
   }
+
   void _write16(Value16 target, u16 value) {
     switch(target.type) {
     case Value16::IMM16: log("err-write-to-imm16"); return;

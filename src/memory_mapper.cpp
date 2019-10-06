@@ -15,7 +15,6 @@ MemoryMapper::MemoryMapper(u8 * rom, u8 * ram) : rom(rom), ram(ram) {
     set(0xFF42, 0);
     set(0xFF43, 0);
     set(0xFF44, 0);
-    set(0xFF44, 0);
   }
 u8 MemoryMapper::select_background_tile(u8 x, u8 y) {
     return ram[0x1800 + y * 32 + x];

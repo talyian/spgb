@@ -1,6 +1,12 @@
 #include "base.hpp"
 #include "wasm_host.hpp"
 #include "emulator.hpp"
+
+#include "data/blargg-03.hpp"
+#include "data/blargg-04.hpp"
+#include "data/blargg-05.hpp"
+#include "data/blargg-06.hpp"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +26,8 @@ extern "C" void * get_emulator();
 extern "C" void   step_frame(void * emulator);
 
 int main() {
-  emulator_t emu;
+  emulator_t emu { __blargg_03_gb, __blargg_03_gb_len };
+  
   // emu.set_breakpoint(0x40); // vblank interrupt
   // emu.set_breakpoint(0xFF80); // high memory DMA loading thunk
   emu.debug.is_debugging = true;

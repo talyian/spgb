@@ -34,4 +34,14 @@ extern "C" {
     #define FPS 60
     e->step(CLOCK_HZ / FPS);
   }
+
+  u8* WASM_EXPORT get_rom_area(emulator_t * e, u32 len) {
+    return new u8[len];
+  }
+  
+  void WASM_EXPORT reset(emulator_t * e, u8 * cart, u32 len) {
+    e->load_cart(cart, len);
+    e->decoder.pc = 0;
+    e->decoder.pc_start = 0;
+  }
 }
