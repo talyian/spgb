@@ -38,28 +38,24 @@ namespace logs {
 void _log(reg16 v);
 }
 
-union Registers {
-  struct { reg8 B, C, D, E, A, F, H, L; };
-  struct { reg16 BC, DE, AF, HL, SP; };
-};
-
-struct Flags { 
-  bit<7> Z;
-  bit<6> N;
-  bit<5> H;
-  bit<4> C;
-};
-
 struct CPU {
   CPU() {
     memset(&registers, 0, sizeof(registers));
   }
-  Registers registers;
+  union Registers {
+    struct { reg8 B, C, D, E, A, F, H, L; };
+    struct { reg16 BC, DE, AF, HL, SP; };
+  } registers;
 
   // the `flag<offset> struct` allows us to access
   // a single bit inside of the F register like a boolean.
   // "fl.Z = 1; fl.C = 1;" is equivalent to "registers.F & 0b10010000";
-  Flags flags { {registers.F}, {registers.F}, {registers.F}, {registers.F} };
+  struct Flags { 
+    bit<7> Z;
+    bit<6> N;
+    bit<5> H;
+    bit<4> C;
+  } flags { {registers.F}, {registers.F}, {registers.F}, {registers.F} };
 
   // Interrupt Master Enable
   bool IME = 0;

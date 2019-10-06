@@ -10,17 +10,16 @@
 ** TODO Cart Memory Banking
 * [7/11] Blargg Tests
 ** DONE Blargg CPU Test 01
-** TODO Blargg CPU Test 02
-** TODO Blargg CPU Test 03 - fails
+** TODO Blargg CPU Test 02 - interrupts
+** TODO Blargg CPU Test 03 - op sp,hl; all tests fail
 ** DONE Blargg CPU Test 04
    - State "DONE"       from "TODO"       [2019-10-06 Sun 10:00]
 ** DONE Blargg CPU Test 05
    - State "DONE"       from "TODO"       [2019-10-06 Sun 10:00]
 ** DONE Blargg CPU Test 06
    - State "DONE"       from "TODO"       [2019-10-06 Sun 09:59]
-** TODO Blargg CPU Test 07 -- many fails
-** DOING Blargg CPU Test 08
-currently the rom repeats the header instead of showing passed
+** TODO Blargg CPU Test 07 -- jr/jp/call/ret/rst  all fail
+** DOING Blargg CPU Test 08 -- misc; currently the rom repeats the header 
 ** DONE Blargg CPU Test 09 -- some fails
    - State "DONE"       from "TODO"       [2019-10-06 Sun 10:27]
 ** DONE Blargg CPU Test 10
