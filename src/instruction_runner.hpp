@@ -300,13 +300,12 @@ struct InstructionRunner {
   
   void ADD(Value16 o, Value16 v) {
     // TODO: addSP has different flags and timing!
-    m_log(*PC_start_ptr, __FUNCTION__, o, v); 
     u16 a = _read16(o);
     u16 b = _read16(v);
     _write16(o, a + b);
     fl.N = 0;
-    fl.C = a > ~b;
-    fl.H = (a & 0xFFF) > ~(b & 0xFFF);
+    fl.C = a > (u16)~b;
+    fl.H = (a & 0xFFF) + (b & 0xFFF) > 0xFFF;
   }
 
   void ADD(Value8 o, Value8 v) {

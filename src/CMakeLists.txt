@@ -48,7 +48,7 @@ else()
   )
 
   add_executable(gb_emulator_console main.cc native_host.cc)
-  add_dependencies(gb_emulator_console opcodes.inc)
+  # add_dependencies(gb_emulator_console opcodes.inc)
   add_custom_target(run
     COMMAND ./gb_emulator_console
     DEPENDS gb_emulator_console)
