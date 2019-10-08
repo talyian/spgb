@@ -153,8 +153,16 @@ struct InstructionRunner {
     switch(v.type) {
     case Value16::IMM16: return v.value;
     case Value16::REG16: return _read16(v.reg);
-    case Value16::SP_d8: return _read16_addr((u16)cpu.registers.SP + (i8)v.offset);
-    }
+    case Value16::SP_d8: {
+      u16 sp = cpu.registers.SP;
+      u16 offset = (i8)v.offset;
+      u16 sp_2 = sp + offset;
+      cpu.flags.Z = 0;
+      cpu.flags.N = 0;
+      cpu.flags.H = (sp & 0xF) + (offset & 0xF) > 0xF;
+      cpu.flags.C = ((sp & 0xFF) + (v.offset & 0xFF)) > 0xFF;
+      return sp + (i8)v.offset;
+    }}
   }
   
   void _write16(Register16 r, u16 value) {

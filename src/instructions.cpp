@@ -37,6 +37,7 @@ void _log(Value16 o) {
   switch(o.type) {
   case Value16::REG16: _log(o.reg); break;
   case Value16::IMM16: _logx16(o.value); break;
+  case Value16::SP_d8: _log("SP+"); _log((i8)o.offset); break;
   default: _log("value16"); break;
   }
 }
