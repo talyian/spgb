@@ -34,20 +34,11 @@ struct InstructionRunner {
   void _push(reg16 value) {
     mmu->set(--cpu.registers.SP, value.h);
     mmu->set(--cpu.registers.SP, value.l);
-    // u16 sp = (u16) registers.SP;
-    // mmu->set(--sp, value.h);
-    // mmu->set(--sp, value.l);
-    // registers.SP = sp - 2;
   }
   u16 _pop() {
     u16 l = mmu->get(cpu.registers.SP++);
     u16 h = mmu->get(cpu.registers.SP++);
     return h * 0x100 + l;
-    // u16 sp = registers.SP;
-    // u16 l = mmu->get(sp++);
-    // u16 h = mmu->get(sp++);
-    // registers.SP = sp;
-    // return (h << 8) + l;
   }
   
   u8 _read8_addr(u16 addr) {
@@ -147,7 +138,7 @@ struct InstructionRunner {
   
   u16 _read16_addr(u16 addr) {
     u16 value = mmu->get(addr++);
-    return value * 0x100 + mmu->get(addr);
+    return value + mmu->get(addr) * 0x100;
   }
   u16 _read16(Register16 r) {
     switch(r) {
@@ -177,8 +168,8 @@ struct InstructionRunner {
   }
 
   void _write16_addr(u16 addr, u16 value) {
-    mmu->set(addr++, value >> 8);
-    mmu->set(addr, value);
+    mmu->set(addr++, value);
+    mmu->set(addr, value >> 8);
   }
 
   void _write16(Value16 target, u16 value) {
