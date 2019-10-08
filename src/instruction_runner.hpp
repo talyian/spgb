@@ -191,14 +191,16 @@ struct InstructionRunner {
   }
 
   void _handle_io_write(u16 addr, u16 value) {
-    char buf[2] = {0, 0};
     switch(addr) {
     // case 0xFF00: log(*PC_start_ptr, "   (JOYP) IO:", addr, "<-", value); break;
-    case 0xFF01:
-      buf[0] = value;
-      log(*PC_start_ptr, " (SERIAL) IO:", buf);
+    // serial control
+    case 0xFF01: break;
+    case 0xFF02:
+      if (value & 0x80) {
+        cpu.serial.out_buf[cpu.serial.pos++] = mmu->get(0xFF01);
+        mmu->set(0xFF02, value & ~0x80);
+      }
       break;
-    // case 0xFF02: log(*PC_start_ptr, " (SERCTL) IO:", addr, "<-", value); break;
     // case 0xFF0F: log(*PC_start_ptr, "     (IF) IO:", addr, "<-", value); break;
     // case 0xFF46: log(*PC_start_ptr, "    (DMA) IO:", addr, "<-", value); break;
     // case 0xFFFF: log(*PC_start_ptr, "     (IE) IO:", addr, "<-", value); break;

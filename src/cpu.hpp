@@ -66,6 +66,12 @@ struct CPU {
   // STOP - stop the machine.
   u8 stopped = 0;
 
+  struct SerialLink {
+    u8 out_buf[256];
+    u8 in_buf[256];
+    u8 pos = 0;
+  } serial;
+  
   void clear() {
     memset(&registers, 0, sizeof(registers));
     IME = halted = stopped = 0;

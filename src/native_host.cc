@@ -2,8 +2,6 @@
 #include "wasm_host.hpp"
 #include "emulator.hpp"
 
-#include "data/blargg-03.hpp"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,10 +21,11 @@ extern "C" void * get_emulator();
 extern "C" void   step_frame(void * emulator);
 
 int main(int argc, char ** argv) {
-  emulator_t emu { __blargg_03_gb, __blargg_03_gb_len };
+  emulator_t emu {};
 
   if (argc > 1) {
     FILE * f = fopen(argv[1], "r");
+    if (!f) { fprintf(stderr, "%s: file not found\n", argv[1]); exit(19); }
     fseek(f,0,SEEK_END);
     size_t len = ftell(f);
     fseek(f,0,0);
@@ -34,13 +33,34 @@ int main(int argc, char ** argv) {
     fread(buf, 1, len, f);
     fclose(f);
     emu.load_cart(buf, len);
+  } else {
+    printf("no file specified\n");
+    return 18;
   }
-
   // emu.set_breakpoint(0x40); // vblank interrupt
   // emu.set_breakpoint(0xFF80); // high memory DMA loading thunk
   // emu.debug.is_debugging = true;
+  u8 last_serial_cursor = 0, first_serial = 1;
   while(true) {
     emu.step(42000);
+    auto &serial = emu.cpu.serial;
+    // if (serial.pos >= last_serial_cursor && serial.out_buf[serial.pos] == '\n') {
+    if (last_serial_cursor < serial.pos) {
+      if (first_serial) { printf("Serial: ");      first_serial = 0; }
+      // blargg tests
+      for(; last_serial_cursor < serial.pos; last_serial_cursor++) {
+        putchar(serial.out_buf[last_serial_cursor]);
+        if (serial.out_buf[last_serial_cursor] == '\n') {
+          first_serial = 1;
+        }
+      }
+      serial.out_buf[255] = 0;
+      if (strstr((const char *)serial.out_buf, "Passed") ||
+          strstr((const char *)serial.out_buf, "Failed")) {
+        exit(20);
+      }
+    }
+    
     if (emu.debug.is_debugging) {
       printf("%04x >> ", emu.decoder.pc);
       char * line;
