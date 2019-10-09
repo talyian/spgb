@@ -31,7 +31,7 @@ struct InstructionRunner {
     //   log(x, xs...);
   }
   
-  void _push(reg16 value) {
+  void _push(Reg16 value) {
     mmu->set(--cpu.registers.SP, value.h);
     mmu->set(--cpu.registers.SP, value.l);
   }

@@ -21,6 +21,7 @@ struct emulator_t {
   IoPorts io;
   Timer timer {io};
   MemoryMapper mmu {rom, ram, io};
+  Joypad joypad {io};
   CPU cpu;
   PPU ppu{io, mmu};
   
@@ -30,7 +31,6 @@ struct emulator_t {
   RunnerDecoder decoder {_runner};
   PrinterDecoder printer {_printer};
   Debugger debug {&mmu, &decoder, &cpu};
-  Joypad joypad {mmu};
 
   emulator_t(u8 *, u32);
   emulator_t();

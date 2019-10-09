@@ -22,3 +22,5 @@ build
 build-native
 build-win
 .vs
+data
+winformui1

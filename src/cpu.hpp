@@ -2,22 +2,22 @@
 #include "wasm_host.hpp"
 
 // Registers
-typedef u8 reg8;
-struct reg16 {
+typedef u8 Reg8;
+struct Reg16 {
   u8 h, l;
-  reg16() = default;
-  reg16(u16 v) { h = v >> 8; l = v; }
+  Reg16() = default;
+  Reg16(u16 v) { h = v >> 8; l = v; }
   operator u16 () { return (u16)(h * 0x100 + l); }
-  reg16 operator-- () {
+  Reg16 operator-- () {
     u16 v = (u16) *this;
-    reg16 r = v - (u16)1;
+    Reg16 r = v - (u16)1;
     h = r.h;
     l = r.l;
     return *this;
   }
-  reg16 operator++ (int) {
+  Reg16 operator++ (int) {
     u16 u = (u16) *this;
-    reg16 r = u + (u16)1;
+    Reg16 r = u + (u16)1;
     h = r.h;
     l = r.l;
     return u;
@@ -26,8 +26,8 @@ struct reg16 {
 
 template<int offset>
 struct bit {
-  reg8 &r;
-  bit(reg8 & _register) : r(_register) { }
+  Reg8 &r;
+  bit(Reg8 & _register) : r(_register) { }
   void operator=(bool n) {
     r ^= (((r >> offset) & 1) ^ n) << offset;
   }
@@ -35,7 +35,7 @@ struct bit {
 };
 
 namespace logs {
-void _log(reg16 v);
+void _log(Reg16 v);
 }
 
 struct CPU {
@@ -43,8 +43,8 @@ struct CPU {
     memset(&registers, 0, sizeof(registers));
   }
   union Registers {
-    struct { reg8 B, C, D, E, A, F, H, L; };
-    struct { reg16 BC, DE, AF, HL, SP; };
+    struct { Reg8 B, C, D, E, A, F, H, L; };
+    struct { Reg16 BC, DE, AF, HL, SP; };
   } registers;
 
   // the `flag<offset> struct` allows us to access

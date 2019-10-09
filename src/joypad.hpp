@@ -1,5 +1,5 @@
 #include "base.hpp"
-#include "memory_mapper.hpp"
+#include "io_ports.hpp"
 
 enum Buttons {
   RIGHT = 0,
@@ -13,33 +13,15 @@ enum Buttons {
 };
 
 struct Joypad {
-  MemoryMapper &mmu;
-  Joypad(MemoryMapper &mmu): mmu(mmu) { }
+  Joypad(IoPorts &io) : io(io), JOYP(io.data[0x00]) { }
+  IoPorts &io;
+  u8 &JOYP;
   u8 buttons = 0xFF;
-
   void tick() {
-    u8 val = mmu.get(IO::JOYP);
-    if (val & 0x10) {
-      // log("read 20", (buttons >> 4));
-      // reading START/SEL/A/B status
-      mmu.set(IO::JOYP, (buttons >> 4));
-    }
-    else if (val & 0x20) {
-      // log("read 10", (buttons & 0xF));
-      // reading arrow status
-      mmu.set(IO::JOYP, (buttons & 0xF));
-    }
+    if (JOYP & 0x10) { JOYP = buttons >> 4; }
+    else if (JOYP & 0x20) { JOYP = buttons & 0xF; }
   }
-
-  void button_down(Buttons button) {
-    // turn off the relevant bit if the button is down
-    buttons &= ~(1 << (int)button);
-    // log("button down", (u16) button, buttons);
-  }
-  void button_up(Buttons button) {
-    // turn on the relevant bit when button is released
-    buttons |= (1 << (int)button);
-    // log("button up", (u16) button, buttons);
-  }
+  void button_down(Buttons button) { buttons &= ~(1 << (i8)button); }
+  void button_up(Buttons button) { buttons |= (1 << (i8)button); }
 };
   

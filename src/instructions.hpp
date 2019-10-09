@@ -2,7 +2,6 @@
 #include "base.hpp"
 #include "wasm_host.hpp"
 
-
 enum class Conditions : u8 { C, Z, T, NC, NZ, };
 enum class Register16 : u8 { SP, BC, DE, HL, AF };
 enum class Register8 : u8 { A, B, C, D, E, F, H, L };

@@ -8,7 +8,7 @@
 #include "ppu.cpp"
 
 namespace logs {
-  void _log(reg16 v) { _logx16(v.h * 256 + v.l); };
+  void _log(Reg16 v) { _logx16((u16)v); };
 }
 
 extern "C" {
