@@ -92,7 +92,7 @@ struct InstructionRunner {
     // // if (addr == 0xFF42) { log(*PC_start_ptr, "scroll y", value); }
     // // if (addr == 0xFF43) { log(*PC_start_ptr, "scroll x", value); }
     // }
-    if (0xFF00 <= addr) _handle_io_write(addr, value);
+    if (0xFF00 <= addr && addr < 0xFF80) _handle_io_write(addr, value);
     mmu->set(addr, value);
   }
   void _write8(Register8 target, u8 value) {
@@ -590,7 +590,9 @@ struct InstructionRunner {
   void CALL(Conditions o, Value16 v) {
     m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u16 addr = _read16(v);
-    _push(*PC_ptr);
-    *PC_ptr = addr;
+    if (_check(o)) {
+      _push(*PC_ptr);
+      *PC_ptr = addr;
+    }
   }
 };
