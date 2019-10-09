@@ -1,7 +1,7 @@
 #include "emulator.hpp"
 #include "data/dmg_boot.hpp"
 
-emulator_t::emulator_t(u8 * cart_data, u32 cart_len): mmu(rom, ram) {
+emulator_t::emulator_t(u8 * cart_data, u32 cart_len) {
   mmu.bios_rom = DMG_ROM_bin;
   decoder.mmu = &mmu;
   decoder.ii.mmu = &mmu;
@@ -22,23 +22,39 @@ void emulator_t::load_cart(u8 * cart_data, u32 cart_len) {
 }
 
 u32 emulator_t::single_step() {
+
   u8 interrupt = (mmu.get(0xFFFF) & mmu.get(0xFF0F));
-  if (cpu.IME && interrupt) {
+
+  if (interrupt) {
     // when an interrupt triggers we clear the IME
     // and the flag that triggered
     // and restart from a halting state
-    cpu.IME = 0;
     cpu.halted = false;
-    if (interrupt == 1) {
-      mmu.get_ref(0xFF0F) &= ~0x1;
+    u8 handler = 0x40;
+    auto set_interrupt = [this, &handler](int i) -> void {
+      u8 intvector = this->mmu.get(0xFF0F);
+      this->mmu.set(0xFF0F, intvector & ~(1 << (i - 1)));
+      handler = 0x38 + 8 * i;
+    };
+    
+
+    if (cpu.IME) {
+      if (interrupt & 1) set_interrupt(1);
+      else if (interrupt & 2) set_interrupt(2);
+      else if (interrupt & 4) set_interrupt(3);
+      else if (interrupt & 8) set_interrupt(4);
+      else if (interrupt & 16) set_interrupt(5);
+      else { return 0; } // something very strange happened here
+      
+      cpu.IME = 0;
       decoder.ii._push(decoder.pc);
-      decoder.pc = 0x40;
+      decoder.pc = handler;
+      return 0; // this is so we have a debug step at the beginning of the handler
     } else {
-      log("interrupt", interrupt);
+      // TODO: halt bug?
+      
     }
-    // TODO: does this actually take zero time?
-    return 0;
-  }
+  } 
 
   joypad.tick();
 
@@ -63,6 +79,10 @@ u32 emulator_t::single_step() {
   u32 dt = 16;              // TODO: do timing based on actual instruction decodetime
   dt = 8;
   ppu.tick(dt);
+
+  timer.Interrupt = mmu.get(0xFF0F) & 4;
+  timer.tick(dt);
+  if (timer.Interrupt) { mmu.set(0xFF0F, mmu.get(0xFF0F) | 4); }
   return dt;
 }
 void emulator_t::step(i32 ticks) {

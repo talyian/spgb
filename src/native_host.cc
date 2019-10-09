@@ -40,69 +40,75 @@ int main(int argc, char ** argv) {
   // emu.set_breakpoint(0x40); // vblank interrupt
   // emu.set_breakpoint(0xFF80); // high memory DMA loading thunk
   // emu.debug.is_debugging = true;
+  // emu.debug.set_breakpoint(0xC66F); // Blargg 07 issue debugging
+  // emu.debug.set_breakpoint(0xC681); // Blargg 07 issue debugging
+
+  // emu.debug.set_breakpoint(0xc2b4); // Blargg 02 main function "EI"
+  // emu.debug.set_breakpoint(0xc316); // Blargg 02 "timer doesn't work"
   u8 last_serial_cursor = 0, first_serial = 1;
+  char line[64] {0};
   while(true) {
-    emu.step(42000);
-    auto &serial = emu.cpu.serial;
-    // if (serial.pos >= last_serial_cursor && serial.out_buf[serial.pos] == '\n') {
-    if (last_serial_cursor < serial.pos) {
-      if (first_serial) { printf("Serial: ");      first_serial = 0; }
-      // blargg tests
-      for(; last_serial_cursor < serial.pos; last_serial_cursor++) {
-        putchar(serial.out_buf[last_serial_cursor]);
-        if (serial.out_buf[last_serial_cursor] == '\n') {
-          first_serial = 1;
-        }
+    emu.debug.step();
+
+    if (emu.debug.is_debugging) {
+      log("ime", emu.cpu.IME, "interrupt", emu.mmu.get(0xFFFF), emu.mmu.get(0xFF0F));
+      log("timer", emu.timer.Control, emu.timer.DIV, emu.timer.TIMA,
+          (u32)emu.timer.counter_t,
+          emu.timer.monoTIMA,
+          (u32)emu.timer.monotonic_t);
+      emu._runner.dump();
+      emu.printer.pc = emu.decoder.pc; emu.printer.decode();
+      printf("DEBUG %04x> ", emu.decoder.pc);
+
+      fgets(line, 63, stdin);
+      for(int i = 0; i < 63; i++)
+        if (!line[i]) break;
+        else if (line[i] == '\n') { line[i] = 0; break; }
+      
+      if (!strcmp(line, "") || !strcmp(line, "s")) {
+        emu.debug.is_stepping = true;
+        emu.debug.is_debugging = false;
       }
-      serial.out_buf[255] = 0;
-      if (strstr((const char *)serial.out_buf, "Passed") ||
-          strstr((const char *)serial.out_buf, "Failed")) {
-        exit(20);
+      else if (!strcmp(line, "n")) {
+        log("scanning to", emu.printer.pc);
+        emu.debug.run_to_target = emu.printer.pc;
+        emu.debug.is_debugging = false;
+      }
+      else if (!strcmp(line, "c")) {
+        emu.debug.is_debugging = false;
+      }
+      else if (!strcmp(line, "q")) {
+        break;
+      }
+      else {
+        continue;
       }
     }
     
-    if (emu.debug.is_debugging) {
-      printf("%04x >> ", emu.decoder.pc);
-      char * line;
-      size_t n = 0;
-      int len = 0;
-      len = getline(&line, &n, stdin);
-      if (len > 0) line[len-1] = 0;
-      else continue;
-      if (!strncmp(line, "?", len)) {
-        printf(R"XXX(
-Debug commands:
- (q) - quit
+    emu.single_step();
 
- (s) - step
- (c) - run
- (r) - run to next return
- (n) - run to next line
-
- (bra) - add breakpoint
- (brc) - clear breakpoint
- (brl) - list breakpoints
-
- (r) - show registers
- (d) - disassemble at PC
- (d xxxx) - disassemble at instruction
-
-)XXX"); }
-      if (!strncmp(line, "q", len)) { exit(0); }
-      if (!strncmp(line, "c", len)) { emu.debug.is_debugging = false; }
-      if (len > 2 && line[0] == 'r' && line[1] == ' ') {
-        u16 addr = 0;
-        for(char * p = line + 2; *p; p++) {
-          u8 d = (*p - '0') % 32;
-          if (d >= 17) d -= 7;
-          addr = addr * 0x10 + d;
+    auto &serial = emu.cpu.serial;
+    // if (serial.pos >= last_serial_cursor && serial.out_buf[serial.pos] == '\n') {
+    if (last_serial_cursor < serial.pos) {
+      // printf("\x1b[1;31m");
+      if (first_serial) { printf("Serial: ");      first_serial = 0; }
+      // blargg tests
+      for(; last_serial_cursor < serial.pos; last_serial_cursor++) {
+        u8 c = serial.out_buf[last_serial_cursor];
+        if (c >= 0x20 || c == '\n')
+          putchar(c);
+        else
+          printf("\\x%02x", c);
+        if (c == '\n') {
+          first_serial = 1;
         }
-        emu.debug.break_temp = addr;
-        emu.debug.is_debugging = false;
       }
-      if (!strncmp(line, "", 1) || !strncmp(line, "s", len)) {
-        emu.debug.is_stepping = true;
-        emu.debug.is_debugging = false;
+      // printf("\x1b[0m");
+      serial.out_buf[255] = 0;
+      if (strstr((const char *)serial.out_buf, "Passed") ||
+          strstr((const char *)serial.out_buf, "33") ||          
+          strstr((const char *)serial.out_buf, "Failed")) {
+        exit(0);
       }
     }
   }

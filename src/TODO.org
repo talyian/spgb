@@ -1,29 +1,35 @@
-** [0/2] Handle Interrupts
-*** DONE vblank
-*** TODO other interrupts
+* [12/19] GBE Tasks
+  :PROPERTIES:
+  :COOKIE_DATA: todo recursive
+  :END:
 ** TODO Sound
 ** TODO Palettes
+** TODO Accurate CPU Timing
 *** TODO DMG Palettes
 *** TODO CGB Palettes
 ** DONE Handle DMA (FF46)
 ** TODO Draw Timing for BGB TEST
 ** TODO Cart Memory Banking
-* [9/11] Blargg Tests
-** DONE Blargg CPU Test 01
-** TODO Blargg CPU Test 02 - interrupts
-** DONE Blargg CPU Test 03 - op sp,hl; E8 E8 F8 F8
-   CLOSED: [2019-10-08 Tue 07:39]
-   - State "DONE"       from "TODO"       [2019-10-08 Tue 07:39]
-** DONE Blargg CPU Test 04
-   - State "DONE"       from "TODO"       [2019-10-06 Sun 10:00]
-** DONE Blargg CPU Test 05
-   - State "DONE"       from "TODO"       [2019-10-06 Sun 10:00]
-** DONE Blargg CPU Test 06
-   - State "DONE"       from "TODO"       [2019-10-06 Sun 09:59]
-** TODO Blargg CPU Test 07 -- jr/jp/call/ret/rst  - C4 CC D4 DC
-** DONE Blargg CPU Test 08 -- misc; currently the rom repeats the header 
-   - State "DONE"       from "DOING"      [2019-10-08 Tue 06:53]
-** DONE Blargg CPU Test 09 -- some fails
-   - State "DONE"       from "TODO"       [2019-10-06 Sun 10:27]
-** DONE Blargg CPU Test 10
-** DONE Blargg CPU Test 11
+** [11/11] Blargg Tests
+*** DONE Blargg CPU Test 01
+*** DONE Blargg CPU Test 02 - interrupts
+    CLOSED: [2019-10-09 Wed 04:19]
+    - State "DONE"       from "TODO"       [2019-10-09 Wed 04:19]
+*** DONE Blargg CPU Test 03 - op sp,hl; E8 E8 F8 F8
+    CLOSED: [2019-10-08 Tue 07:39]
+    - State "DONE"       from "TODO"       [2019-10-08 Tue 07:39]
+*** DONE Blargg CPU Test 04
+    - State "DONE"       from "TODO"       [2019-10-06 Sun 10:00]
+*** DONE Blargg CPU Test 05
+    - State "DONE"       from "TODO"       [2019-10-06 Sun 10:00]
+*** DONE Blargg CPU Test 06
+    - State "DONE"       from "TODO"       [2019-10-06 Sun 09:59]
+*** DONE Blargg CPU Test 07 -- jr/jp/call/ret/rst  - C4 CC D4 DC
+    CLOSED: [2019-10-08 Tue 21:28]
+    - State "DONE"       from "TODO"       [2019-10-08 Tue 21:28]
+*** DONE Blargg CPU Test 08 -- misc; currently the rom repeats the header 
+    - State "DONE"       from "DOING"      [2019-10-08 Tue 06:53]
+*** DONE Blargg CPU Test 09 -- some fails
+    - State "DONE"       from "TODO"       [2019-10-06 Sun 10:27]
+*** DONE Blargg CPU Test 10
+*** DONE Blargg CPU Test 11

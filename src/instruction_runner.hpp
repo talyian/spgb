@@ -190,8 +190,11 @@ struct InstructionRunner {
   }
 
   void _handle_io_write(u16 addr, u16 value) {
+// #define WARN(msg) log("IO CTL", msg, value); break;
+#define WARN(msg) break;
     switch(addr) {
-    // case 0xFF00: log(*PC_start_ptr, "   (JOYP) IO:", addr, "<-", value); break;
+    // joypad
+    case 0xFF00: break;
     // serial control
     case 0xFF01: break;
     case 0xFF02:
@@ -201,11 +204,57 @@ struct InstructionRunner {
       }
       break;
     // case 0xFF0F: log(*PC_start_ptr, "     (IF) IO:", addr, "<-", value); break;
-    // case 0xFF46: log(*PC_start_ptr, "    (DMA) IO:", addr, "<-", value); break;
-    // case 0xFFFF: log(*PC_start_ptr, "     (IE) IO:", addr, "<-", value); break;
-    case 0xFF50:
-      mmu->bios_active = false;
-      break;
+    case 0xFF04: 
+    case 0xFF05: 
+    case 0xFF06:
+    case 0xFF07: WARN("timer");
+
+    case 0xFF0F: WARN("interrupt");
+    // case 0xFF10:
+    // case 0xFF11:
+    // case 0xFF12:
+    // case 0xFF13:
+    // case 0xFF14:
+    // case 0xFF16:
+    // case 0xFF17:
+    // case 0xFF18:
+    // case 0xFF19:
+    // case 0xFF1A:
+    // case 0xFF1B:
+    // case 0xFF1C:
+    // case 0xFF1D:
+    // case 0xFF1E:
+    // case 0xFF20:
+    // case 0xFF21:
+    // case 0xFF22:
+    // case 0xFF23:
+    // case 0xFF24:
+    // case 0xFF25:
+    // case 0xFF26:
+    //   WARN("sound");
+    case 0xFF40: WARN("LCDC"); break;
+    case 0xFF41: WARN("stat"); break;
+    case 0xFF42: 
+    case 0xFF43: 
+    case 0xFF44: 
+    case 0xFF45:
+    case 0xFF4A:
+    case 0xFF4B: WARN("screen");
+      
+    case 0xFF46: /* DMA */ break;
+    case 0xFF47: /* BG Palette */ break;
+    case 0xFF48: /* BG Palette */ break;
+    case 0xFF49: /* BG Palette */ break;
+    case 0xFF4F: /* hblank dma */ break;
+    case 0xFF50: mmu->bios_active = false; break;
+    case 0xFF68:
+    case 0xFF69:
+    case 0xFF6A: WARN("CGB pal"); 
+    case 0xFFFF: /* IE */; break;
+    default:
+      if (0xFF10 <= addr && addr < 0xFF40) WARN("sound");
+      log("Unhandled IOCTL", addr, value);
+      // _stop();
     }
   }
 

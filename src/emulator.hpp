@@ -7,6 +7,7 @@
 #include "debugger.hpp"
 #include "joypad.hpp"
 #include "cart.hpp"
+#include "timer.hpp"
 
 using RunnerDecoder = InstructionDecoderT<InstructionRunner>;
 using PrinterDecoder = InstructionDecoderT<InstructionPrinter>;
@@ -18,8 +19,9 @@ struct emulator_t {
   u8 ram[0x8000];
   CPU cpu;
   PPU ppu;
-  MemoryMapper mmu {rom, ram};
-
+  Timer timer;
+  MemoryMapper mmu {rom, ram, timer};
+  
   // Subsystems
   InstructionRunner _runner{cpu};
   InstructionPrinter _printer;

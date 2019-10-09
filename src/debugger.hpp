@@ -18,9 +18,9 @@ struct Debugger {
   bool is_debugging = false;
   bool is_stepping = false;
   u16 breakpoints[64];
-  u16 break_temp = 0;
   u8 break_n = 0;
-
+  u32 run_to_target = -1;
+  
   void set_breakpoint(u16 v) { breakpoints[break_n++] = v; }
 
   void clear_breakpoint(u16 v) {
@@ -30,22 +30,23 @@ struct Debugger {
   }
 
   int step() {
-    if (!mmu->bios_active && !is_stepping) {
-      for(int i=0; i<break_n; i++) {
+    // check if current pc matches any breakpoints
+    if (!is_debugging && !mmu->bios_active && !is_stepping) {
+      for(int i=0; i<break_n; i++) 
         if (breakpoints[i] == decoder->pc) {
           is_debugging = true;
-          log("======================================== DEBUG ======");
-          return 0;
+          break;
         }
-      }
     }
-
-    if (break_temp && break_temp == decoder->pc) {
+    if (!is_debugging && run_to_target == decoder->pc) {
       is_debugging = true;
-      break_temp = 0;
-      return 0;
+      run_to_target = -1;
     }
-
+    // convert single-step to active debug
+    if (is_stepping) {
+      is_debugging = true;
+      is_stepping = false;
+    }
     return 0;
   }
 };

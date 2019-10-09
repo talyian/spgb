@@ -20,3 +20,5 @@ core/opcodes.cc
 build
 /core2/tetris.gb
 build-native
+build-win
+.vs
