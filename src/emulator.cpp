@@ -5,7 +5,7 @@ emulator_t::emulator_t(u8 * cart_data, u32 cart_len) {
   mmu.bios_rom = DMG_ROM_bin;
   decoder.mmu = &mmu;
   decoder.ii.mmu = &mmu;
-  ppu.memory = &mmu;
+  ppu.mmu = &mmu;
   printer.mmu = &mmu;
   load_cart(cart_data, cart_len);
 }
@@ -80,9 +80,7 @@ u32 emulator_t::single_step() {
   dt = 8;
   ppu.tick(dt);
 
-  timer.Interrupt = mmu.get(0xFF0F) & 4;
   timer.tick(dt);
-  if (timer.Interrupt) { mmu.set(0xFF0F, mmu.get(0xFF0F) | 4); }
   return dt;
 }
 void emulator_t::step(i32 ticks) {

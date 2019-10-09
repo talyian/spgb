@@ -1,22 +1,23 @@
 #pragma once
 
 #include "base.hpp"
+#include "io_ports.hpp"
 
 struct Timer {
-  u8 DIV;   // FF04
-  u16 TIMA; // FF05
-  u8 TMA;   // FF06
-  bool Interrupt; // a bit in FF0F
+  Timer(IoPorts &io) : io(io),
+    DIV(io.data[0x04]),
+    TIMA(io.data[0x05]),
+    TMA(io.data[0x06]),
+    Control(io.data[0x07]) { }
 
-  u8 Control;
-  bool enabled = 0;
-  u16 speed_modifier = 1024;
-
-  void set_control(u8 v) {
-    Control = v;
-    enabled = v & 4;
-    speed_modifier = 1 << (2 * ((v - 1) & 3) + 4);
-  }
+  IoPorts &io;
+  u8 &DIV;   // FF04
+  u8 &TIMA; // FF05
+  u8 &TMA;   // FF06
+  u8 &Control; // FF07
+  
+  bool enabled() { return Control & 4; }
+  u16 speed_modifier() { return 1 << (2 * ((Control - 1) & 3) + 4); }
   
   u64 monotonic_t = 0;
   u32 monoTIMA = 0;
@@ -26,16 +27,15 @@ struct Timer {
 
     DIV = monotonic_t / 256;
 
-    if (!enabled)  return;
+    if (!(Control & 4))  return;
     
     counter_t += ticks;
 
-    if (counter_t >= speed_modifier) {
-      TIMA++;
+    if (counter_t >= speed_modifier()) {
+      if (TIMA == 0xFF) { TIMA = TMA; io.data[0x0F] |= 4; }
+      else { TIMA++; }
       monoTIMA++;
-      counter_t -= speed_modifier;
+      counter_t -= speed_modifier();
     }
-    
-    if (TIMA >= 0x100) { TIMA = TMA; Interrupt = 1; }
   }
 };

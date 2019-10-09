@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base.hpp"
+#include "io_ports.hpp"
 #include "memory_mapper.hpp"
 #include "instruction_decoder.hpp"
 #include "ppu.hpp"
@@ -17,10 +18,11 @@ struct emulator_t {
   Cart cart {0, 0};
   u8 rom[0x8000];
   u8 ram[0x8000];
+  IoPorts io;
+  Timer timer {io};
+  MemoryMapper mmu {rom, ram, io};
   CPU cpu;
-  PPU ppu;
-  Timer timer;
-  MemoryMapper mmu {rom, ram, timer};
+  PPU ppu{io, mmu};
   
   // Subsystems
   InstructionRunner _runner{cpu};

@@ -5,7 +5,7 @@ WASM_CC_COMPILE=clang++.exe -c -DWASM=1 --target=wasm32 -fvisibility=hidden -std
 WASM_CC_LINK=wasm-ld.exe --export-dynamic --no-entry --strip-all --gc-sections --allow-undefined --import-memory
 
 run: gb-emu.exe
-	./gb-emu.exe ../../data/cpu_instrs/individual/01-special.gb
+	find ../../data/cpu_instrs/individual/*.gb | while read f; do ./gb-emu.exe "$f"; echo; done
 
 main.wasm-o: main.o
 	$(WASM_CC_COMPILE) -o main.wasm-o ../main.cc

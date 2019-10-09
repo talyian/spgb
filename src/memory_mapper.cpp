@@ -1,6 +1,8 @@
 #include "memory_mapper.hpp"
+#include "ppu.hpp"
 
-MemoryMapper::MemoryMapper(u8 * rom, u8 * ram, Timer &t) : rom(rom), ram(ram), timer(t) {
+MemoryMapper::MemoryMapper(u8 * rom, u8 * ram, IoPorts &io) :
+  rom(rom), ram(ram), io(io) {
   rom_n = rom;
   vram = ram;
   bg0 = vram + 0x1800;
