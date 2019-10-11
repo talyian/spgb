@@ -245,15 +245,16 @@ struct InstructionRunner {
     case 0xFF47: /* BG Palette */ break;
     case 0xFF48: /* BG Palette */ break;
     case 0xFF49: /* BG Palette */ break;
+      // case 0xFF4D: 
     case 0xFF4F: /* hblank dma */ break;
-    case 0xFF50: mmu->bios_active = false; break;
+    case 0xFF50: break;
     case 0xFF68:
     case 0xFF69:
     case 0xFF6A: WARN("CGB pal"); 
     case 0xFFFF: /* IE */; break;
     default:
       if (0xFF10 <= addr && addr < 0xFF40) WARN("sound");
-      log("Unhandled IOCTL", addr, value);
+      log(*PC_start_ptr, "Unhandled IOCTL", addr, value);
       // _stop();
     }
   }
@@ -637,8 +638,11 @@ struct InstructionRunner {
       *PC_ptr = _read16(v);
   }
   void CALL(Conditions o, Value16 v) {
-    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u16 addr = _read16(v);
+    // if (*PC_start_ptr > 0x100 &&
+    //     *PC_start_ptr != 0xc015 &&
+    //     addr != 0xc05a)
+    //   log(*PC_start_ptr, __FUNCTION__, o, v);
     if (_check(o)) {
       _push(*PC_ptr);
       *PC_ptr = addr;

@@ -8,7 +8,8 @@
 #include "ppu.cpp"
 
 namespace logs {
-  void _log(Reg16 v) { _logx16((u16)v); };
+void _log(Reg16 v) { _logx16((u16)v); };
+void _log(str s) { _logs((const char *)s.data, s.size); }
 }
 
 extern "C" {

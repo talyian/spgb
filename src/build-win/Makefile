@@ -5,6 +5,10 @@ WASM_CC_COMPILE=clang++.exe -c -DWASM=1 --target=wasm32 -fvisibility=hidden -std
 WASM_CC_LINK=wasm-ld.exe --export-dynamic --no-entry --strip-all --gc-sections --allow-undefined --import-memory
 
 run: gb-emu.exe
+	#find ../../data/cpu_instrs/individual/*.gb | while read f; do ./gb-emu.exe "$$f"; echo; done
+	./gb-emu.exe ../../data/cpu_instrs/cpu_instrs.gb
+
+run_blargg: gb-emu.exe
 	find ../../data/cpu_instrs/individual/*.gb | while read f; do ./gb-emu.exe "$$f"; echo; done
 
 main.wasm-o: main.o
@@ -13,7 +17,7 @@ main.wasm-o: main.o
 	$(WASM_CC_LINK) -o $@ main.wasm-o
 
 gb-emu.exe: main.o native_host.o deps.Makefile
-	clang++.exe -o $@ main.o native_host.o
+	clang++.exe -fsanitize=undefined -o $@ main.o native_host.o
 
 deps.Makefile: ../main.cc ../native_host.cc
 	# clang -MM generates backslash-delimited paths, but Make wants forward-delimited paths
@@ -23,8 +27,8 @@ deps.Makefile: ../main.cc ../native_host.cc
 include deps.Makefile
 
 main.o: Makefile
-	clang++.exe -D_CRT_SECURE_NO_WARNINGS -o $@ -c ../main.cc 
+	clang++.exe -D_CRT_SECURE_NO_WARNINGS -fsanitize=undefined -o $@ -c ../main.cc 
 
 native_host.o: Makefile
-	clang++.exe -D_CRT_SECURE_NO_WARNINGS -o $@ -c ../native_host.cc
+	clang++.exe -D_CRT_SECURE_NO_WARNINGS -fsanitize=undefined -o $@ -c ../native_host.cc
 

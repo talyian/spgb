@@ -3,64 +3,55 @@
 #include "io_ports.hpp"
 #include "timer.hpp"
 #include "wasm_host.hpp"
-
-struct IO {
-  const static u16 JOYP = 0xFF00;
-  const static u16 DMA = 0xFF46;
-};
+#include "cart.hpp"
 
 struct MemoryMapper {
-  MemoryMapper(u8 * rom, u8 * ram, IoPorts &io);
+  MemoryMapper(Cart &cart, IoPorts &io);
+  Cart &cart;
   
-  bool bios_active = true;
   u8 *bios_rom = 0;
-  // u8 rom [0x8000];
-  u8 * rom = 0;
-  u8 *rom_n = 0;
 
-  // u8 ram[0x8000];
-  u8 * ram = 0;
-  u8 *vram = ram;
-
-  u8 *bg0, *bg1;
-  u8 *cart_ram;
-  u8 *work_ram;
-  u8 *echo_ram;
-
-  u8 *oam;
-  u8 *io_port;
+  u8 VRAM[0x2000];    // at 0x8000
+  u8 WRAM[8][0x1000]; // work ram at 0xC000 / banks at 0xD000
+  u8 OAM[0x100];      // OAM at 0xFE00
+  IoPorts &io;        // IO registers at 0xFF00
+  u8 HRAM[0x80];      // HRAM at 0xFF80
   u8 error;
 
-  IoPorts &io;
+  u8 &BiosLock;
   
-  u8 select_background_tile(u8 x, u8 y);
-  u8 select_tile_pixel(u8 tile_index, u8 x, u8 y);
-  void load_cart(u8 * cart, u32 len);
-  
-  u8 get(u16 index) {
-    if (0xFF00 <= index && index < 0xFF80)
-      return io.data[index & 0xFF];
-    else
-      return get_ref(index);
+  void load_cart(const Cart &cart);
+
+  u8 get(u16 addr) {
+    return 
+      addr < 0x100 && !BiosLock ? bios_rom[addr] :
+      addr < 0x8000 ? cart.read(addr) :
+      addr < 0xA000 ? VRAM[addr - 0x8000] :
+      addr < 0xC000 ? cart.read(addr) :
+      addr < 0xD000 ? WRAM[0][addr - 0xC000] :
+      addr < 0xE000 ? WRAM[1][addr - 0xD000] : // TODO : CGB: banking?
+      addr < 0xF000 ? WRAM[0][addr - 0xE000] : // echo
+      addr < 0xFE00 ? WRAM[1][addr - 0xF000] : // echo
+      addr < 0xFF00 ? OAM[addr - 0xFE00] :
+      addr < 0xFF80 ? io.data[addr - 0xFF00] :
+      HRAM[addr - 0xFF80];
   }
 
-  void set(u16 index, u8 val) {
-    if (0xFF00 <= index && index < 0xFF80)
-      io.data[index & 0xFF] = val;
-    else
-      get_ref(index) = val;
+  void set(u16 addr, u8 val) {
+    if (addr < 0x100 && !BiosLock) bios_rom[addr] = val;
+    else if (addr < 0x8000) cart.write(addr, val);
+    else if (addr < 0xA000) VRAM[addr - 0x8000] = val;
+    else if (addr < 0xC000) cart.write(addr, val);
+    else if (addr < 0xD000) WRAM[0][addr - 0xC000] = val;
+    else if (addr < 0xE000) WRAM[1][addr - 0xD000] = val; // TODO : CGB: banking?
+    else if (addr < 0xF000) WRAM[0][addr - 0xE000] = val; // echo
+    else if (addr < 0xFE00) WRAM[1][addr - 0xF000] = val; // echo
+    else if (addr < 0xFF00) OAM[addr - 0xFE00] = val;
+    else if (addr < 0xFF80) io.data[addr - 0xFF00] = val;
+    else HRAM[addr - 0xFF80] = val;
   }
 
   void clear() {
-    memset(ram + 0x7F00, 0, 0x80);
-  }
-
-private:
-  u8& get_ref(u16 index) {
-    return
-      index < 0x100 && bios_active ? bios_rom[index] :
-      index < 0x4000 ? rom[index] :
-      index < 0x8000 ? rom_n[index] :
-      ram[index - 0x8000];
+    // memset(ram + 0x7F00, 0, 0x80);
   }
 };

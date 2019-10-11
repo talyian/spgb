@@ -31,7 +31,7 @@ struct Debugger {
 
   int step() {
     // check if current pc matches any breakpoints
-    if (!is_debugging && !mmu->bios_active && !is_stepping) {
+    if (!is_debugging && mmu->BiosLock && !is_stepping) {
       for(int i=0; i<break_n; i++) 
         if (breakpoints[i] == decoder->pc) {
           is_debugging = true;

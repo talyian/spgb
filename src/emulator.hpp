@@ -16,11 +16,9 @@ using PrinterDecoder = InstructionDecoderT<InstructionPrinter>;
 struct emulator_t {
   // Hardware resources
   Cart cart {0, 0};
-  u8 rom[0x8000];
-  u8 ram[0x8000];
   IoPorts io;
   Timer timer {io};
-  MemoryMapper mmu {rom, ram, io};
+  MemoryMapper mmu {cart, io};
   Joypad joypad {io};
   CPU cpu;
   PPU ppu{io, mmu};
@@ -42,7 +40,7 @@ struct emulator_t {
   void dma_transfer(MemoryMapper * mem, u16 addr) {
     addr = addr * 0x100;
     for(int i = 0; i < 0xA0; i++) {
-      mem->oam[i] = mem->get(addr + i);
+      mem->OAM[i] = mem->get(addr + i);
     }
   }
 };

@@ -45,6 +45,7 @@ int main(int argc, char ** argv) {
 
   // emu.debug.set_breakpoint(0xc2b4); // Blargg 02 main function "EI"
   // emu.debug.set_breakpoint(0xc316); // Blargg 02 "timer doesn't work"
+  // emu.debug.set_breakpoint(0xC2E7); // Blargg combined "03 test strange"
   u8 last_serial_cursor = 0, first_serial = 1;
   char line[64] {0};
   while(true) {
@@ -91,7 +92,7 @@ int main(int argc, char ** argv) {
     // if (serial.pos >= last_serial_cursor && serial.out_buf[serial.pos] == '\n') {
     if (last_serial_cursor < serial.pos) {
       // printf("\x1b[1;31m");
-      if (first_serial) { printf("Serial: ");      first_serial = 0; }
+      if (first_serial) { printf("Serial: "); first_serial = 0; }
       // blargg tests
       for(; last_serial_cursor < serial.pos; last_serial_cursor++) {
         u8 c = serial.out_buf[last_serial_cursor];
@@ -106,7 +107,6 @@ int main(int argc, char ** argv) {
       // printf("\x1b[0m");
       serial.out_buf[255] = 0;
       if (strstr((const char *)serial.out_buf, "Passed") ||
-          strstr((const char *)serial.out_buf, "33") ||          
           strstr((const char *)serial.out_buf, "Failed")) {
         exit(0);
       }

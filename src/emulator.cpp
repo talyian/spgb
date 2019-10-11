@@ -15,10 +15,10 @@ emulator_t::emulator_t() : emulator_t(0, 0) { }
 void emulator_t::load_cart(u8 * cart_data, u32 cart_len) {
   this->cart = Cart {cart_data, cart_len};
   this->cpu.clear();
-  this->mmu.bios_active = true;
+  this->mmu.BiosLock = 0;
   this->mmu.clear();
   this->decoder.pc = this->decoder.pc_start = 0;
-  mmu.load_cart(cart_data, cart_len);
+  mmu.load_cart(cart);
 }
 
 u32 emulator_t::single_step() {
@@ -58,11 +58,11 @@ u32 emulator_t::single_step() {
 
   joypad.tick();
 
-  if (mmu.get(IO::DMA)) {
+  if (mmu.get(IoPorts::DMA)) {
     // technically this won't work if we transfer from 0
     // but that seems highly unlikely
-    dma_transfer(&mmu, mmu.get(IO::DMA));
-    mmu.set(IO::DMA, 0);
+    dma_transfer(&mmu, mmu.get(IoPorts::DMA));
+    mmu.set(IoPorts::DMA, 0);
   }
 
   if (!cpu.halted) {
