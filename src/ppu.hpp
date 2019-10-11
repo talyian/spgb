@@ -32,7 +32,7 @@ struct PPU {
   u8 &LineYMark = io.data[0x45];
   u8 &WindowY = io.data[0x4A];
   u8 &WindowX = io.data[0x4B];
-  
+  u8 &InterruptV = io.data[0x0F];
   // The PPU state machine - drawing is timing sensitive so we need
   // to carefully control the clocks
   enum State { OAM_SCAN, VRAM_SCAN, HSCAN } state = OAM_SCAN;
@@ -40,6 +40,9 @@ struct PPU {
   void push_frame();
   void scan_line();
 
+  u8 select_background_tile(u8 x, u8 y);
+  u8 select_tile_pixel(u8 tile_index, u8 x, u8 y);
+  
   static const int DISPLAY_W = 160, DISPLAY_H = 144;
   u8 display[DISPLAY_W * DISPLAY_H];
   void set_display(u8 x, u8 y, u8 pixel);
