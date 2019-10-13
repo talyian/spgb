@@ -5,25 +5,30 @@
 #include "wasm_host.hpp"
 
 struct Cart {
-  u8 * data;
+  u8 *data;
   u32 len; // expected to be between 32K and 4M
   str name;
   enum { CGB, CGB_Only, DMG, SGB } console_type;
-  enum { ROM = 0, MBC1 = 1, ERROR } mapper;
-  
+  enum { ROM = 0, MBC1 = 1, MBC3 = 2, ERROR } mapper;
+
   u32 rom_size;
-  u8 * ram;
+  u8 *ram;
   u32 ram_size;
-  
-  Cart(u8 * data, u32 len) : data(data), len(len) {
-    if (data == 0) return;
+
+  Cart(u8 *data, u32 len) : data(data), len(len) {
+    if (data == 0)
+      return;
 
     name = {data + 0x134, 0xB};
-        
-    if (data[0x143] == 0x80) console_type = CGB;
-    else if (data[0x143] == 0xC0) console_type = CGB_Only;
-    else if (data[0x146] == 0x3) console_type = SGB;
-    else console_type = DMG;
+
+    if (data[0x143] == 0x80)
+      console_type = CGB;
+    else if (data[0x143] == 0xC0)
+      console_type = CGB_Only;
+    else if (data[0x146] == 0x3)
+      console_type = SGB;
+    else
+      console_type = DMG;
 
     rom_size = (32 * 1024) << data[0x148];
 
@@ -32,19 +37,31 @@ struct Cart {
     else
       ram_size = 0;
     ram = new u8[ram_size];
-    
-    if (data[0x147] == 0) mapper = ROM;
-    else if (data[0x147] == 1) mapper = MBC1;
-    else mapper = ERROR;
 
-    _log("cart"); _log(name); _log(len);
-    _log("cart-type"); _log(data[0x147]);
-    _log("rom-size"); _log(data[0x148]); _log(rom_size);
-    _log("ram-size"); _log(data[0x149]); _log(ram_size);
+    if (data[0x147] == 0)
+      mapper = ROM;
+    else if (data[0x147] <= 3)
+      mapper = MBC1;
+    else if (0x11 <= data[0x147] && data[0x147] <= 13)
+      mapper = MBC3;
+    else
+      mapper = ERROR;
+
+    _log("cart");
+    _log(name);
+    _log(len);
+    _log("mapper-type");
+    _log(data[0x147]);
+    _log("rom-size");
+    _log(data[0x148]);
+    _log(rom_size);
+    _log("ram-size");
+    _log(data[0x149]);
+    _log(ram_size);
     _showlog();
 
-    if (mapper != ROM && mapper != MBC1) {
-      log("Unsupported Cart Mapper", (u8)mapper);
+    if (mapper == ERROR) {
+      log("Unsupported Mapper", data[0x147]);
       _stop();
     }
   }
@@ -55,10 +72,18 @@ struct Cart {
     u8 ram_bank = 0;
     enum BankMode : u8 { ROM, RAM } bank_mode;
   } mbc1;
-  
+
+  struct MBC3 {
+    u8 enable_ram = 0;
+    u8 rom_bank = 1;
+    u8 ram_bank = 0;
+    enum BankMode : u8 { ROM, RAM } bank_mode;
+  } mbc3;
+
   void write(u16 addr, u8 val) {
     if (mapper == ROM) {
-      if (addr >= 0xA000) ram[addr - 0xA000] = val;
+      if (addr >= 0xA000)
+        ram[addr - 0xA000] = val;
       return;
     }
     if (mapper == MBC1) {
@@ -66,29 +91,26 @@ struct Cart {
         // log("MBC1: enable ram", val);
         mbc1.enable_ram = val == 0xA;
         return;
-      }
-      else if (addr < 0x4000) {
+      } else if (addr < 0x4000) {
         u8 bank = 0x1F & val;
         bank += !bank;
         mbc1.rom_bank = (mbc1.rom_bank & ~0x1F) | bank;
         // log("MBC1: rom bank switch", val, mbc1.rom_bank);
         return;
-      }
-      else if (addr < 0x6000) {
-        // log("MBC1: ram bank switch", addr, val, mbc1.bank_mode == MBC1::ROM ? "rom" : "ram");
+      } else if (addr < 0x6000) {
+        // log("MBC1: ram bank switch", addr, val, mbc1.bank_mode == MBC1::ROM ?
+        // "rom" : "ram");
         val = 0x3 & val;
         if (mbc1.bank_mode == MBC1::ROM)
           mbc1.rom_bank = (mbc1.rom_bank & ~0x60) | (val << 5);
         else
           mbc1.ram_bank = val;
         return;
-      }
-      else if (addr < 0x8000) {
+      } else if (addr < 0x8000) {
         // log("MBC1: mode switch", val);
         mbc1.bank_mode = val == 0 ? MBC1::ROM : MBC1::RAM;
         return;
-      }
-      else if (addr < 0xC000) {
+      } else if (addr < 0xC000) {
         ram[addr - 0xA000 + 0x2000 * mbc1.ram_bank] = val;
         return;
       }
@@ -103,11 +125,22 @@ struct Cart {
     }
     if (mapper == MBC1) {
       // bank 0 ROM
-      if (addr < 0x4000) return data[addr];
+      if (addr < 0x4000)
+        return data[addr];
       // bank 1 ROM
-      if (addr < 0x8000) return data[(addr - 0x4000) + mbc1.rom_bank * 0x4000];
+      if (addr < 0x8000)
+        return data[(addr - 0x4000) + mbc1.rom_bank * 0x4000];
       // RAM
-      if (addr < 0xC000) return ram[addr - 0xA000 + 0x2000 * mbc1.ram_bank];
+      if (addr < 0xC000)
+        return ram[addr - 0xA000 + 0x2000 * mbc1.ram_bank];
+    }
+    if (mapper == MBC3) {
+      // bank 0 ROM
+      if (addr < 0x4000)
+        return data[addr];
+      // bank 1 ROM
+      if (addr < 0x8000)
+        return data[(addr - 0x4000) + mbc3.rom_bank * 0x4000];
     }
     log("unsupported mapper read", addr);
     _stop();

@@ -1,7 +1,7 @@
 #include "emulator.hpp"
 #include "data/dmg_boot.hpp"
 
-emulator_t::emulator_t(u8 * cart_data, u32 cart_len) {
+emulator_t::emulator_t(u8 *cart_data, u32 cart_len) {
   mmu.bios_rom = DMG_ROM_bin;
   decoder.mmu = &mmu;
   decoder.ii.mmu = &mmu;
@@ -10,10 +10,10 @@ emulator_t::emulator_t(u8 * cart_data, u32 cart_len) {
   load_cart(cart_data, cart_len);
 }
 
-emulator_t::emulator_t() : emulator_t(0, 0) { }
+emulator_t::emulator_t() : emulator_t(0, 0) {}
 
-void emulator_t::load_cart(u8 * cart_data, u32 cart_len) {
-  this->cart = Cart {cart_data, cart_len};
+void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
+  this->cart = Cart{cart_data, cart_len};
   this->cpu.clear();
   this->mmu.BiosLock = 0;
   this->mmu.clear();
@@ -36,25 +36,31 @@ u32 emulator_t::single_step() {
       this->mmu.set(0xFF0F, intvector & ~(1 << (i - 1)));
       handler = 0x38 + 8 * i;
     };
-    
 
     if (cpu.IME) {
-      if (interrupt & 1) set_interrupt(1);
-      else if (interrupt & 2) set_interrupt(2);
-      else if (interrupt & 4) set_interrupt(3);
-      else if (interrupt & 8) set_interrupt(4);
-      else if (interrupt & 16) set_interrupt(5);
-      else { return 0; } // something very strange happened here
-      
+      if (interrupt & 1)
+        set_interrupt(1);
+      else if (interrupt & 2)
+        set_interrupt(2);
+      else if (interrupt & 4)
+        set_interrupt(3);
+      else if (interrupt & 8)
+        set_interrupt(4);
+      else if (interrupt & 16)
+        set_interrupt(5);
+      else {
+        return 0;
+      } // something very strange happened here
+
       cpu.IME = 0;
       decoder.ii._push(decoder.pc);
       decoder.pc = handler;
-      return 0; // this is so we have a debug step at the beginning of the handler
+      return 0; // this is so we have a debug step at the beginning of the
+                // handler
     } else {
       // TODO: halt bug?
-      
     }
-  } 
+  }
 
   joypad.tick();
 
@@ -69,14 +75,18 @@ u32 emulator_t::single_step() {
     decoder.decode();
 
     if (decoder.error) {
-      log(decoder.pc_start, "decoder error", decoder.error); _stop(); return 0;
+      log(decoder.pc_start, "decoder error", decoder.error);
+      _stop();
+      return 0;
     }
     if (decoder.ii.error) {
-      log(decoder.pc_start, "runner error", decoder.ii.error); _stop(); return 0;
+      log(decoder.pc_start, "runner error", decoder.ii.error);
+      _stop();
+      return 0;
     }
   }
 
-  u32 dt = 16;              // TODO: do timing based on actual instruction decodetime
+  u32 dt = 16; // TODO: do timing based on actual instruction decodetime
   dt = 8;
   ppu.tick(dt);
 
@@ -85,8 +95,9 @@ u32 emulator_t::single_step() {
 }
 void emulator_t::step(i32 ticks) {
   // _runner.verbose_log = true;
-  while(ticks > 0) {
-    if (decoder.error || decoder.ii.error) break;
+  while (ticks > 0) {
+    if (decoder.error || decoder.ii.error)
+      break;
 
     debug.step();
 

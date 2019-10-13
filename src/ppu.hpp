@@ -18,12 +18,12 @@ struct OamEntry {
 
 struct MemoryMapper;
 struct PPU {
-  PPU(IoPorts &io, MemoryMapper &mmu) : io(io), mmu(&mmu) { }
+  PPU(IoPorts &io, MemoryMapper &mmu) : io(io), mmu(&mmu) {}
   IoPorts &io;
-  MemoryMapper * mmu = 0;
-  u32 * ext_timer = 0;
+  MemoryMapper *mmu = 0;
+  u32 *ext_timer = 0;
   u32 line_timer = 0, frame = 0;
-  
+
   u8 &LcdControl = io.data[0x40];
   u8 &LcdStatus = io.data[0x41];
   u8 &ScrollY = io.data[0x42];
@@ -42,7 +42,7 @@ struct PPU {
 
   u8 select_background_tile(u8 x, u8 y);
   u8 select_tile_pixel(u8 tile_index, u8 x, u8 y);
-  
+
   static const int DISPLAY_W = 160, DISPLAY_H = 144;
   u8 display[DISPLAY_W * DISPLAY_H];
   void set_display(u8 x, u8 y, u8 pixel);
