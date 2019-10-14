@@ -1,6 +1,8 @@
 /// handles uploading roms
-function encode(buf) {
-  return String.fromCharCode.apply(null, new Uint8Array(buf));
+function encode(buf, start, len) {
+  if (len <= 0x8000)
+    return String.fromCharCode.apply(null, new Uint8Array(buf, start, len));
+  return encode(buf, 0, 0x8000) + encode(buf, 0x8000, len - 0x8000);
 }
 
 function decode(str) {
@@ -22,7 +24,7 @@ class FileList {
         .then(buffer => {
           let count = localStorage.getItem("rom_count") | 0;
           localStorage.setItem("rom_" + count + "_name", file.name);
-          localStorage.setItem("rom_" + count + "_data", encode(buffer));
+          localStorage.setItem("rom_" + count + "_data", encode(buffer, 0, buffer.byteLength));
           localStorage.setItem("rom_count", count + 1);
           list_object.redraw();
         });

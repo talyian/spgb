@@ -1,6 +1,6 @@
 #pragma once
 #include "instructions.hpp"
-#include "wasm_host.hpp"
+#include "platform.hh"
 #include "memory_mapper.hpp"
 #include "cpu.hpp"
   
@@ -259,16 +259,17 @@ struct InstructionRunner {
     }
   }
 
-  void NOP() { m_log(*PC_start_ptr, __FUNCTION__); }
+  void NOP() {
+
+  }
+  
   void STOP() {
-    m_log(*PC_start_ptr, __FUNCTION__);
     cpu.stopped = 1;
     cpu.halted = 1;
   }
   void DAA() {
     auto &fl = cpu.flags;
     auto &registers = cpu.registers;
-    m_log(*PC_start_ptr, __FUNCTION__);
     if (fl.N) {
       if (fl.C) { registers.A -= 0x60; }
       if (fl.H) { registers.A -= 0x06; }
@@ -285,7 +286,6 @@ struct InstructionRunner {
   void CPL() {
     auto &fl = cpu.flags;
     auto &registers = cpu.registers;
-    m_log(*PC_start_ptr, __FUNCTION__);
     registers.A = ~registers.A;
     fl.N = 1;
     fl.H = 1;
@@ -293,7 +293,6 @@ struct InstructionRunner {
 
   // Set Carry Flag
   void SCF() {
-    m_log(*PC_start_ptr, __FUNCTION__);
     cpu.flags.N = 0;
     cpu.flags.H = 0;
     cpu.flags.C = 1;
@@ -301,7 +300,6 @@ struct InstructionRunner {
 
   // Complement Carry Flag
   void CCF() {
-    m_log(*PC_start_ptr, __FUNCTION__);
     cpu.flags.N = 0;
     cpu.flags.H = 0;
     cpu.flags.C = 1 - cpu.flags.C;
@@ -309,28 +307,26 @@ struct InstructionRunner {
 
   // Disable Interrupts
   void DI() {
-    m_log(*PC_start_ptr, __FUNCTION__);
     cpu.IME = 0;
   }
 
   // Enable Interrupts
   void EI() {
-    m_log(*PC_start_ptr, __FUNCTION__);
     cpu.IME = 1;
   }
 
   void HALT() {
-    m_log(*PC_start_ptr, __FUNCTION__);
     cpu.halted = 1;
+    if (cpu.IME == 0) {
+      *PC_ptr += 1;
+    }
   }
 
   void RLCA() {
-    m_log(*PC_start_ptr, __FUNCTION__);
     RLC(Register8::A);
     cpu.flags.Z = 0;
   }
   void RRCA() {
-    m_log(*PC_start_ptr, __FUNCTION__);
     RRC(Register8::A);
     cpu.flags.Z = 0;
   }
@@ -339,23 +335,19 @@ struct InstructionRunner {
     cpu.flags.Z = 0;
   }
   void RRA() {
-    m_log(*PC_start_ptr, __FUNCTION__);
     RR(Register8::A);
     cpu.flags.Z = 0;
   }
   
   void LD8(Value8 o, Value8 v) {
-    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     _write8(o, _read8(v));
   }
   void LD16(Value16 o, Value16 v) {
-    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     _write16(o, _read16(v));
   }
 
   void BIT(u8 o, Value8 v) {
     if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
-    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u8 val = _read8(v) & (1 << o);
     cpu.flags.Z = val == 0;
     cpu.flags.N = 0;
@@ -364,13 +356,11 @@ struct InstructionRunner {
 
   void RES(u8 o, Value8 v) {
     if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
-    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u8 val = _read8(v) & ~(1 << o);
     _write8(v, val);
   }
   void SET(u8 o, Value8 v) {
     if (o < 0 || o > 7) { log("bit", o, v); error = 3; return; }
-    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u8 val = _read8(v) | (1 << o);
     _write8(v, val);
   }
@@ -386,7 +376,6 @@ struct InstructionRunner {
   }
 
   void ADD(Value8 o, Value8 v) {
-    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u8 a = _read8(o);
     u8 b = _read8(v);
     _write8(o, a + b);
@@ -397,7 +386,6 @@ struct InstructionRunner {
   }
 
   void ADC(Value8 o, Value8 v) {
-    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     u8 a = _read8(o);
     u8 b = _read8(v);
     u8 c = cpu.flags.C;
@@ -410,7 +398,6 @@ struct InstructionRunner {
   }
 
   void XOR(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     cpu.registers.A = cpu.registers.A ^ _read8(o);
     cpu.flags.N = 0;
     cpu.flags.H = 0;
@@ -418,7 +405,6 @@ struct InstructionRunner {
     cpu.flags.Z = cpu.registers.A == 0;
   }
   void AND(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     cpu.registers.A = cpu.registers.A & _read8(o);
     cpu.flags.N = 0;
     cpu.flags.H = 1;
@@ -426,7 +412,6 @@ struct InstructionRunner {
     cpu.flags.Z = cpu.registers.A == 0;
   }
   void OR(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     cpu.registers.A = cpu.registers.A | _read8(o);
     cpu.flags.N = 0;
     cpu.flags.H = 0;
@@ -435,7 +420,6 @@ struct InstructionRunner {
   }
 
   void DEC(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 a = _read8(o);
     u8 v = a - (u8)1;
     _write8(o, v);
@@ -444,14 +428,12 @@ struct InstructionRunner {
     cpu.flags.H = (a & 0xF) < 1;
   } 
   void DEC(Register16 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u16 v = _read16(o);
     _write16(o, v - 1);
     // no flags
   }
   
   void INC(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 v = _read8(o);
     _write8(o, v + 1);
     cpu.flags.N = 0;
@@ -460,13 +442,11 @@ struct InstructionRunner {
   }  // INC LoadHL)
 
   void INC(Register16 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u16 v = _read16(o) + 1;
     _write16(o, v);
   } // INC HL
 
   void SUB(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 a = _read8(Register8::A);
     u8 b = _read8(o);
     _write8(Register8::A, a - b);
@@ -477,7 +457,6 @@ struct InstructionRunner {
   }
 
   void SBC(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 a = _read8(Register8::A);
     u8 b = _read8(o);
     u8 c = cpu.flags.C;
@@ -491,7 +470,6 @@ struct InstructionRunner {
 
   // unsigned right-shift
   void SRL(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 v = _read8(o);
     cpu.flags.C = v & 1;
     cpu.flags.N = 0;
@@ -502,7 +480,6 @@ struct InstructionRunner {
 
   // signed right-shift
   void SRA(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 v = _read8(o);
     cpu.flags.C = v & 1;
     cpu.flags.H = 0;
@@ -513,7 +490,6 @@ struct InstructionRunner {
 
   // left shift
   void SLA(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 v = _read8(o);
     u8 v2 = v << 1;
     cpu.flags.C = v & 0x80;
@@ -525,7 +501,6 @@ struct InstructionRunner {
 
   // 8-bit Right Rotate
   void RRC(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 v = _read8(o);
     cpu.flags.Z = v == 0;
     cpu.flags.C = v & 1;
@@ -535,7 +510,6 @@ struct InstructionRunner {
   }
 
   void RLC(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 v = _read8(o);
     cpu.flags.C = v & 0x80;
     v = (v << 1) | (v >> 7);
@@ -547,7 +521,6 @@ struct InstructionRunner {
 
   // 9-bit rotate-left-through-carry
   void RL(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u16 v = (_read8(o) << 1) | cpu.flags.C;
     cpu.flags.C = v & 0x100;
     cpu.flags.N = 0;
@@ -558,7 +531,6 @@ struct InstructionRunner {
   
   // 9-bit rotate-right-through-carry
   void RR(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u16 v = _read8(o) | (cpu.flags.C << 8);
     cpu.flags.C = v & 1;
     v = v >> 1;
@@ -569,7 +541,6 @@ struct InstructionRunner {
   }
 
   void SWAP(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 value = _read8(o);
     value = value << 4 | (value >> 4);
     _write8(o, value);
@@ -578,14 +549,12 @@ struct InstructionRunner {
   }
   
   void RST(u8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 addr = _read8(o);
     _push(*PC_ptr);
     *PC_ptr = addr;
   }
 
   void CP(Value8 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     u8 a = cpu.registers.A;
     u8 b = _read8(o);
     cpu.flags.Z = a == b;
@@ -594,11 +563,9 @@ struct InstructionRunner {
     cpu.flags.H = (a & 0xF) < (b & 0xF);
   }
   void PUSH(Register16 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     _push(_read16(o));
   }
   void POP(Register16 o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     _write16(o, _pop());
   }
   
@@ -616,24 +583,20 @@ struct InstructionRunner {
   }
   
   void RET(Conditions o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     if (_check(o)) *PC_ptr = _pop();
   }
   void RETI(Conditions o) {
-    m_log(*PC_start_ptr, __FUNCTION__, o);
     // log(*PC_start_ptr, "reti");
     cpu.IME = 1;
     *PC_ptr = _pop();
   }
   void JR(Conditions o, Value8 v) {
-    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     if (_check(o)) *PC_ptr += (i8) _read8(v);
     static bool warned = false;
     if (_check(o) && _read8(v) == 0xfe && !warned)
       log(*PC_start_ptr, "warning: infinite loop", warned = true);
   }
   void JP(Conditions o, Value16 v) {
-    m_log(*PC_start_ptr, __FUNCTION__, o, v);
     if (_check(o))
       *PC_ptr = _read16(v);
   }

@@ -1,6 +1,6 @@
 #include "emulator.hpp"
 
-#include "platform_utils.cc"
+#include "platform_shared.cc"
 #include "instruction_decoder.cpp"
 #include "instructions.cpp"
 #include "memory_mapper.cpp"

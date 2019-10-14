@@ -1,8 +1,11 @@
 #pragma once
 #include "instructions.hpp"
-#include "wasm_host.hpp"
+#include "platform.hh"
 
 struct InstructionPrinter {
+  u16 internal_pc = 0;
+  u16 internal_pc_start = 0;
+
   u16 * PC_ptr = 0;
   u16 * PC_start_ptr = 0;
   int error = 0;
@@ -64,4 +67,5 @@ struct InstructionPrinter {
   void JR(Conditions o, Value8 v) { log(__FUNCTION__, o, v); }
   void JP(Conditions o, Value16 v) { log(__FUNCTION__, o, v); }
   void CALL(Conditions o, Value16 v) { log(__FUNCTION__, o, v); }
+
 };

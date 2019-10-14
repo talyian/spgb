@@ -2,7 +2,6 @@
 #include "base.hpp"
 #include "io_ports.hpp"
 #include "timer.hpp"
-#include "wasm_host.hpp"
 #include "cart.hpp"
 
 struct MemoryMapper {

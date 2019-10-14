@@ -1,8 +1,6 @@
 #pragma once
 #include "base.hpp"
-#include "str.hpp"
 
-// imports
 extern "C" {
   void _logf(double v);
   void _logx8(u8 v);
@@ -17,17 +15,9 @@ extern "C" {
 
 #define WASM_EXPORT __attribute__((visibility("default")))
 
-#ifdef WASM
-// if we're freestanding, we write our own string.h functions here
-// memset/memcpy are assumed to be provided as part of the runtime
-extern "C" {
-size_t strlen(const char * s);
-void *memset(void *dest, int c, size_t n);
-void *memcpy(void *dest, const void *src, size_t n);
-}
-#else
-#include <string.h>
-#endif
+extern "C" size_t sslen(const char * s);
+extern "C" void *memset(void *dest, int c, size_t n);
+// void *memcpy(void *dest, const void *src, size_t n);
 
 namespace logs {
 void _log(u8 v);
@@ -37,7 +27,6 @@ void _log(i32 v);
 void _log(double f);
 void _log(const char * s);
 void _log(void* s);
-void _log(str s);
 
 template<class T>
 void log(T x) { _log(x); _showlog (); }

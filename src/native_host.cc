@@ -1,10 +1,13 @@
 #include "base.hpp"
-#include "wasm_host.hpp"
+#include "platform.hh"
 #include "emulator.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+extern "C" size_t sslen(const char * s) { return strlen(s); }
+
 // imports
 extern "C" {
   void _logf(double v) { printf("%f ", v); }

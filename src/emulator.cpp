@@ -23,7 +23,7 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
 
 u32 emulator_t::single_step() {
 
-  u8 interrupt = (mmu.get(0xFFFF) & mmu.get(0xFF0F));
+  u8 interrupt = (mmu.get(IoPorts::IE) & mmu.get(IoPorts::IF));
 
   if (interrupt) {
     // when an interrupt triggers we clear the IME
@@ -32,8 +32,7 @@ u32 emulator_t::single_step() {
     cpu.halted = false;
     u8 handler = 0x40;
     auto set_interrupt = [this, &handler](int i) -> void {
-      u8 intvector = this->mmu.get(0xFF0F);
-      this->mmu.set(0xFF0F, intvector & ~(1 << (i - 1)));
+      mmu.set(IoPorts::IF, mmu.get(IoPorts::IF) & ~(1 << (i - 1)));
       handler = 0x38 + 8 * i;
     };
 
@@ -93,6 +92,7 @@ u32 emulator_t::single_step() {
   timer.tick(dt);
   return dt;
 }
+
 void emulator_t::step(i32 ticks) {
   // _runner.verbose_log = true;
   while (ticks > 0) {

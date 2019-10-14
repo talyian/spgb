@@ -1,5 +1,5 @@
 #include "base.hpp"
-#include "wasm_host.hpp"
+#include "platform.hh"
 
 // Registers
 typedef u8 Reg8;

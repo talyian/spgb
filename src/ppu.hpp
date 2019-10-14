@@ -1,7 +1,7 @@
 #pragma once
 #include "base.hpp"
 #include "io_ports.hpp"
-#include "wasm_host.hpp"
+#include "platform.hh"
 
 struct OamEntry {
   u8 y;

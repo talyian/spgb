@@ -1,6 +1,5 @@
 #pragma once
 #include "base.hpp"
-#include "wasm_host.hpp"
 #include "memory_mapper.hpp"
 #include "instruction_printer.hpp"
 #include "instruction_runner.hpp"
