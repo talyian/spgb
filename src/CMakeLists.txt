@@ -34,8 +34,10 @@ add_custom_target(copy_wasm
   COMMAND cp gb_emulator.wasm ../../wasmgui/build/
   DEPENDS gb_emulator.wasm)
 
+elseif (WINDOWS)
+  add_executable(gb_emulator main.cc platform_windows.cc)
+  target_link_libraries(gb_emulator OpenGL32)
 else()
-
   add_compile_options(
     -fvisibility=hidden
     -std=c++14

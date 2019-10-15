@@ -79,7 +79,6 @@ u8 PPU::select_tile_pixel(u8 tile_index, u8 x, u8 y) {
   }
 }
 
-__attribute__((noinline))
 void PPU::scan_line() {
   // reads in LineY and writes that scanline to `display`
   u8 bg_y = LineY + ScrollY;

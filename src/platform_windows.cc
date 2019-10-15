@@ -8,25 +8,25 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <commdlg.h>
 
 #include <gl/gl.h>
 
-extern "C" size_t sslen(const char *s) { return strlen(s); }
+extern "C" size_t sslen(const char* s) { return strlen(s); }
 
 // imports
 extern "C" {
-void _logf(double v) { printf("%f ", v); }
-void _logx8(u8 v) { printf("%02x ", v); }
-void _logx16(u16 v) { printf("%04x ", v); }
-void _logx32(u32 v) { printf("%04x ", v); }
-void _logs(const char *s, u32 len) { printf("%.*s ", len, s); }
-void _showlog() { printf("\n"); }
-void _stop() { exit(1); }
-void _logp(void *v) { printf("%p ", v); }
+  void _logf(double v) { printf("%f ", v); }
+  void _logx8(u8 v) { printf("%02x ", v); }
+  void _logx16(u16 v) { printf("%04x ", v); }
+  void _logx32(u32 v) { printf("%04x ", v); }
+  void _logs(const char* s, u32 len) { printf("%.*s ", len, s); }
+  void _showlog() { printf("\n"); }
+  void _stop() { exit(1); }
+  void _logp(void* v) { printf("%p ", v); }
+  void _serial_putc(char c) {
+  }
 }
-
-extern "C" void *get_emulator();
-extern "C" void step_frame(void *emulator);
 
 struct Win32Emulator {
   HWND hwnd = 0;
@@ -54,8 +54,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   case WM_PAINT:
     break;
   case WM_KEYUP: {
-    auto *jp = &win32_emulator.emu.joypad;
-    switch(wParam) {
+    auto* jp = &win32_emulator.emu.joypad;
+    switch (wParam) {
     case VK_RETURN: jp->button_up(Buttons::START); return 0;
     case VK_RSHIFT: jp->button_up(Buttons::SELECT); return 0;
     case 'J': jp->button_up(Buttons::B); return 0;
@@ -69,8 +69,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     }
   }
   case WM_KEYDOWN: {
-    auto *jp = &win32_emulator.emu.joypad;
-    switch(wParam) {
+    auto* jp = &win32_emulator.emu.joypad;
+    switch (wParam) {
     case VK_RETURN: jp->button_down(Buttons::START); return 0;
     case VK_RSHIFT: jp->button_down(Buttons::SELECT); return 0;
     case 'J': jp->button_down(Buttons::B); return 0;
@@ -82,36 +82,54 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     case VK_ESCAPE:
       DestroyWindow(hwnd); return 0;
     }
-  }}
+  }
+  }
   return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
-u8 * display_memory = 0;
+u8* display_memory = 0;
 u32 display_memory_len = 0;
 
-int main(int argc, char **argv) {
+// Reads a cart file from a path
+void load_cart_file(char* path, emulator_t* emu) {
+  FILE* f = fopen(path, "r");
+  if (!f) { fprintf(stderr, "%s: file not found\n", path); exit(19); }
+  fseek(f, 0, SEEK_END);
+  size_t len = ftell(f);
+  fseek(f, 0, 0);
+  u8* buf = new u8[len];
+  fread(buf, 1, len, f);
+  fclose(f);
+  emu->load_cart(buf, len);
+}
 
+int main(int argc, char** argv) {
   // init emulator 
-  emulator_t &emu = win32_emulator.emu;
-  u8 last_serial_cursor = 0, first_serial = 1;  
+  emulator_t& emu = win32_emulator.emu;
+  u8 last_serial_cursor = 0, first_serial = 1;
 
+  // Select Cart
   if (argc > 1) {
-    FILE * f = fopen(argv[1], "r");
-    if (!f) { fprintf(stderr, "%s: file not found\n", argv[1]); exit(19); }
-    fseek(f,0,SEEK_END);
-    size_t len = ftell(f);
-    fseek(f,0,0);
-    u8 * buf = new u8[len];
-    fread(buf, 1, len, f);
-    fclose(f);
-    emu.load_cart(buf, len);
-  } else {
-    printf("no file specified\n");
-    return 18;
+    load_cart_file(argv[1], &emu);
+  }
+  else {
+    char filename[0x100] = { 0 };
+    OPENFILENAME ofn;
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFile = filename;
+    ofn.nMaxFile = 0x100;
+    ofn.lpstrInitialDir = NULL;
+    if (!GetOpenFileName(&ofn)) {
+      printf("no file specified\n");
+      return 18;
+    }
+    load_cart_file(ofn.lpstrFile, &emu);
   }
 
   // init win32 window
-  WNDCLASS wnd_class{0};
+  WNDCLASS wnd_class{ 0 };
   wnd_class.hInstance = NULL;
   wnd_class.lpfnWndProc = WndProc;
   wnd_class.lpszClassName = "gbo";
@@ -144,9 +162,9 @@ int main(int argc, char **argv) {
   HDC hdc = win32_emulator.hdc = GetDC(hwnd);
   PIXELFORMATDESCRIPTOR pfd;
   memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
-  pfd.nSize  = sizeof(PIXELFORMATDESCRIPTOR);
-  pfd.nVersion   = 1;
-  pfd.dwFlags    = PFD_DOUBLEBUFFER | PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW;
+  pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+  pfd.nVersion = 1;
+  pfd.dwFlags = PFD_DOUBLEBUFFER | PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW;
   pfd.iPixelType = PFD_TYPE_RGBA;
   pfd.cColorBits = 32;
   pfd.cDepthBits = 32;
@@ -160,12 +178,13 @@ int main(int argc, char **argv) {
     printf("SetPixelFormat error\n");
     return __LINE__;
   }
+
   HGLRC gl = win32_emulator.gl = wglCreateContext(hdc);
   wglMakeCurrent(hdc, gl);
   auto version = glGetString(GL_VERSION);
   printf("OpenGL Version: %s\n", version);
 
-  u32 &display = win32_emulator.display_texture;
+  u32& display = win32_emulator.display_texture;
   glGenTextures(1, &display);
   glBindTexture(GL_TEXTURE_2D, display);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -174,60 +193,31 @@ int main(int argc, char **argv) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   long long int frames = 1;
-  while(true) {
+  while (true) {
     if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       if (msg.message == WM_QUIT) exit(0);
       TranslateMessage(&msg);
       DispatchMessage(&msg);
       continue;
     }
-    // frames++;
-    // if (emu.decoder.pc != 0x64 &&
-    //     emu.decoder.pc != 0x66 &&
-    //     emu.decoder.pc != 0x68 &&
-    //     emu.decoder.pc != 0x39 &&
-    //     emu.decoder.pc != 0x38 &&
-    //     emu.decoder.pc != 0x1e3 &&
-    //     true)
-    //   printf("[%x] tick %lld\n", emu.decoder.pc, frames);
-    emu.single_step();
-    // auto &serial = emu.cpu.serial;
-    // if (last_serial_cursor < serial.pos) {
-    //   // printf("\x1b[1;31m");
-    //   if (first_serial) { printf("Serial: "); first_serial = 0; }
-    //   // blargg tests
-    //   for(; last_serial_cursor < serial.pos; last_serial_cursor++) {
-    //     u8 c = serial.out_buf[last_serial_cursor];
-    //     if (c >= 0x20 || c == '\n')
-    //       putchar(c);
-    //     else
-    //       printf("\\x%02x", c);
-    //     if (c == '\n') {
-    //       first_serial = 1;
-    //     }
-    //   }
-    //   // printf("\x1b[0m");
-    //   serial.out_buf[255] = 0;
-    //   if (strstr((const char *)serial.out_buf, "Passed") ||
-    //       strstr((const char *)serial.out_buf, "Failed")) {
-    //     exit(0);
-    //   }
-    // }
+
+    for (int i = 0; i < 4000000 / 60; i++)
+      emu.single_step();
   }
 }
 
-void _push_frame(u32 category, u8 *memory, u32 len) {
-  if (category == 0x300) { 
+void _push_frame(u32 category, u8* memory, u32 len) {
+  if (category == 0x300) {
     display_memory = memory;
     display_memory_len = len;
 
-    glClearColor(1.0, 0.5, 0.2, 1.0);
+    glClearColor(1.0f, 0.5f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glBindTexture(GL_TEXTURE_2D, win32_emulator.display_texture);
-    for(int i = 0; i < len; i++) {
+    for (u32 i = 0; i < len; i++) {
       memory[i] = memory[i] == 0 ? 0 :
-        memory[i] == 1 ? 0x60 : 
+        memory[i] == 1 ? 0x60 :
         memory[i] == 2 ? 0x90 :
         0xFF;
     }
@@ -239,14 +229,14 @@ void _push_frame(u32 category, u8 *memory, u32 len) {
       memory);
     glEnable(GL_TEXTURE_2D);
     glBegin(GL_TRIANGLES);
-    auto w = 1.0;
+    auto w = 1.0f;
     glTexCoord2f(0, 1);
     glVertex3f(-w, -w, 0);
     glTexCoord2f(1, 1);
     glVertex3f(w, -w, 0);
     glTexCoord2f(1, 0);
     glVertex3f(w, w, 0);
-    
+
     glTexCoord2f(0, 1);
     glVertex3f(-w, -w, 0);
     glTexCoord2f(1, 0);

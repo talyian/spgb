@@ -4,7 +4,7 @@
 #pragma once
 #include "base.hpp"
 
-// Imports
+// Imports - these are provided by the platform
 extern "C" {
   void _logf(double v);
   void _logx8(u8 v);
@@ -17,7 +17,11 @@ extern "C" {
   void _stop();
 }
 
+#ifdef WASM
 #define WASM_EXPORT __attribute__((visibility("default")))
+#else
+#define WASM_EXPORT
+#endif
 
 extern "C" size_t sslen(const char * s);
 extern "C" void *memset(void *dest, int c, size_t n) throw ();

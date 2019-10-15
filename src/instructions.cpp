@@ -2,23 +2,23 @@
 
 const char * name_of(Register16 r) {
   switch(r) {
-  case Register16::BC: return("BC"); break;
-  case Register16::DE: return("DE"); break;
-  case Register16::HL: return("HL"); break;
-  case Register16::AF: return("AF"); break;
-  case Register16::SP: return("SP"); break;
+  case Register16::BC: return("BC"); 
+  case Register16::DE: return("DE"); 
+  case Register16::HL: return("HL");
+  case Register16::AF: return("AF"); 
+  case Register16::SP: return("SP");
   }    
 }
 const char * name_of(Register8 r) {
   switch(r) {
-  case Register8::A: return("A"); break;
-  case Register8::B: return("B"); break;
-  case Register8::C: return("C"); break;
-  case Register8::D: return("D"); break;
-  case Register8::E: return("E"); break;
-  case Register8::F: return("F"); break;
-  case Register8::H: return("H"); break;
-  case Register8::L: return("L"); break;
+  case Register8::A: return("A");
+  case Register8::B: return("B");
+  case Register8::C: return("C");
+  case Register8::D: return("D");
+  case Register8::E: return("E");
+  case Register8::F: return("F");
+  case Register8::H: return("H");
+  case Register8::L: return("L");
   }
 }
 
