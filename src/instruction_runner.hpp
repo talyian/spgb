@@ -1,6 +1,6 @@
 #pragma once
 #include "instructions.hpp"
-#include "platform.hh"
+#include "platform.hpp"
 #include "memory_mapper.hpp"
 #include "cpu.hpp"
   

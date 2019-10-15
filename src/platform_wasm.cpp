@@ -1,5 +1,5 @@
 #include "base.hpp"
-#include "platform.hh"
+#include "platform.hpp"
 #include "emulator.hpp"
 
 // functions we need to provide since WASM is a freestanding environment

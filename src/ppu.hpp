@@ -1,7 +1,7 @@
 #pragma once
 #include "base.hpp"
 #include "io_ports.hpp"
-#include "platform.hh"
+#include "platform.hpp"
 
 struct OamEntry {
   u8 y;

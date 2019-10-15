@@ -1,6 +1,6 @@
 #pragma once
 #include "instructions.hpp"
-#include "platform.hh"
+#include "platform.hpp"
 
 struct InstructionPrinter {
   u16 internal_pc = 0;

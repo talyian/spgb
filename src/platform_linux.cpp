@@ -1,5 +1,5 @@
 #include "base.hpp"
-#include "platform.hh"
+#include "platform.hpp"
 #include "emulator.hpp"
 
 #include <stdio.h>
