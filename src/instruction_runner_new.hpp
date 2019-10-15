@@ -80,7 +80,7 @@ struct InstructionDasher {
     case 0x3A: A = mmu_get(HL--); break;
     case 0x3E: A = _read_u8(); break;
 
-    case 0x40: B = B; break;
+    case 0x40: /*B = B;*/ break;
     case 0x41: B = C; break;
     case 0x42: B = D; break;
     case 0x43: B = E; break;
@@ -90,7 +90,7 @@ struct InstructionDasher {
     case 0x47: B = A; break;
 
     case 0x48: C = B; break;
-    case 0x49: C = C; break;
+    case 0x49: /*C = C;*/ break;
     case 0x4A: C = D; break;
     case 0x4B: C = E; break;
     case 0x4C: C = H; break;
@@ -120,7 +120,7 @@ struct InstructionDasher {
     case 0x61: H = C; break;
     case 0x62: H = D; break;
     case 0x63: H = E; break;
-    case 0x64: H = H; break;
+    case 0x64: /*H = H;*/ break;
     case 0x65: H = L; break;
     case 0x66: H = mmu_get(HL); break;
     case 0x67: H = A; break;
