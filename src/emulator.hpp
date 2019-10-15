@@ -4,6 +4,7 @@
 #include "cart.hpp"
 #include "debugger.hpp"
 #include "instruction_decoder.hpp"
+#include "instruction_runner_new.hpp"
 #include "io_ports.hpp"
 #include "joypad.hpp"
 #include "memory_mapper.hpp"
@@ -28,6 +29,7 @@ struct emulator_t {
   InstructionPrinter _printer;
   RunnerDecoder decoder{_runner};
   PrinterDecoder printer{_printer};
+  InstructionDasher _dasher{cpu, mmu};
   Debugger debug{&mmu, &decoder, &cpu};
 
   emulator_t(u8 *, u32);

@@ -1,8 +1,11 @@
+#pragma once
+
 #include "base.hpp"
 #include "platform.hpp"
 
 // Registers
 typedef u8 Reg8;
+
 struct Reg16 {
   u8 h, l;
   Reg16() = default;
@@ -18,6 +21,13 @@ struct Reg16 {
   Reg16 operator++ (int) {
     u16 u = (u16) *this;
     Reg16 r = u + (u16)1;
+    h = r.h;
+    l = r.l;
+    return u;
+  }
+  Reg16 operator-- (int) {
+    u16 u = (u16) *this;
+    Reg16 r = u - (u16)1;
     h = r.h;
     l = r.l;
     return u;

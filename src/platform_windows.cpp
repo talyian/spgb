@@ -24,7 +24,15 @@ extern "C" {
   void _showlog() { printf("\n"); }
   void _stop() { exit(1); }
   void _logp(void* v) { printf("%p ", v); }
-  void _serial_putc(u8 v) { printf("Serial [%c]\n", v); }
+  void _serial_putc(u8 v) {
+    static u64 sequence = 0;
+    printf("Serial [%c]\n", v);
+    sequence = sequence * 0x100 + v;
+    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"dessaP\0\0")
+      exit(0);
+    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"deliaF\0\0")
+      exit(-1);
+  }
 }
 
 struct Win32Emulator {

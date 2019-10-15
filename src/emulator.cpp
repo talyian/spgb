@@ -23,6 +23,7 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
 
 u32 emulator_t::single_step() {
 
+  u32 dt = 16; // TODO: do timing based on actual instruction decodetime
   u8 interrupt = (mmu.get(IoPorts::IE) & mmu.get(IoPorts::IF));
 
   if (interrupt) {
@@ -71,8 +72,16 @@ u32 emulator_t::single_step() {
   }
 
   if (!cpu.halted) {
-    decoder.decode();
-
+    _dasher.PC = decoder.pc;
+    _dasher.cycles = 0;
+    if (_dasher.decode()) {
+      decoder.pc_start = _dasher.PC_start;
+      decoder.pc = _dasher.PC;
+      dt = _dasher.cycles;
+    }
+    else 
+      decoder.decode();
+    
     if (decoder.error) {
       log(decoder.pc_start, "decoder error", decoder.error);
       _stop();
@@ -85,8 +94,6 @@ u32 emulator_t::single_step() {
     }
   }
 
-  u32 dt = 16; // TODO: do timing based on actual instruction decodetime
-  dt = 8;
   ppu.tick(dt);
 
   timer.tick(dt);
