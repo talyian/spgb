@@ -101,77 +101,9 @@ int main(int argc, char ** argv) {
     }
     
     emu.single_step();
-
-    auto &serial = emu.cpu.serial;
-    // if (serial.pos >= last_serial_cursor && serial.out_buf[serial.pos] == '\n') {
-    if (last_serial_cursor < serial.pos) {
-      // printf("\x1b[1;31m");
-      if (first_serial) { printf("Serial: "); first_serial = 0; }
-      // blargg tests
-      for(; last_serial_cursor < serial.pos; last_serial_cursor++) {
-        u8 c = serial.out_buf[last_serial_cursor];
-        if (c >= 0x20 || c == '\n')
-          putchar(c);
-        else
-          printf("\\x%02x", c);
-        if (c == '\n') {
-          first_serial = 1;
-        }
-      }
-      // printf("\x1b[0m");
-      serial.out_buf[255] = 0;
-      if (strstr((const char *)serial.out_buf, "Passed") ||
-          strstr((const char *)serial.out_buf, "Failed")) {
-        exit(0);
-      }
-    }
-  }
-}
-
-void _show_tile(u8 * memory, u32 len) {
-  printf("Tile Map  ========================================\n");
-  u8 buffer[16 * 8 * 8 * 8];
-  u8 STRIDE = 8 * 8;
-  u8 * tile_data = memory;
-  for(u8 y = 0; y < 8; y++) {
-    for(u8 x = 0; x < 16; x++) {
-      u8 s = 0;
-      for(u8 i = 0; i < 16; i++) s += tile_data[i];
-
-      for(u8 j = 0; j < 8; j++) {
-        for(u8 i = 0; i < 8; i ++) {
-          buffer[STRIDE * (y * 8 + j) + x * 8 + i] = s;
-        }
-      }
-      tile_data += 16;
-    }
-  }
-  u8 * p = buffer;
-  for(u8 y = 0; y < 2 * 8; y++) {
-    for(u8 x = 0; x < 16 * 8; x++) {
-      printf("%c", ' ' + (*p & 0x4f));
-      p++;
-    }
-    printf("\n");
-  }
-}
-void _show_bg_map(u8 * memory, u32 len) {
-  printf("BG Map ========================================\n");
-  u8 * p = memory;
-  for(u8 y = 0; y < 32; y++){ 
-    for(u8 x = 0; x < 32; x++) {
-      printf("%c", ' ' + (*p++ % 32));
-    }
-    printf("\n");
   }
 }
 
 void _push_frame(u32 category, u8 * memory, u32 len) {
   return;
-  if ((category & ~0xFF) == 0x100)
-    _show_tile(memory,len);
-  else if ((category & 0xFF)  == 0x200)
-    _show_bg_map(memory,len);
-  else
-    ; // log("pushframe");
 }

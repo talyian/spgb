@@ -30,6 +30,10 @@ struct PPU {
   u8 &ScrollX = io.data[0x43];
   u8 &LineY = io.data[0x44];
   u8 &LineYMark = io.data[0x45];
+  u8 &OamDMA = io.data[0x46];
+  u8 &BgPalette = io.data[0x47];
+  u8 &OamPalette1 = io.data[0x48];
+  u8 &OamPalette2 = io.data[0x49];
   u8 &WindowY = io.data[0x4A];
   u8 &WindowX = io.data[0x4B];
   u8 &InterruptV = io.data[0x0F];

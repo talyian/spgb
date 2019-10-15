@@ -12,7 +12,8 @@ platform_windows.o: ../platform_windows.cpp ../base.hpp ../emulator.hpp \
   ../memory_mapper.hpp ../io_ports.hpp ../timer.hpp \
   ../instruction_decoder.hpp ../instruction_printer.hpp \
   ../instructions.hpp ../instruction_runner.hpp ../cpu.hpp \
-  ../opcodes.inc ../instruction_runner_new.hpp ../joypad.hpp ../ppu.hpp
+  ../opcodes.inc ../instruction_runner_new.hpp ../joypad.hpp ../ppu.hpp \
+  ../win32_opengl.hpp
 platform_linux.o: ../platform_linux.cpp ../base.hpp ../platform.hpp \
   ../emulator.hpp ../cart.hpp ../str.hpp ../debugger.hpp \
   ../memory_mapper.hpp ../io_ports.hpp ../timer.hpp \
