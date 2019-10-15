@@ -1,6 +1,5 @@
 #include "emulator.hpp"
 
-#include "platform_shared.cc"
 #include "instruction_decoder.cpp"
 #include "instructions.cpp"
 #include "memory_mapper.cpp"
@@ -11,6 +10,13 @@ namespace logs {
 void _log(Reg16 v) { _logx16((u16)v); };
 void _log(str s) { _logs((const char *)s.data, s.size); }
 }
+void logs::_log(u8 v) { _logx8(v); }
+void logs::_log(u16 v) { _logx16(v); }
+void logs::_log(u32 v) { _logx32(v); }
+void logs::_log(i32 v) { _logf(v); }
+void logs::_log(double f) { _logf(f); }
+void logs::_log(const char * s) { _logs(s, sslen(s)); }
+void logs::_log(void * s) { _logp(s); }
 
 extern "C" {
   emulator_t * WASM_EXPORT get_emulator() {return new emulator_t {}; }

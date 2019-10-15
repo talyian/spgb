@@ -1,6 +1,10 @@
+/// Platform.hpp - a shared API for implementing different OS environments.
+/// current platforms: Win32+OpenGL, WASM+WebGL, Linux Console
+
 #pragma once
 #include "base.hpp"
 
+// Imports
 extern "C" {
   void _logf(double v);
   void _logx8(u8 v);
