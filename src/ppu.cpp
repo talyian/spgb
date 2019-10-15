@@ -46,10 +46,10 @@ START:
 void PPU::push_frame() {
   frame++;
   _push_frame(0x300, display, DISPLAY_W * DISPLAY_H);
-  // _push_frame(0x200, mmu->VRAM + 0x1800, 32 * 32);
-  // _push_frame(0x100, mmu->VRAM, 0x800);
-  // _push_frame(0x101, mmu->VRAM + 0x800, 0x800);
-  // _push_frame(0x102, mmu->VRAM + 0x1000, 0x800);
+  _push_frame(0x200, mmu->VRAM + 0x1800, 32 * 32);
+  _push_frame(0x100, mmu->VRAM, 0x800);
+  _push_frame(0x101, mmu->VRAM + 0x800, 0x800);
+  _push_frame(0x102, mmu->VRAM + 0x1000, 0x800);
   InterruptV |= 0x01; // HBLANK
 }
 
