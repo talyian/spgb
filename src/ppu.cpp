@@ -60,12 +60,10 @@ u8 PPU::select_background_tile(u8 x, u8 y) {
 };
 
 u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8 y) {
-  u8 t1 = tile_ptr[0];
-  u8 t2 = tile_ptr[1];
-  x = 7 - x;
-  u8 v1 = (t1 >> x) & 1;
-  u8 v2 = (t2 >> x) & 1;
-  return v1 * 2 + v2;
+  u16 t = *(u16 *)tile_ptr;
+  t = t >> (7 - x);
+  t = t & 0x0101;
+  return t | (t >> 7);
 }
 
 // given a tile specifier and a pixel position, return the pixel value
