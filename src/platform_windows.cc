@@ -116,6 +116,7 @@ int main(int argc, char **argv) {
   wnd_class.lpfnWndProc = WndProc;
   wnd_class.lpszClassName = "gbo";
   wnd_class.style = CS_HREDRAW | CS_VREDRAW;
+  wnd_class.hCursor = LoadCursor(NULL, IDC_ARROW);
   if (!RegisterClass(&wnd_class)) {
     MessageBox(NULL, "RegisterClass failed", "Error", MB_OK);
     return 101;

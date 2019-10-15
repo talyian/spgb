@@ -51,6 +51,8 @@ int main(int argc, char ** argv) {
   // emu.debug.set_breakpoint(0xC2E7); // Blargg combined "03 test strange"
   u8 last_serial_cursor = 0, first_serial = 1;
   char line[64] {0};
+
+  long long int frames = 0;
   while(true) {
     emu.debug.step();
 
@@ -88,6 +90,17 @@ int main(int argc, char ** argv) {
         continue;
       }
     }
+
+    frames++;
+    if (emu.decoder.pc != 0x64 &&
+        emu.decoder.pc != 0x66 &&
+        emu.decoder.pc != 0x68 &&
+        emu.decoder.pc != 0x39 &&
+        emu.decoder.pc != 0x38 &&
+        emu.decoder.pc != 0x1e3 &&
+        true)
+      printf("[%x] tick %lld\n", emu.decoder.pc, frames);
+
     
     emu.single_step();
 
