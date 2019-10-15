@@ -21,7 +21,12 @@ platform.wasm-o: platform_wasm.o
 
 gb-emu.exe: deps.Makefile
 gb-emu.exe: main.o platform_windows.o
-	clang++.exe -o $@ -fsanitize=undefined -flto -O2 main.o platform_windows.o C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/User32.Lib C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/OpenGL32.Lib C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Gdi32.Lib
+	clang++.exe -o $@ -fsanitize=undefined -flto -O2 main.o platform_windows.o \
+C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/User32.Lib \
+C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/OpenGL32.Lib \
+C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Gdi32.Lib \
+C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Comdlg32.Lib \
+
 
 # clang -MM generates backslash-delimited paths, but Make wants forward-delimited paths
 deps.Makefile: ../main.cc ../platform_windows.cc ../platform_wasm.cc ../platform_linux.cc

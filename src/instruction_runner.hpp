@@ -42,13 +42,6 @@ struct InstructionRunner {
   void _write16_addr(u16 addr, u16 value);
   void _write16(Value16 target, u16 value);
 
-  // case 0xFF02:
-  // if (value & 0x80) {
-  //   cpu.serial.out_buf[cpu.serial.pos++] = mmu->get(0xFF01);
-  //   mmu->set(0xFF02, value & ~0x80);
-  // }
-  // break;
-
   void NOP() {
 
   }

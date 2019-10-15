@@ -24,8 +24,7 @@ extern "C" {
   void _showlog() { printf("\n"); }
   void _stop() { exit(1); }
   void _logp(void* v) { printf("%p ", v); }
-  void _serial_putc(char c) {
-  }
+  void _serial_putc(u8 v) { printf("Serial [%c]\n", v); }
 }
 
 struct Win32Emulator {

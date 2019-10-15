@@ -46,7 +46,18 @@ struct MemoryMapper {
     else if (addr < 0xF000) WRAM[0][addr - 0xE000] = val; // echo
     else if (addr < 0xFE00) WRAM[1][addr - 0xF000] = val; // echo
     else if (addr < 0xFF00) OAM[addr - 0xFE00] = val;
-    else if (addr < 0xFF80) io.data[addr - 0xFF00] = val;
+    else if (addr < 0xFF80) {
+      switch(addr) {
+      case 0xFF02:
+        if (val & 0x80) {
+          _serial_putc(io.data[0x01]);
+          io.data[0x02] = val & ~0x80;
+        }
+        break;
+      default:
+        io.data[addr - 0xFF00] = val;
+      }
+    }
     else HRAM[addr - 0xFF80] = val;
   }
 

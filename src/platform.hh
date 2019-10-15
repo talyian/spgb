@@ -15,6 +15,7 @@ extern "C" {
   void _showlog();
   void _push_frame(u32 category, u8 * data, u32 len);
   void _stop();
+  void _serial_putc(u8 v);
 }
 
 #ifdef WASM
