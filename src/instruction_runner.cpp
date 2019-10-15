@@ -217,3 +217,369 @@ void InstructionRunner::_write16(Value16 target, u16 value) {
                          value);
   }
 }
+
+/// Section: CPU Instruction Implementation
+
+void InstructionRunner::NOP() {}
+
+void InstructionRunner::STOP() {
+  cpu.stopped = 1;
+  cpu.halted = 1;
+}
+void InstructionRunner::DAA() {
+  auto &fl = cpu.flags;
+  auto &registers = cpu.registers;
+  if (fl.N) {
+    if (fl.C) {
+      registers.A -= 0x60;
+    }
+    if (fl.H) {
+      registers.A -= 0x06;
+    }
+  } else {
+    if (fl.C || registers.A > 0x99) {
+      registers.A += 0x60;
+      fl.C = 1;
+    }
+    if (fl.H || (registers.A & 0xF) > 0x9) {
+      registers.A += 0x06;
+    }
+  }
+  fl.Z = registers.A == 0;
+  fl.H = 0;
+}
+
+// Complement A
+void InstructionRunner::CPL() {
+  auto &fl = cpu.flags;
+  auto &registers = cpu.registers;
+  registers.A = ~registers.A;
+  fl.N = 1;
+  fl.H = 1;
+}
+
+// Set Carry Flag
+void InstructionRunner::SCF() {
+  cpu.flags.N = 0;
+  cpu.flags.H = 0;
+  cpu.flags.C = 1;
+}
+
+// Complement Carry Flag
+void InstructionRunner::CCF() {
+  cpu.flags.N = 0;
+  cpu.flags.H = 0;
+  cpu.flags.C = 1 - cpu.flags.C;
+}
+
+// Disable Interrupts
+void InstructionRunner::DI() { cpu.IME = 0; }
+
+// Enable Interrupts
+void InstructionRunner::EI() { cpu.IME = 1; }
+
+void InstructionRunner::HALT() {
+  cpu.halted = 1;
+  if (cpu.IME == 0) {
+    *PC_ptr += 1;
+  }
+}
+
+void InstructionRunner::RLCA() {
+  RLC(Register8::A);
+  cpu.flags.Z = 0;
+}
+void InstructionRunner::RRCA() {
+  RRC(Register8::A);
+  cpu.flags.Z = 0;
+}
+void InstructionRunner::RLA() {
+  RL(Register8::A);
+  cpu.flags.Z = 0;
+}
+void InstructionRunner::RRA() {
+  RR(Register8::A);
+  cpu.flags.Z = 0;
+}
+
+void InstructionRunner::LD8(Value8 o, Value8 v) { _write8(o, _read8(v)); }
+void InstructionRunner::LD16(Value16 o, Value16 v) { _write16(o, _read16(v)); }
+
+void InstructionRunner::BIT(u8 o, Value8 v) {
+  if (o < 0 || o > 7) {
+    log("bit", o, v);
+    error = 3;
+    return;
+  }
+  u8 val = _read8(v) & (1 << o);
+  cpu.flags.Z = val == 0;
+  cpu.flags.N = 0;
+  cpu.flags.H = 1;
+}
+
+void InstructionRunner::RES(u8 o, Value8 v) {
+  if (o < 0 || o > 7) {
+    log("bit", o, v);
+    error = 3;
+    return;
+  }
+  u8 val = _read8(v) & ~(1 << o);
+  _write8(v, val);
+}
+void InstructionRunner::SET(u8 o, Value8 v) {
+  if (o < 0 || o > 7) {
+    log("bit", o, v);
+    error = 3;
+    return;
+  }
+  u8 val = _read8(v) | (1 << o);
+  _write8(v, val);
+}
+
+void InstructionRunner::ADD(Value16 o, Value16 v) {
+  // TODO: addSP has different flags and timing!
+  u16 a = _read16(o);
+  u16 b = _read16(v);
+  _write16(o, a + b);
+  cpu.flags.N = 0;
+  cpu.flags.C = a > (u16)~b;
+  cpu.flags.H = (a & 0xFFF) + (b & 0xFFF) > 0xFFF;
+}
+
+void InstructionRunner::ADD(Value8 o, Value8 v) {
+  u8 a = _read8(o);
+  u8 b = _read8(v);
+  _write8(o, a + b);
+  cpu.flags.Z = (u8)(a + b) == 0;
+  cpu.flags.C = (u16)a + (u16)b > 0xFF;
+  cpu.flags.H = (a & 0xF) + (b & 0xF) > 0xF;
+  cpu.flags.N = 0;
+}
+
+void InstructionRunner::ADC(Value8 o, Value8 v) {
+  u8 a = _read8(o);
+  u8 b = _read8(v);
+  u8 c = cpu.flags.C;
+  u16 d = a + b + c;
+  _write8(o, d);
+  cpu.flags.Z = (u8)d == 0;
+  cpu.flags.C = d > 0xFF;
+  cpu.flags.H = (a & 0xF) + (b & 0xF) + c > 0xF;
+  cpu.flags.N = 0;
+}
+
+void InstructionRunner::XOR(Value8 o) {
+  cpu.registers.A = cpu.registers.A ^ _read8(o);
+  cpu.flags.N = 0;
+  cpu.flags.H = 0;
+  cpu.flags.C = 0;
+  cpu.flags.Z = cpu.registers.A == 0;
+}
+void InstructionRunner::AND(Value8 o) {
+  cpu.registers.A = cpu.registers.A & _read8(o);
+  cpu.flags.N = 0;
+  cpu.flags.H = 1;
+  cpu.flags.C = 0;
+  cpu.flags.Z = cpu.registers.A == 0;
+}
+void InstructionRunner::OR(Value8 o) {
+  cpu.registers.A = cpu.registers.A | _read8(o);
+  cpu.flags.N = 0;
+  cpu.flags.H = 0;
+  cpu.flags.C = 0;
+  cpu.flags.Z = cpu.registers.A == 0;
+}
+
+void InstructionRunner::DEC(Value8 o) {
+  u8 a = _read8(o);
+  u8 v = a - (u8)1;
+  _write8(o, v);
+  cpu.flags.Z = a == 1;
+  cpu.flags.N = 1;
+  cpu.flags.H = (a & 0xF) < 1;
+}
+void InstructionRunner::DEC(Register16 o) {
+  u16 v = _read16(o);
+  _write16(o, v - 1);
+  // no flags
+}
+
+void InstructionRunner::INC(Value8 o) {
+  u8 v = _read8(o);
+  _write8(o, v + 1);
+  cpu.flags.N = 0;
+  cpu.flags.H = (v & 0xF) == 0xF;
+  cpu.flags.Z = v == 0xFF;
+} // INC LoadHL)
+
+void InstructionRunner::INC(Register16 o) {
+  u16 v = _read16(o) + 1;
+  _write16(o, v);
+} // INC HL
+
+void InstructionRunner::SUB(Value8 o) {
+  u8 a = _read8(Register8::A);
+  u8 b = _read8(o);
+  _write8(Register8::A, a - b);
+  cpu.flags.Z = a == b;
+  cpu.flags.N = 1;
+  cpu.flags.C = a < b;
+  cpu.flags.H = (a & 0xF) < (b & 0xF);
+}
+
+void InstructionRunner::SBC(Value8 o) {
+  u8 a = _read8(Register8::A);
+  u8 b = _read8(o);
+  u8 c = cpu.flags.C;
+  u8 d = a - b - c;
+  _write8(Register8::A, d);
+  cpu.flags.Z = a == (u8)(b + c);
+  cpu.flags.N = 1;
+  cpu.flags.C = (u16)a < (u16)b + c;
+  cpu.flags.H = (a & 0xF) < (b & 0xF) + c;
+}
+
+// unsigned right-shift
+void InstructionRunner::SRL(Value8 o) {
+  u8 v = _read8(o);
+  cpu.flags.C = v & 1;
+  cpu.flags.N = 0;
+  cpu.flags.H = 0;
+  cpu.flags.Z = (v >> 1) == 0;
+  _write8(o, v >> 1);
+}
+
+// signed right-shift
+void InstructionRunner::SRA(Value8 o) {
+  u8 v = _read8(o);
+  u8 v2 = ((i8)v) >> 1;
+  cpu.flags.C = v & 1;
+  cpu.flags.H = 0;
+  cpu.flags.N = 0;
+  cpu.flags.Z = v2 == 0;
+  _write8(o, v2);
+}
+
+// left shift
+void InstructionRunner::SLA(Value8 o) {
+  u8 v = _read8(o);
+  u8 v2 = v << 1;
+  cpu.flags.C = v & 0x80;
+  cpu.flags.H = 0;
+  cpu.flags.N = 0;
+  cpu.flags.Z = v2 == 0;
+  _write8(o, v2);
+}
+
+// 8-bit Right Rotate
+void InstructionRunner::RRC(Value8 o) {
+  u8 v = _read8(o);
+  u8 v2 = (v >> 1) | (v << 7);
+  cpu.flags.Z = v == 0;
+  cpu.flags.C = v & 1;
+  cpu.flags.N = 0;
+  cpu.flags.H = 0;
+  _write8(o, v2);
+}
+
+void InstructionRunner::RLC(Value8 o) {
+  u8 v = _read8(o);
+  cpu.flags.C = v & 0x80;
+  u8 v2 = (v << 1) | (v >> 7);
+  cpu.flags.N = 0;
+  cpu.flags.H = 0;
+  cpu.flags.Z = v2 == 0;
+  _write8(o, v2);
+}
+
+// 9-bit rotate-left-through-carry
+void InstructionRunner::RL(Value8 o) {
+  u16 v = (_read8(o) << 1) | cpu.flags.C;
+  cpu.flags.C = v & 0x100;
+  cpu.flags.N = 0;
+  cpu.flags.H = 0;
+  cpu.flags.Z = (u8)v == 0;
+  _write8(o, v);
+}
+
+// 9-bit rotate-right-through-carry
+void InstructionRunner::RR(Value8 o) {
+  u16 v = _read8(o) | (cpu.flags.C << 8);
+  cpu.flags.C = v & 1;
+  v = v >> 1;
+  cpu.flags.N = 0;
+  cpu.flags.H = 0;
+  cpu.flags.Z = v == 0;
+  _write8(o, v);
+}
+
+void InstructionRunner::SWAP(Value8 o) {
+  u8 value = _read8(o);
+  value = value << 4 | (value >> 4);
+  _write8(o, value);
+  cpu.registers.F = 0;
+  cpu.flags.Z = value == 0;
+}
+
+void InstructionRunner::RST(u8 o) {
+  u8 addr = _read8(o);
+  _push(*PC_ptr);
+  *PC_ptr = addr;
+}
+
+void InstructionRunner::CP(Value8 o) {
+  u8 a = cpu.registers.A;
+  u8 b = _read8(o);
+  cpu.flags.Z = a == b;
+  cpu.flags.C = a < b;
+  cpu.flags.N = 1;
+  cpu.flags.H = (a & 0xF) < (b & 0xF);
+}
+void InstructionRunner::PUSH(Register16 o) { _push(_read16(o)); }
+void InstructionRunner::POP(Register16 o) { _write16(o, _pop()); }
+
+bool InstructionRunner::_check(Conditions o) {
+  switch (o) {
+  case Conditions::T:
+    return true;
+  case Conditions::C:
+    return cpu.flags.C;
+  case Conditions::NC:
+    return !cpu.flags.C;
+  case Conditions::Z:
+    return cpu.flags.Z;
+  case Conditions::NZ:
+    return !cpu.flags.Z;
+  }
+  error = 100;
+  log("error condition", o);
+  return false;
+}
+
+void InstructionRunner::RET(Conditions o) {
+  if (_check(o))
+    *PC_ptr = _pop();
+}
+void InstructionRunner::RETI(Conditions o) {
+  // log(*PC_start_ptr, "reti");
+  cpu.IME = 1;
+  *PC_ptr = _pop();
+}
+void InstructionRunner::JR(Conditions o, Value8 v) {
+  if (_check(o))
+    *PC_ptr += (i8)_read8(v);
+  static bool warned = false;
+  if (_check(o) && _read8(v) == 0xfe && !warned)
+    log(*PC_start_ptr, "warning: infinite loop", warned = true);
+}
+void InstructionRunner::JP(Conditions o, Value16 v) {
+  if (_check(o))
+    *PC_ptr = _read16(v);
+}
+void InstructionRunner::CALL(Conditions o, Value16 v) {
+  u16 addr = _read16(v);
+  if (_check(o)) {
+    _push(*PC_ptr);
+    *PC_ptr = addr;
+  }
+}
