@@ -11,10 +11,10 @@ run_blargg: gb-emu.exe
 	find ../../data/cpu_instrs/individual/*.gb | while read f; do ./gb-emu.exe "$$f"; echo; done
 
 main.wasm-o: main.o
-	$(WASM_CC_COMPILE) -o main.wasm-o ../main.cc
+	$(WASM_CC_COMPILE) -o main.wasm-o ../main.cpp
 
 platform.wasm-o: platform_wasm.o
-	$(WASM_CC_COMPILE) -o platform.wasm-o ../platform_wasm.cc
+	$(WASM_CC_COMPILE) -o platform.wasm-o ../platform_wasm.cpp
 
 ../build/gb_emulator.wasm: main.wasm-o platform.wasm-o
 	$(WASM_CC_LINK) -o $@ main.wasm-o platform.wasm-o
@@ -29,13 +29,13 @@ C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Comdlg32.Lib
 
 
 # clang -MM generates backslash-delimited paths, but Make wants forward-delimited paths
-deps.Makefile: ../main.cc ../platform_windows.cc ../platform_wasm.cc ../platform_linux.cc
-	clang++.exe -E -MM ../main.cc ../platform_windows.cc ../platform_linux.cc ../platform_wasm.cc | sed 's/\\\([^\x0d]\)/\/\1/g' > deps.Makefile
+deps.Makefile: ../main.cpp ../platform_windows.cpp ../platform_wasm.cpp ../platform_linux.cpp
+	clang++.exe -E -MM ../main.cpp ../platform_windows.cpp ../platform_linux.cpp ../platform_wasm.cpp | sed 's/\\\([^\x0d]\)/\/\1/g' > deps.Makefile
 
 include deps.Makefile
 
 platform_wasm.o:
 	# ok
 
-%.o: ../%.cc Makefile
+%.o: ../%.cpp Makefile
 	clang++.exe -D_CRT_SECURE_NO_WARNINGS -fsanitize=undefined -O2 -o $@ -c $<

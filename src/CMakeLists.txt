@@ -29,13 +29,13 @@ if (WASM)
     --import-memory
   )
 
-add_executable(gb_emulator.wasm main.cc platform_wasm.cc)
+add_executable(gb_emulator.wasm main.cpp platform_wasm.cpp)
 add_custom_target(copy_wasm
   COMMAND cp gb_emulator.wasm ../../wasmgui/build/
   DEPENDS gb_emulator.wasm)
 
 elseif (WINDOWS)
-  add_executable(gb_emulator main.cc platform_windows.cc)
+  add_executable(gb_emulator main.cpp platform_windows.cpp)
   target_link_libraries(gb_emulator OpenGL32)
 else()
   add_compile_options(
@@ -54,7 +54,7 @@ else()
     -O3
   )
 
-  add_executable(gb_emulator_console main.cc platform_linux.cc)
+  add_executable(gb_emulator_console main.cpp platform_linux.cpp)
   # add_dependencies(gb_emulator_console opcodes.inc)
   add_custom_target(run
     COMMAND ./gb_emulator_console
