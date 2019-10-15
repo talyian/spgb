@@ -24,3 +24,4 @@ build-win
 .vs
 data
 winformui1
+build-wasm

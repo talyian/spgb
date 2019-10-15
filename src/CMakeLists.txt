@@ -29,8 +29,11 @@ if (WASM)
     --import-memory
   )
 
-  add_executable(gb_emulator.wasm main.cc platform_wasm.cc)
-  # add_dependencies(gb_emulator.wasm generated_instruction_decode_table.inc)
+add_executable(gb_emulator.wasm main.cc platform_wasm.cc)
+add_custom_target(copy_wasm
+  COMMAND cp gb_emulator.wasm ../../wasmgui/build/
+  DEPENDS gb_emulator.wasm)
+
 else()
 
   add_compile_options(
