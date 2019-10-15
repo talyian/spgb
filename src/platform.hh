@@ -20,8 +20,7 @@ extern "C" {
 #define WASM_EXPORT __attribute__((visibility("default")))
 
 extern "C" size_t sslen(const char * s);
-extern "C" void *memset(void *dest, int c, size_t n);
-// void *memcpy(void *dest, const void *src, size_t n);
+extern "C" void *memset(void *dest, int c, size_t n) throw ();
 
 namespace logs {
 void _log(u8 v);

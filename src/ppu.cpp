@@ -84,6 +84,7 @@ u8 PPU::select_tile_pixel(u8 tile_index, u8 x, u8 y) {
 }
 
 void PPU::scan_line() {
+  // reads in LineY and writes that scanline to `display`
   for (u8 screen_x = 0; screen_x < DISPLAY_W; screen_x++) {
     u8 pixel = 0;
     {

@@ -40,6 +40,7 @@ int main(int argc, char ** argv) {
     printf("no file specified\n");
     return 18;
   }
+  
   // emu.set_breakpoint(0x40); // vblank interrupt
   // emu.set_breakpoint(0xFF80); // high memory DMA loading thunk
   // emu.debug.is_debugging = true;
@@ -52,7 +53,6 @@ int main(int argc, char ** argv) {
   u8 last_serial_cursor = 0, first_serial = 1;
   char line[64] {0};
 
-  long long int frames = 0;
   while(true) {
     emu.debug.step();
 
@@ -90,17 +90,6 @@ int main(int argc, char ** argv) {
         continue;
       }
     }
-
-    frames++;
-    if (emu.decoder.pc != 0x64 &&
-        emu.decoder.pc != 0x66 &&
-        emu.decoder.pc != 0x68 &&
-        emu.decoder.pc != 0x39 &&
-        emu.decoder.pc != 0x38 &&
-        emu.decoder.pc != 0x1e3 &&
-        true)
-      printf("[%x] tick %lld\n", emu.decoder.pc, frames);
-
     
     emu.single_step();
 

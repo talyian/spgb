@@ -29,7 +29,7 @@ if (WASM)
     --import-memory
   )
 
-  add_executable(gb_emulator.wasm main.cc)
+  add_executable(gb_emulator.wasm main.cc platform_wasm.cc)
   # add_dependencies(gb_emulator.wasm generated_instruction_decode_table.inc)
 else()
 
@@ -47,7 +47,7 @@ else()
     -fsanitize=undefined
   )
 
-  add_executable(gb_emulator_console main.cc native_host.cc)
+  add_executable(gb_emulator_console main.cc platform_linux.cc)
   # add_dependencies(gb_emulator_console opcodes.inc)
   add_custom_target(run
     COMMAND ./gb_emulator_console
