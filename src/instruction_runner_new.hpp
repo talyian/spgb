@@ -34,8 +34,9 @@ struct InstructionDasher {
     u16 opcode = _read_u8();
     if (opcode == 0xCB) opcode = 0x100 + _read_u8();
 
-#define LD16_XXXX(RR) RR = _read_u16()
-#define LD16_XXXX(RR) RR.l = _read_u8(); RR.h = _read_u8()
+    // I wonder if there's any difference between these two
+    // #define LD16_XXXX(RR) RR = _read_u16()
+    #define LD16_XXXX(RR) RR.l = _read_u8(); RR.h = _read_u8()
     
     Reg8 &A = cpu.registers.A,
       &B = cpu.registers.B,
