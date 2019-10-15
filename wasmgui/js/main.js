@@ -8,6 +8,7 @@ if (typeof TextDecoder == "undefined") {
 var emulator = 0, frames = 0;
 var instance, line=[], dec = new TextDecoder();
 var memory = new WebAssembly.Memory({ initial: 32 });
+var tile_maps = [0, 0, 0];
 function draw_display(canvas, data) {
   frames++;
   var p = 0, i = 0;
@@ -69,14 +70,17 @@ function push_frame(category, data, len) {
   var buf = new Uint8Array(memory.buffer.slice(data, data + len));
   if (category == 0x100) { // tile data
     draw_vram(tile0, buf);
+    tile_maps[0] = buf;
   }
   if (category == 0x101) { // tile data
     draw_vram(tile1, buf);
+    tile_maps[1] = buf;
   }
   if (category == 0x102) { // tile data
     draw_vram(tile2, buf);
+    tile_maps[2] = buf;
   }
-  if (category == 0x300) { // tile data
+  if (category == 0x300) { // screen
     draw_display(cvscreen, buf, len);
   }
   if (category == 0x200) { // background
@@ -89,21 +93,27 @@ function push_frame(category, data, len) {
     var w = 8, i = 0, cc = {};
     for(var y = 0; y < 32; y++) {
       for(var x = 0; x < 32; x++) {
-        for(var i = 0; i < 8; i++) {
-          for(var j = 0; j < 8; j++) {
-
-          }
+        var tile = buf[i++]
+        if (tile < 0x80) {
+          ctx.drawImage(
+            tile0, 0x8 * (tile % 0x10), 8 * (tile / 0x10 | 0),
+            w, w,
+            x * w, y * w, w, w);
         }
-        // ctx.fillStyle = ['red', 'blue','green', 'pink'][buf[i++] % 4]
-        // ctx.fillRect(x * w, y * w, w, w);
-        var p = buf[i++] % 4;
-        idata[k++] = p * 80;
-        idata[k++] = p * 80;
-        idata[k++] = p / 2 ? 0 : 255;
-        idata[k++] = 255;
+        else if (tile < 0x100) {
+          var t = tile - 0x80;
+          ctx.drawImage(
+            tile1, 0x8 * (t % 0x10), 8 * (t / 0x10 | 0),
+            w, w,
+            x * w, y * w, w, w);
+        }
+        else {
+          ctx.fillStyle = ['red', 'blue','green', 'pink'][tile % 4]
+          ctx.fillRect(x * w, y * w, w, w);
+        }
       }
     }
-    ctx.putImageData(image_buffer, 0, 0);
+    // ctx.putImageData(image_buffer, 0, 0);
   }
 }
 var error = 0;
@@ -125,6 +135,7 @@ var env = {
       'byte size', memory.buffer.byteLength,
       'page size', memory.buffer.byteLength / 64 / 1024);
   },
+  _serial_putc: function(c) { console.log("Serial", String.fromCharCode(c)); },
   memory:memory,
 };
 fetch("build/gb_emulator.wasm")
