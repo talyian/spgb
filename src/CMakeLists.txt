@@ -39,12 +39,14 @@ else()
     -Wall
     -Wno-unused-variable
     -g
-    -O2
-    -fsanitize=undefined
+    -O3
+#    -fsanitize=undefined
   )
 
   add_link_options(
-    -fsanitize=undefined
+    #    -fsanitize=undefined
+    -flto
+    -O3
   )
 
   add_executable(gb_emulator_console main.cc platform_linux.cc)

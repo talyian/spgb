@@ -31,16 +31,20 @@ struct Debugger {
 
   int step() {
     // check if current pc matches any breakpoints
-    if (!is_debugging && mmu->BiosLock && !is_stepping) {
-      for(int i=0; i<break_n; i++) 
-        if (breakpoints[i] == decoder->pc) {
-          is_debugging = true;
-          break;
+    if (!is_debugging) { 
+      if (!is_stepping) {
+        if (mmu->BiosLock) {
+          for(int i=0; i<break_n; i++) 
+            if (breakpoints[i] == decoder->pc) {
+              is_debugging = true;
+              break;
+            }
         }
-    }
-    if (!is_debugging && run_to_target == decoder->pc) {
-      is_debugging = true;
-      run_to_target = -1;
+      }
+      if (run_to_target == decoder->pc) {
+        is_debugging = true;
+        run_to_target = -1;
+      }
     }
     // convert single-step to active debug
     if (is_stepping) {
