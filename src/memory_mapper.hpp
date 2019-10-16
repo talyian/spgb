@@ -54,6 +54,8 @@ struct MemoryMapper {
           io.data[0x02] = val & ~0x80;
         }
         break;
+      // bios always locked when writing here
+      case 0xFF50: BiosLock = 1; break; 
       default:
         io.data[addr - 0xFF00] = val;
       }

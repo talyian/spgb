@@ -13,12 +13,23 @@ emulator_t::emulator_t(u8 *cart_data, u32 cart_len) {
 emulator_t::emulator_t() : emulator_t(0, 0) {}
 
 void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
-  this->cart = Cart{cart_data, cart_len};
-  this->cpu.clear();
-  this->mmu.BiosLock = 0;
-  this->mmu.clear();
-  this->decoder.pc = this->decoder.pc_start = 0;
+  cart = Cart{cart_data, cart_len};
+  cpu.clear();
+  mmu.BiosLock = 0;
+  mmu.clear();
+  if (true) { // skip bootrom
+    decoder.pc = decoder.pc_start = 0x100;
+    cpu.registers.AF = 0x01B0;
+    cpu.registers.BC = 0x0013;
+    cpu.registers.DE = 0x00D8;
+    cpu.registers.HL = 0x014D;
+    cpu.registers.SP = 0xFFFE;
+    mmu.set(io.IF, 0xE1);
+  } else {
+    decoder.pc = decoder.pc_start = 0;
+  }
   mmu.load_cart(cart);
+
 }
 
 u32 emulator_t::single_step() {
