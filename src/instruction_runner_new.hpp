@@ -85,6 +85,39 @@ struct InstructionDasher {
     cpu.flags.Z = v2 == 0;
     RR = v2;
   }
+
+  // (Unsigned) Shift Right
+  inline void SRL(Reg8 &RR) {
+    u8 v = RR;
+    u8 v2 = v >> 1;
+    cpu.registers.F = 0;
+    cpu.flags.C = v & 1;
+    cpu.flags.Z = v2 == 0;
+    RR = v2;
+  }
+
+  // Rotate-4
+  inline void SWAP(Reg8 &RR) {
+    u8 v = RR;
+    u8 v2 = (v >> 4) | (v << 4);
+    cpu.registers.F = (v == 0) << 7;
+    RR = v2;
+  }
+
+  void BIT(u8 bit, u8 v) {
+    v &= (1 << bit);
+    cpu.flags.N = 0;
+    cpu.flags.H = 1;
+    cpu.flags.Z = v == 0;
+  }
+
+  void RES(u8 bit, Reg8 &RR) {
+    RR = RR & ~(1 << bit);
+  }
+
+  void SET(u8 bit, Reg8 &RR) {
+    RR = RR | (1 << bit);
+  }
   
   bool decode() {
     PC_start = PC;
@@ -282,7 +315,6 @@ struct InstructionDasher {
     case 0x11E: { Reg8 v = mmu_get(HL); RR(v); mmu_set(HL, v); break; }
     case 0x11F: RR(A); break;
 
-
     case 0x120: SLA(B); break;
     case 0x121: SLA(C); break;
     case 0x122: SLA(D); break;
@@ -301,6 +333,96 @@ struct InstructionDasher {
     case 0x12E: { Reg8 v = mmu_get(HL); SRA(v); mmu_set(HL, v); break; }
     case 0x12F: SRA(A); break;
 
+    case 0x130: SWAP(B); break;
+    case 0x131: SWAP(C); break;
+    case 0x132: SWAP(D); break;
+    case 0x133: SWAP(E); break;
+    case 0x134: SWAP(H); break;
+    case 0x135: SWAP(L); break;
+    case 0x136: { Reg8 v = mmu_get(HL); SWAP(v); mmu_set(HL, v); break; }
+    case 0x137: SWAP(A); break;
+
+    case 0x138: SRL(B); break;
+    case 0x139: SRL(C); break;
+    case 0x13A: SRL(D); break;
+    case 0x13B: SRL(E); break;
+    case 0x13C: SRL(H); break;
+    case 0x13D: SRL(L); break;
+    case 0x13E: { Reg8 v = mmu_get(HL); SRL(v); mmu_set(HL, v); break; }
+    case 0x13F: SRL(A); break;
+
+    case 0x140: BIT(0, B); break;
+    case 0x141: BIT(0, C); break;
+    case 0x142: BIT(0, D); break;
+    case 0x143: BIT(0, E); break;
+    case 0x144: BIT(0, H); break;
+    case 0x145: BIT(0, L); break;
+    case 0x146: BIT(0, mmu_get(HL)); cycles += 4; break;
+    case 0x147: BIT(0, A); break;
+
+    case 0x148: BIT(1, B); break;
+    case 0x149: BIT(1, C); break;
+    case 0x14A: BIT(1, D); break;
+    case 0x14B: BIT(1, E); break;
+    case 0x14C: BIT(1, H); break;
+    case 0x14D: BIT(1, L); break;
+    case 0x14E: BIT(1, mmu_get(HL)); cycles += 4; break;
+    case 0x14F: BIT(1, A); break;
+
+    case 0x150: BIT(2, B); break;
+    case 0x151: BIT(2, C); break;
+    case 0x152: BIT(2, D); break;
+    case 0x153: BIT(2, E); break;
+    case 0x154: BIT(2, H); break;
+    case 0x155: BIT(2, L); break;
+    case 0x156: BIT(2, mmu_get(HL)); cycles += 4; break;
+    case 0x157: BIT(2, A); break;
+
+    case 0x158: BIT(3, B); break;
+    case 0x159: BIT(3, C); break;
+    case 0x15A: BIT(3, D); break;
+    case 0x15B: BIT(3, E); break;
+    case 0x15C: BIT(3, H); break;
+    case 0x15D: BIT(3, L); break;
+    case 0x15E: BIT(3, mmu_get(HL)); cycles += 4; break;
+    case 0x15F: BIT(3, A); break;
+
+    case 0x160: BIT(4, B); break;
+    case 0x161: BIT(4, C); break;
+    case 0x162: BIT(4, D); break;
+    case 0x163: BIT(4, E); break;
+    case 0x164: BIT(4, H); break;
+    case 0x165: BIT(4, L); break;
+    case 0x166: BIT(4, mmu_get(HL)); cycles += 4; break;
+    case 0x167: BIT(4, A); break;
+
+    case 0x168: BIT(5, B); break;
+    case 0x169: BIT(5, C); break;
+    case 0x16A: BIT(5, D); break;
+    case 0x16B: BIT(5, E); break;
+    case 0x16C: BIT(5, H); break;
+    case 0x16D: BIT(5, L); break;
+    case 0x16E: BIT(5, mmu_get(HL)); cycles += 4; break;
+    case 0x16F: BIT(5, A); break;
+
+    case 0x170: BIT(6, B); break;
+    case 0x171: BIT(6, C); break;
+    case 0x172: BIT(6, D); break;
+    case 0x173: BIT(6, E); break;
+    case 0x174: BIT(6, H); break;
+    case 0x175: BIT(6, L); break;
+    case 0x176: BIT(6, mmu_get(HL)); cycles += 4; break;
+    case 0x177: BIT(6, A); break;
+
+    case 0x178: BIT(7, B); break;
+    case 0x179: BIT(7, C); break;
+    case 0x17A: BIT(7, D); break;
+    case 0x17B: BIT(7, E); break;
+    case 0x17C: BIT(7, H); break;
+    case 0x17D: BIT(7, L); break;
+    case 0x17E: BIT(7, mmu_get(HL)); cycles += 4; break;
+    case 0x17F: BIT(7, A); break;
+      
     default:
       // log("unknown op", opcode);
       return false;

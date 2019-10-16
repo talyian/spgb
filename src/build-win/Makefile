@@ -16,7 +16,8 @@ main.wasm-o: main.o
 platform.wasm-o: platform_wasm.o
 	$(WASM_CC_COMPILE) -o platform.wasm-o ../platform_wasm.cpp
 
-../build/gb_emulator.wasm: main.wasm-o platform.wasm-o
+../../wasmgui/build/gb_emulator.wasm: main.wasm-o platform.wasm-o
+	mkdir -p ../../wasmgui/build
 	$(WASM_CC_LINK) -o $@ main.wasm-o platform.wasm-o
 
 gb-emu.exe: deps.Makefile
@@ -26,7 +27,6 @@ C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/User32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/OpenGL32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Gdi32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Comdlg32.Lib \
-
 
 # clang -MM generates backslash-delimited paths, but Make wants forward-delimited paths
 deps.Makefile: ../main.cpp ../platform_windows.cpp ../platform_wasm.cpp ../platform_linux.cpp
