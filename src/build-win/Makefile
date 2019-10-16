@@ -21,7 +21,7 @@ platform.wasm-o: platform_wasm.o
 
 gb-emu.exe: deps.Makefile
 gb-emu.exe: main.o platform_windows.o
-	clang++.exe -o $@ -fsanitize=undefined -flto -O2 main.o platform_windows.o \
+	clang++.exe -o $@ -flto -O2 main.o platform_windows.o \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/User32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/OpenGL32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Gdi32.Lib \
@@ -38,4 +38,4 @@ platform_wasm.o:
 	# ok
 
 %.o: ../%.cpp Makefile
-	clang++.exe -D_CRT_SECURE_NO_WARNINGS -fsanitize=undefined -O2 -o $@ -c $<
+	clang++.exe -D_CRT_SECURE_NO_WARNINGS -O2 -o $@ -c $<

@@ -32,3 +32,4 @@
     - State "DONE"       from "TODO"       [2019-10-06 Sun 10:27]
 *** DONE Blargg CPU Test 10
 *** DONE Blargg CPU Test 11
+** TODO Skip Bootstrap

@@ -219,29 +219,29 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
   glf::glLinkProgram(program);
   // glf::glUseProgram(program);
 
-  f32 w = 1.0f;
-  struct Vertex { f32 x, y, z; f32 u, v; } vertices[] = {
-    {-w, -w, 0, 0, 1},
-    {w, -w, 0,  1, 1},
-    {w, w, 0,   1, 0},
-    {-w, -w, 0, 0, 1},
-    {w, w, 0,   1, 0},
-    {-w, w, 0,  0, 0}
-  };
   GLuint vbo = 0;
-  glf::GenBuffers(1, &vbo);
-  glf::BindBuffer(glf::ARRAY_BUFFER, vbo);
-  glf::BufferData(
-    glf::ARRAY_BUFFER,
-    sizeof(vertices),
-    (const void*)vertices,
-    glf::DrawType::STREAM_DRAW);
-
-  glEnableClientState(GL_VERTEX_ARRAY);
-  glVertexPointer(3, GL_FLOAT, sizeof(vertices[0]), 0);
-  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-  glTexCoordPointer(2, GL_FLOAT, sizeof(vertices[0]), (void*)12);
-  
+  {
+    f32 w = 1.0f;
+    struct Vertex { f32 x, y, z; f32 u, v; } vertices[] = {
+      {-w, -w, 0, 0, 1},
+      {w, -w, 0,  1, 1},
+      {w, w, 0,   1, 0},
+      {-w, -w, 0, 0, 1},
+      {w, w, 0,   1, 0},
+      {-w, w, 0,  0, 0}
+    };
+    glf::GenBuffers(1, &vbo);
+    glf::BindBuffer(glf::ARRAY_BUFFER, vbo);
+    glf::BufferData(
+      glf::ARRAY_BUFFER,
+      sizeof(vertices),
+      (const void*)vertices,
+      glf::DrawType::STATIC_DRAW);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(3, GL_FLOAT, sizeof(vertices[0]), 0);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glTexCoordPointer(2, GL_FLOAT, sizeof(vertices[0]), (void*)12);
+  }
   printf("vs: %d, fs: %d, error: %d\n", vertex_shader, fragment_shader, glGetError());
   
   glGenTextures(1, &display);
@@ -252,7 +252,6 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   win32_emulator.display_texture = display;
 
-  long long int frames = 1;
   while (true) {
     if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       if (msg.message == WM_QUIT) exit(0);
@@ -273,7 +272,8 @@ void _push_frame(u32 category, u8* memory, u32 len) {
 
     glClearColor(1.0f, 0.5f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    
+    glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, win32_emulator.display_texture);
     for (u32 i = 0; i < len; i++) {
       memory[i] = memory[i] == 0 ? 0 :
@@ -283,12 +283,13 @@ void _push_frame(u32 category, u8* memory, u32 len) {
     }
     glTexImage2D(
       GL_TEXTURE_2D, 0,
-      GL_R3_G3_B2, // internal format
-      160, 144, //dimensions
-      0 /*border*/, GL_RED /*format*/, GL_UNSIGNED_BYTE /*type*/,
+      GL_RGBA, // internal format
+      160, 144,   //dimensions
+      0 /*border*/,
+      GL_GREEN /*format*/ ,
+      GL_UNSIGNED_BYTE /*type*/,
       memory);
 
-    glEnable(GL_TEXTURE_2D);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     if (win32_emulator.hdc)
