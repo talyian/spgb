@@ -114,7 +114,6 @@ void load_cart_file(char* path, emulator_t* emu) {
 int main(int argc, char** argv) {
   // init emulator 
   emulator_t& emu = win32_emulator.emu;
-  u8 last_serial_cursor = 0, first_serial = 1;
 
   // Select Cart
   if (argc > 1) {
@@ -219,6 +218,7 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
   glf::glLinkProgram(program);
   // glf::glUseProgram(program);
 
+  glDrawBuffer(GL_FRONT);
   GLuint vbo = 0;
   {
     f32 w = 1.0f;
@@ -242,7 +242,7 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, sizeof(vertices[0]), (void*)12);
   }
-  printf("vs: %d, fs: %d, error: %d\n", vertex_shader, fragment_shader, glGetError());
+  printf("vs: %d, fs: %d, error: %d\n", vertex_shader.id, fragment_shader.id, glGetError());
   
   glGenTextures(1, &display);
   glBindTexture(GL_TEXTURE_2D, display);
@@ -260,19 +260,14 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
       continue;
     }
 
-    for (int i = 0; i < 1000; i++)
-      emu.single_step();
+    for (int i = 0; i < 456 * 154;) {
+      i += emu.single_step();
+    }
   }
 }
 
 void _push_frame(u32 category, u8* memory, u32 len) {
   if (category == 0x300) {
-    display_memory = memory;
-    display_memory_len = len;
-
-    glClearColor(1.0f, 0.5f, 0.2f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, win32_emulator.display_texture);
     for (u32 i = 0; i < len; i++) {
@@ -291,8 +286,6 @@ void _push_frame(u32 category, u8* memory, u32 len) {
       memory);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    if (win32_emulator.hdc)
-      SwapBuffers(win32_emulator.hdc);
+    glFinish();
   }
 }
