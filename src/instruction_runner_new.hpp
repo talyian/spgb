@@ -115,10 +115,26 @@ struct InstructionDasher {
     RR = RR & ~(1 << bit);
   }
 
+  u8 RES(u8 bit, u8 && RR) {
+    return RR & ~(1 << bit);
+  }
+
+  void RES_(u8 bit, u16 RR) {
+    mmu.set(RR, RES(bit, mmu_get(RR))); cycles += 4;
+  }
+
   void SET(u8 bit, Reg8 &RR) {
     RR = RR | (1 << bit);
   }
-  
+
+  u8 SET(u8 bit, u8 && RR) {
+    return RR | (1 << bit);
+  }
+
+  void SET_(u8 bit, u16 RR) {
+    mmu.set(RR, SET(bit, mmu_get(RR))); cycles += 4;
+  }
+
   bool decode() {
     PC_start = PC;
     u16 opcode = _read_u8();
@@ -127,7 +143,7 @@ struct InstructionDasher {
     // I wonder if there's any difference between these two
     // #define LD16_XXXX(RR) RR = _read_u16()
     #define LD16_XXXX(RR) RR.l = _read_u8(); RR.h = _read_u8()
-    
+
     Reg8 &A = cpu.registers.A,
       &B = cpu.registers.B,
       &C = cpu.registers.C,
@@ -422,6 +438,150 @@ struct InstructionDasher {
     case 0x17D: BIT(7, L); break;
     case 0x17E: BIT(7, mmu_get(HL)); cycles += 4; break;
     case 0x17F: BIT(7, A); break;
+
+    case 0x180: RES(0, B); break;
+    case 0x181: RES(0, C); break;
+    case 0x182: RES(0, D); break;
+    case 0x183: RES(0, E); break;
+    case 0x184: RES(0, H); break;
+    case 0x185: RES(0, L); break;
+    case 0x186: RES_(3, HL); break;
+    case 0x187: RES(0, A); break;
+
+    case 0x188: RES(1, B); break;
+    case 0x189: RES(1, C); break;
+    case 0x18A: RES(1, D); break;
+    case 0x18B: RES(1, E); break;
+    case 0x18C: RES(1, H); break;
+    case 0x18D: RES(1, L); break;
+    case 0x18E: RES_(1, HL); break;
+    case 0x18F: RES(1, A); break;
+
+    case 0x190: RES(2, B); break;
+    case 0x191: RES(2, C); break;
+    case 0x192: RES(2, D); break;
+    case 0x193: RES(2, E); break;
+    case 0x194: RES(2, H); break;
+    case 0x195: RES(2, L); break;
+    case 0x196: RES_(2, HL); break; 
+    case 0x197: RES(2, A); break;
+
+    case 0x198: RES(3, B); break;
+    case 0x199: RES(3, C); break;
+    case 0x19A: RES(3, D); break;
+    case 0x19B: RES(3, E); break;
+    case 0x19C: RES(3, H); break;
+    case 0x19D: RES(3, L); break;
+    case 0x19E: RES_(3, HL); break; 
+    case 0x19F: RES(3, A); break;
+
+    case 0x1A0: RES(4, B); break;
+    case 0x1A1: RES(4, C); break;
+    case 0x1A2: RES(4, D); break;
+    case 0x1A3: RES(4, E); break;
+    case 0x1A4: RES(4, H); break;
+    case 0x1A5: RES(4, L); break;
+    case 0x1A6: RES_(4, HL); break; 
+    case 0x1A7: RES(4, A); break;
+
+    case 0x1A8: RES(5, B); break;
+    case 0x1A9: RES(5, C); break;
+    case 0x1AA: RES(5, D); break;
+    case 0x1AB: RES(5, E); break;
+    case 0x1AC: RES(5, H); break;
+    case 0x1AD: RES(5, L); break;
+    case 0x1AE: RES_(5, HL); break; 
+    case 0x1AF: RES(5, A); break;
+
+    case 0x1B0: RES(6, B); break;
+    case 0x1B1: RES(6, C); break;
+    case 0x1B2: RES(6, D); break;
+    case 0x1B3: RES(6, E); break;
+    case 0x1B4: RES(6, H); break;
+    case 0x1B5: RES(6, L); break;
+    case 0x1B6: RES_(6, HL); break; 
+    case 0x1B7: RES(6, A); break;
+
+    case 0x1B8: RES(7, B); break;
+    case 0x1B9: RES(7, C); break;
+    case 0x1BA: RES(7, D); break;
+    case 0x1BB: RES(7, E); break;
+    case 0x1BC: RES(7, H); break;
+    case 0x1BD: RES(7, L); break;
+    case 0x1BE: RES_(7, HL); break;
+    case 0x1BF: RES(7, A); break;
+
+    case 0x1C0: SET(0, B); break;
+    case 0x1C1: SET(0, C); break;
+    case 0x1C2: SET(0, D); break;
+    case 0x1C3: SET(0, E); break;
+    case 0x1C4: SET(0, H); break;
+    case 0x1C5: SET(0, L); break;
+    case 0x1C6: SET_(0, HL); break;
+    case 0x1C7: SET(0, A); break;
+
+    case 0x1C8: SET(1, B); break;
+    case 0x1C9: SET(1, C); break;
+    case 0x1CA: SET(1, D); break;
+    case 0x1CB: SET(1, E); break;
+    case 0x1CC: SET(1, H); break;
+    case 0x1CD: SET(1, L); break;
+    case 0x1CE: SET_(1, HL); break;
+    case 0x1CF: SET(1, A); break;
+
+    case 0x1D0: SET(2, B); break;
+    case 0x1D1: SET(2, C); break;
+    case 0x1D2: SET(2, D); break;
+    case 0x1D3: SET(2, E); break;
+    case 0x1D4: SET(2, H); break;
+    case 0x1D5: SET(2, L); break;
+    case 0x1D6: SET_(2, HL); break;
+    case 0x1D7: SET(2, A); break;
+
+    case 0x1D8: SET(3, B); break;
+    case 0x1D9: SET(3, C); break;
+    case 0x1DA: SET(3, D); break;
+    case 0x1DB: SET(3, E); break;
+    case 0x1DC: SET(3, H); break;
+    case 0x1DD: SET(3, L); break;
+    case 0x1DE: SET_(3, HL); break;
+    case 0x1DF: SET(3, A); break;
+
+    case 0x1E0: SET(4, B); break;
+    case 0x1E1: SET(4, C); break;
+    case 0x1E2: SET(4, D); break;
+    case 0x1E3: SET(4, E); break;
+    case 0x1E4: SET(4, H); break;
+    case 0x1E5: SET(4, L); break;
+    case 0x1E6: SET_(4, HL); break;
+    case 0x1E7: SET(4, A); break;
+
+    case 0x1E8: SET(5, B); break;
+    case 0x1E9: SET(5, C); break;
+    case 0x1EA: SET(5, D); break;
+    case 0x1EB: SET(5, E); break;
+    case 0x1EC: SET(5, H); break;
+    case 0x1ED: SET(5, L); break;
+    case 0x1EE: SET_(5, HL); break;
+    case 0x1EF: SET(5, A); break;
+
+    case 0x1F0: SET(6, B); break;
+    case 0x1F1: SET(6, C); break;
+    case 0x1F2: SET(6, D); break;
+    case 0x1F3: SET(6, E); break;
+    case 0x1F4: SET(6, H); break;
+    case 0x1F5: SET(6, L); break;
+    case 0x1F6: SET_(6, HL); break;
+    case 0x1F7: SET(6, A); break;
+
+    case 0x1F8: SET(7, B); break;
+    case 0x1F9: SET(7, C); break;
+    case 0x1FA: SET(7, D); break;
+    case 0x1FB: SET(7, E); break;
+    case 0x1FC: SET(7, H); break;
+    case 0x1FD: SET(7, L); break;
+    case 0x1FE: SET_(7, HL); break;
+    case 0x1FF: SET(7, A); break;
       
     default:
       // log("unknown op", opcode);

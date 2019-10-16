@@ -152,7 +152,6 @@ fetch("build/gb_emulator.wasm")
     }    
     requestAnimationFrame(loop);
     chkPaused.addEventListener("change", loop);
-    console.log(loop);
 
     var RIGHT = 0, LEFT = 1, UP = 2, DOWN = 3,
         A = 4, B = 5, SELECT = 6, START = 7,
