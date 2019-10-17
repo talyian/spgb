@@ -1,8 +1,8 @@
 #pragma once
 #include "instructions.hpp"
 #include "platform.hpp"
-#include "emulator/mmu.hpp"
-#include "emulator/cpu.hpp"
+#include "system/mmu.hpp"
+#include "system/cpu.hpp"
   
 struct InstructionRunner {
   InstructionRunner(CPU &cpu) : cpu(cpu) {  }

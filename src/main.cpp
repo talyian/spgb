@@ -3,8 +3,8 @@
 #include "instruction_decoder.cpp"
 #include "instruction_runner.cpp"
 #include "instructions.cpp"
-#include "emulator/mmu.cpp"
-#include "emulator/ppu.cpp"
+#include "system/mmu.cpp"
+#include "system/ppu.cpp"
 #include "emulator.cpp"
 
 namespace logs {

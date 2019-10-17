@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base.hpp"
-#include "emulator/io_ports.hpp"
+#include "system/io_ports.hpp"
 
 struct Timer {
   Timer(IoPorts &io) : io(io),

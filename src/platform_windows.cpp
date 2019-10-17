@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
 
   glf::load_functions();
   glEnable(glf::GL_DEBUG_OUTPUT);
-
+  glf::DebugMessageCallback(MessageCallback, nullptr);
   u32 display;
 
   auto program = glf::glCreateProgram();
