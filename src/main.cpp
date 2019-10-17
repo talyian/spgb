@@ -3,9 +3,9 @@
 #include "instruction_decoder.cpp"
 #include "instruction_runner.cpp"
 #include "instructions.cpp"
-#include "memory_mapper.cpp"
+#include "emulator/mmu.cpp"
+#include "emulator/ppu.cpp"
 #include "emulator.cpp"
-#include "ppu.cpp"
 
 namespace logs {
   void _log(Reg16 v) { _logx16((u16)v); };

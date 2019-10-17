@@ -24,18 +24,17 @@ struct Timer {
   u64 counter_t = 0;
   void tick(u32 ticks) {
     monotonic_t += ticks;
-
+    // DIV increments at 16 khz, which is 4MHz / 256
     DIV = monotonic_t / 256;
 
-    if (!(Control & 4))  return;
-    
-    counter_t += ticks;
-
-    if (counter_t >= speed_modifier()) {
-      if (TIMA == 0xFF) { TIMA = TMA; io.data[0x0F] |= 4; }
-      else { TIMA++; }
-      monoTIMA++;
-      counter_t -= speed_modifier();
+    if (enabled()) {
+      counter_t += ticks;
+      if (counter_t >= speed_modifier()) {
+        if (TIMA == 0xFF) { TIMA = TMA; io.data[0x0F] |= 4; }
+        else { TIMA++; }
+        monoTIMA++;
+        counter_t -= speed_modifier();
+      }
     }
   }
 };

@@ -287,7 +287,8 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
         emu.debug.state.type = Debugger::State::RUN;
       }
       else if (!strcmp(line, "r")) {
-        emu.debug.state.type = Debugger::State::RUN;
+        emu.debug.state.type = Debugger::State::RUN_TO_RET;
+        emu.debug.state.call_depth = 1;
       }
       else if (!strcmp(line, "q")) {
         break;

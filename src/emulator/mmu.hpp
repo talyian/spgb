@@ -36,6 +36,8 @@ struct MemoryMapper {
       HRAM[addr - 0xFF80];
   }
 
+  u16 get16(u16 addr) { return get(addr) + 0x100 * get(addr + 1); }
+  
   void set(u16 addr, u8 val) {
     if (addr < 0x100 && !BiosLock) bios_rom[addr] = val;
     else if (addr < 0x8000) cart.write(addr, val);
