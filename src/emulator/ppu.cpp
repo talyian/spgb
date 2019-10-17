@@ -1,5 +1,5 @@
-#include "ppu.hpp"
-#include "memory_mapper.hpp"
+#include "emulator/ppu.hpp"
+#include "emulator/mmu.hpp"
 
 void PPU::set_display(u8 x, u8 y, u8 pixel) {
   display[y * DISPLAY_W + x] = pixel;

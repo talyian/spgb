@@ -1,6 +1,6 @@
 #pragma once
 #include "base.hpp"
-#include "io_ports.hpp"
+#include "emulator/io_ports.hpp"
 #include "platform.hpp"
 
 struct OamEntry {

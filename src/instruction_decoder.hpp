@@ -1,6 +1,6 @@
 #pragma once
 #include "base.hpp"
-#include "memory_mapper.hpp"
+#include "emulator/mmu.hpp"
 #include "instruction_printer.hpp"
 #include "instruction_runner.hpp"
 

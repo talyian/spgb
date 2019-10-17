@@ -1,15 +1,15 @@
 #pragma once
 
 #include "base.hpp"
-#include "cart.hpp"
+#include "emulator/cart.hpp"
 #include "debugger.hpp"
 #include "instruction_decoder.hpp"
 #include "instruction_runner_new.hpp"
-#include "io_ports.hpp"
-#include "joypad.hpp"
-#include "memory_mapper.hpp"
-#include "ppu.hpp"
-#include "timer.hpp"
+#include "emulator/io_ports.hpp"
+#include "emulator/joypad.hpp"
+#include "emulator/mmu.hpp"
+#include "emulator/ppu.hpp"
+#include "emulator/timer.hpp"
 
 using RunnerDecoder = InstructionDecoderT<InstructionRunner>;
 using PrinterDecoder = InstructionDecoderT<InstructionPrinter>;

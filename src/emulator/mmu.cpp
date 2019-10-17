@@ -1,5 +1,5 @@
-#include "memory_mapper.hpp"
-#include "ppu.hpp"
+#include "emulator/mmu.hpp"
+#include "emulator/ppu.hpp"
 
 MemoryMapper::MemoryMapper(Cart &cart, IoPorts &io) :
   cart(cart), io(io), BiosLock(io.data[0x50]) {

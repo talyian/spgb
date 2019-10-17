@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base.hpp"
-#include "cpu.hpp"
-#include "memory_mapper.hpp"
+#include "emulator/cpu.hpp"
+#include "emulator/mmu.hpp"
 
 // Runs instructions
 struct InstructionDasher {
