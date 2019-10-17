@@ -20,12 +20,19 @@ extern "C" {
   void _logp(void * v) { printf("%p ", v); }
   void _serial_putc(u8 v) {
     static u64 sequence = 0;
-    printf("Serial [%c]\n", v);
+    static char line[20];
+    static u32 p = 0;
+    auto flush = [&]() { printf("<<< %.*s\n", p, line); p = 0; };
+    if (v == '\n' || p == 20) { flush(); } else { line[p++] = v; }
     sequence = sequence * 0x100 + v;
-    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"dessaP\0\0")
+    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"dessaP\0") {
+      flush();
       exit(0);
-    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"deliaF\0\0")
+    }
+    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"deliaF\0") {
+      flush();
       exit(-1);
+    }
   }
 }
 
@@ -64,8 +71,10 @@ int main(int argc, char ** argv) {
   while(true) {
     emu.debug.step();
 
-    if (emu.debug.is_debugging) {
+    if (emu.debug.state.type == Debugger::State::PAUSE) {
       log("ime", emu.cpu.IME, "interrupt", emu.mmu.get(0xFFFF), emu.mmu.get(0xFF0F));
+      printf("Timer: CTL=%02x DIV=%02x TIMA=%02x, ticks=%08x\n",
+             emu.timer.Control, emu.timer.DIV, emu.timer.TIMA, (u32)emu.timer.monotonic_t);
       log("timer", emu.timer.Control, emu.timer.DIV, emu.timer.TIMA,
           (u32)emu.timer.counter_t,
           emu.timer.monoTIMA,
@@ -80,16 +89,19 @@ int main(int argc, char ** argv) {
         else if (line[i] == '\n') { line[i] = 0; break; }
       
       if (!strcmp(line, "") || !strcmp(line, "s")) {
-        emu.debug.is_stepping = true;
-        emu.debug.is_debugging = false;
+        emu.debug.state.type = Debugger::State::STEP;
       }
       else if (!strcmp(line, "n")) {
         log("scanning to", emu.printer.pc);
-        emu.debug.run_to_target = emu.printer.pc;
-        emu.debug.is_debugging = false;
+        emu.debug.state.type = Debugger::State::RUN_TO;
+        emu.debug.state.addr = emu.printer.pc;
       }
       else if (!strcmp(line, "c")) {
-        emu.debug.is_debugging = false;
+        emu.debug.state.type = Debugger::State::RUN;
+      }
+      else if (!strcmp(line, "r")) {
+        emu.debug.state.type = Debugger::State::RUN_TO_RET;
+        emu.debug.state.call_depth = 1;
       }
       else if (!strcmp(line, "q")) {
         break;

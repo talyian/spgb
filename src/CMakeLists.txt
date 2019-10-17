@@ -45,7 +45,9 @@ else()
     -Wno-unused-variable
     -g
     -O3
-#    -fsanitize=undefined
+    #    -fsanitize=undefined
+    -I ${CMAKE_SOURCE_DIR}
+    -I ${CMAKE_SOURCE_DIR}/utils
   )
 
   add_link_options(

@@ -22,18 +22,29 @@ struct MemoryMapper {
   void load_cart(const Cart &cart);
 
   u8 get(u16 addr) {
-    return 
-      addr < 0x100 && !BiosLock ? bios_rom[addr] :
-      addr < 0x8000 ? cart.read(addr) :
-      addr < 0xA000 ? VRAM[addr - 0x8000] :
-      addr < 0xC000 ? cart.read(addr) :
-      addr < 0xD000 ? WRAM[0][addr - 0xC000] :
-      addr < 0xE000 ? WRAM[1][addr - 0xD000] : // TODO : CGB: banking?
-      addr < 0xF000 ? WRAM[0][addr - 0xE000] : // echo
-      addr < 0xFE00 ? WRAM[1][addr - 0xF000] : // echo
-      addr < 0xFF00 ? OAM[addr - 0xFE00] :
-      addr < 0xFF80 ? io.data[addr - 0xFF00] :
-      HRAM[addr - 0xFF80];
+    switch(addr >> 12) {
+    case 0x0: return !BiosLock ? bios_rom[addr] : cart.read(addr);
+    case 0x1:
+    case 0x2:
+    case 0x3:
+    case 0x4:
+    case 0x5:
+    case 0x6:
+    case 0x7: return cart.read(addr);
+    case 0x8:
+    case 0x9: return VRAM[addr & 0x1FFF];
+    case 0xA:
+    case 0xB: return cart.read(addr);
+    case 0xC: return WRAM[0][addr & 0xFFF];
+    case 0xD: return WRAM[1][addr & 0xFFF];
+    case 0xE: return WRAM[0][addr & 0xFFF]; // echo0
+    default:
+      return 
+        addr < 0xFE00 ? WRAM[1][addr & 0xFFF] : // echo
+        addr < 0xFF00 ? OAM[addr & 0xFF] :
+        addr < 0xFF80 ? io.data[addr & 0xFF] :
+        HRAM[addr - 0xFF80];
+    }
   }
 
   u16 get16(u16 addr) { return get(addr) + 0x100 * get(addr + 1); }
