@@ -15,7 +15,8 @@
 
 extern "C" size_t sslen(const char* s) { return strlen(s); }
 
-// imports
+// Platform API: these functions are declared in platform.hpp and must
+// be provided by the platform.
 extern "C" {
   void _logf(double v) { printf("%f ", v); }
   void _logx8(u8 v) { printf("%02x ", v); }
@@ -36,6 +37,9 @@ extern "C" {
   }
 }
 
+// a global variable to hold current window/opengl/emulator context.
+// Not hygienic, but it's an easy way to get access to these fields
+// from inside WndProc or _push_frame.
 struct Win32Emulator {
   HWND hwnd = 0;
   HGLRC gl = 0;
@@ -44,13 +48,12 @@ struct Win32Emulator {
   u32 display_texture = 0;
 } win32_emulator;
 
+// Main Window event handler.
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
   switch (message) {
   case WM_QUIT:
-    printf("???quit\n");
     return 0;
   case WM_DESTROY:
-    printf("destroyed\n");
     PostQuitMessage(0);
     return 0;
   case WM_SIZE: {
@@ -59,8 +62,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     glViewport(0, 0, w, h);
     break;
   }
-  case WM_PAINT:
-    break;
   case WM_KEYUP: {
     auto* jp = &win32_emulator.emu.joypad;
     switch (wParam) {
@@ -95,38 +96,31 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
-u8* display_memory = 0;
-u32 display_memory_len = 0;
-
-// Reads a cart file from a path
-void load_cart_file(char* path, emulator_t* emu) {
-  FILE* f = fopen(path, "r");
-  if (!f) { fprintf(stderr, "%s: file not found\n", path); exit(19); }
-  fseek(f, 0, SEEK_END);
-  size_t len = ftell(f);
-  fseek(f, 0, 0);
-  u8* buf = new u8[len];
-  fread(buf, 1, len, f);
-  fclose(f);
-  emu->load_cart(buf, len);
-}
-
 int main(int argc, char** argv) {
-  // init emulator 
   emulator_t& emu = win32_emulator.emu;
 
-  // Select Cart
+  // Select Cart from argv or open file Dialog box
+  auto load_cart_file = [] (char* path, emulator_t* emu) -> void {
+    FILE* f = fopen(path, "r");
+    if (!f) { fprintf(stderr, "%s: file not found\n", path); exit(19); }
+    fseek(f, 0, SEEK_END);
+    size_t len = ftell(f);
+    fseek(f, 0, 0);
+    u8* buf = new u8[len];
+    fread(buf, 1, len, f);
+    fclose(f);
+    emu->load_cart(buf, len);
+  };
   if (argc > 1) {
     load_cart_file(argv[1], &emu);
   }
   else {
     char filename[0x100] = { 0 };
-    OPENFILENAME ofn;
-    ZeroMemory(&ofn, sizeof(ofn));
+    OPENFILENAME ofn {0};
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = NULL;
     ofn.lpstrFile = filename;
-    ofn.nMaxFile = 0x100;
+    ofn.nMaxFile = sizeof(filename);
     ofn.lpstrInitialDir = NULL;
     if (!GetOpenFileName(&ofn)) {
       printf("no file specified\n");
@@ -218,7 +212,7 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
   glf::glLinkProgram(program);
   // glf::glUseProgram(program);
 
-  glDrawBuffer(GL_FRONT);
+  // glDrawBuffer(GL_FRONT);
   GLuint vbo = 0;
   {
     f32 w = 1.0f;
@@ -252,6 +246,10 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   win32_emulator.display_texture = display;
 
+  char line[64] {0};
+  // emu.debug.name_function("main", 0xC300, 0xc315);
+  // emu.debug.name_function("test_timer", 0xC318, 0xc345);
+  emu.debug.set_breakpoint(0xC300);
   while (true) {
     if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       if (msg.message == WM_QUIT) exit(0);
@@ -260,9 +258,48 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
       continue;
     }
 
-    for (int i = 0; i < 456 * 154;) {
-      i += emu.single_step();
+    emu.debug.step();
+    
+    if (emu.debug.state.type == Debugger::State::PAUSE) {
+      log("ime", emu.cpu.IME, "interrupt", emu.mmu.get(0xFFFF), emu.mmu.get(0xFF0F));
+      log("timer", emu.timer.Control, emu.timer.DIV, emu.timer.TIMA,
+          (u32)emu.timer.counter_t,
+          emu.timer.monoTIMA,
+          (u32)emu.timer.monotonic_t);
+      emu._runner.dump();
+      emu.printer.pc = emu.decoder.pc; emu.printer.decode();
+      printf("DEBUG %04x> ", emu.decoder.pc);
+
+      fgets(line, 63, stdin);
+      for(int i = 0; i < 63; i++)
+        if (!line[i]) break;
+        else if (line[i] == '\n') { line[i] = 0; break; }
+      
+      if (!strcmp(line, "") || !strcmp(line, "s")) {
+        emu.debug.state.type = Debugger::State::STEP;
+      }
+      else if (!strcmp(line, "n")) {
+        log("scanning to", emu.printer.pc);
+        emu.debug.state.type = Debugger::State::RUN_TO;
+        emu.debug.state.addr = emu.printer.pc;
+      }
+      else if (!strcmp(line, "c")) {
+        emu.debug.state.type = Debugger::State::RUN;
+      }
+      else if (!strcmp(line, "r")) {
+        emu.debug.state.type = Debugger::State::RUN;
+      }
+      else if (!strcmp(line, "q")) {
+        break;
+      }
+      else {
+        continue;
+      }
     }
+      
+    // 456 * 154 ticks is one emulator frame 
+    // emu.step(456 * 154);
+    emu.single_step();
   }
 }
 
@@ -286,6 +323,7 @@ void _push_frame(u32 category, u8* memory, u32 len) {
       memory);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    glFinish();
+    // glFinish();
+    SwapBuffers(win32_emulator.hdc);
   }
 }

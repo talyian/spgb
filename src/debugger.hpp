@@ -15,12 +15,15 @@ struct Debugger {
   CPU * cpu;
   u16 pc = 0;
 
-  bool is_debugging = false;
-  bool is_stepping = false;
+  struct State {
+    enum { RUN = 0, PAUSE, STEP, RUN_TO, RUN_TO_RET } type;
+    union {
+      u16 addr;
+    };
+  } state {};
+  
   u16 breakpoints[64];
   u8 break_n = 0;
-  u32 run_to_target = -1;
-  
   void set_breakpoint(u16 v) { breakpoints[break_n++] = v; }
 
   void clear_breakpoint(u16 v) {
@@ -31,25 +34,26 @@ struct Debugger {
 
   int step() {
     // check if current pc matches any breakpoints
-    if (!is_debugging) { 
-      if (!is_stepping) {
-        if (mmu->BiosLock) {
-          for(int i=0; i<break_n; i++) 
-            if (breakpoints[i] == decoder->pc) {
-              is_debugging = true;
-              break;
-            }
-        }
-      }
-      if (run_to_target == decoder->pc) {
-        is_debugging = true;
-        run_to_target = -1;
-      }
-    }
-    // convert single-step to active debug
-    if (is_stepping) {
-      is_debugging = true;
-      is_stepping = false;
+    switch(state.type) {
+    case State::PAUSE:
+      break;
+    case State::STEP:
+      state.type = State::PAUSE;
+      break;
+    case State::RUN:
+      if (mmu->BiosLock)
+        for(int i = 0; i < break_n; i++)
+          if (breakpoints[i] == decoder->pc) {
+            state.type = State::PAUSE;
+            break;
+          }
+      break;
+    case State::RUN_TO:
+      if (state.addr == decoder->pc)
+        state.type = State::PAUSE;
+      break;
+    case State::RUN_TO_RET:
+      break;
     }
     return 0;
   }

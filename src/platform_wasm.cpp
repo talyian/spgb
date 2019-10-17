@@ -63,7 +63,7 @@ extern "C" {
   void WASM_EXPORT step_frame(emulator_t * e) {
     #define CLOCK_HZ 4000000
     #define FPS 60
-    e->step(CLOCK_HZ / FPS * 3); // fudge factor??
+    e->step(CLOCK_HZ / FPS); // fudge factor??
   }
 
   u8* WASM_EXPORT get_rom_area(emulator_t * e, u32 len) {
@@ -72,7 +72,5 @@ extern "C" {
   
   void WASM_EXPORT reset(emulator_t * e, u8 * cart, u32 len) {
     e->load_cart(cart, len);
-    e->decoder.pc = 0;
-    e->decoder.pc_start = 0;
   }
 }

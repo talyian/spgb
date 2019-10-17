@@ -59,7 +59,6 @@ int main(int argc, char ** argv) {
   // emu.debug.set_breakpoint(0xc2b4); // Blargg 02 main function "EI"
   // emu.debug.set_breakpoint(0xc316); // Blargg 02 "timer doesn't work"
   // emu.debug.set_breakpoint(0xC2E7); // Blargg combined "03 test strange"
-  u8 last_serial_cursor = 0, first_serial = 1;
   char line[64] {0};
 
   while(true) {

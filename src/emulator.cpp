@@ -18,6 +18,7 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
   mmu.BiosLock = 0;
   mmu.clear();
   if (true) { // skip bootrom
+    mmu.BiosLock = 0x1;
     decoder.pc = decoder.pc_start = 0x100;
     cpu.registers.AF = 0x01B0;
     cpu.registers.BC = 0x0013;
@@ -29,7 +30,6 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
     decoder.pc = decoder.pc_start = 0;
   }
   mmu.load_cart(cart);
-
 }
 
 u32 emulator_t::single_step() {
@@ -111,6 +111,8 @@ u32 emulator_t::single_step() {
   return dt;
 }
 
+// calls single_step, but wraps in debug logic
+// so returns either when ticks has elapsed or we're debugging
 void emulator_t::step(i32 ticks) {
   // _runner.verbose_log = true;
   while (ticks > 0) {
@@ -120,20 +122,14 @@ void emulator_t::step(i32 ticks) {
     debug.step();
 
     // is_debugging means we don't run any code
-    if (debug.is_debugging) {
+    if (debug.state.type == Debugger::State::PAUSE) {
       printer.pc = decoder.pc_start;
       decoder.ii.dump();
       _log("breakpoint");
       _log(decoder.pc_start);
       printer.decode();
-      _stop(); // stop core run loop
       break;
     }
     ticks -= single_step();
-    // stepping means we run one instruction and go back into debug
-    if (debug.is_stepping) {
-      debug.is_stepping = false;
-      debug.is_debugging = true;
-    }
   }
 }

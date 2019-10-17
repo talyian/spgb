@@ -123,5 +123,4 @@ void PPU::scan_line() {
         set_display(screen_x, LineY, tile_pixel);        
     }
   }
-  
 }
