@@ -56,8 +56,7 @@ extern "C" {
   }
   
   void WASM_EXPORT continue_instr(emulator_t * e) {
-    e->debug.is_debugging = false;
-    e->debug.is_stepping = false;
+    e->debug.state.type = Debugger::State::RUN;
   }
   
   void WASM_EXPORT step_frame(emulator_t * e) {
