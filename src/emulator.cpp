@@ -85,7 +85,8 @@ u32 emulator_t::single_step() {
   if (!cpu.halted) {
     _dasher.PC = decoder.pc;
     _dasher.cycles = 0;
-    if (_dasher.decode()) {
+    if (ff ++ % 2) {
+      _dasher.decode();
       decoder.pc_start = _dasher.PC_start;
       decoder.pc = _dasher.PC;
       dt = _dasher.cycles;
