@@ -1,15 +1,25 @@
-* [12/19] GBE Tasks
+* [14/22] GBE Tasks
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :END:
-** TODO Memory Banking
+** DONE Memory Banking - MBC1
+** TODO Memory Banking - MBC3
+** DOING Blargg instr_timing
+currently the test fails init_timer since our timer is way off.
+we'll need to emit accurate cycle counts for all the instructions used in
+the delay loop before init_timer can pass and we can actually test_timer
+
+** DOING New Instruction Decoder
+The current instruction decoder is too abstracted. we can simplify by
+removing the opcodes.inc python generator stuff
+
 ** TODO Palettes
 ** TODO Sound
 ** TODO CGB Features
-** TODO Accurate CPU Timing
 ** TODO HBlank Timing for BGB TEST
 ** DONE Handle DMA (FF46)
-** [11/11] Blargg Tests
+** TODO Blargg mem_timing
+** [11/11] Blargg CPU Tests
 *** DONE Blargg CPU Test 01
 *** DONE Blargg CPU Test 02 - interrupts
     CLOSED: [2019-10-09 Wed 04:19]
@@ -32,4 +42,5 @@
     - State "DONE"       from "TODO"       [2019-10-06 Sun 10:27]
 *** DONE Blargg CPU Test 10
 *** DONE Blargg CPU Test 11
-** TODO Skip Bootstrap
+** DONE Skip Bootstrap
+** TODO Test Harness

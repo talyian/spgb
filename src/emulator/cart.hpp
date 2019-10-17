@@ -1,8 +1,8 @@
 #pragma once
 
-#include "base.hpp"
-#include "str.hpp"
-#include "platform.hpp"
+#include "../base.hpp"
+#include "../utils/str.hpp"
+#include "../platform.hpp"
 
 enum ConsoleType : u8 { CGB, CGB_Only, DMG, SGB };
 enum MapperType : u8 { ROMMapper = 0, MBC1 = 1, MBC3 = 2, ERROR };

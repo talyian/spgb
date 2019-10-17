@@ -38,4 +38,4 @@ platform_wasm.o:
 	# ok
 
 %.o: ../%.cpp Makefile
-	clang++.exe -D_CRT_SECURE_NO_WARNINGS -O2 -o $@ -c $<
+	clang++.exe -D_CRT_SECURE_NO_WARNINGS -O2 -o $@ -c $< -I .. -I ../utils

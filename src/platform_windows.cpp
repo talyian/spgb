@@ -249,7 +249,7 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
   char line[64] {0};
   // emu.debug.name_function("main", 0xC300, 0xc315);
   // emu.debug.name_function("test_timer", 0xC318, 0xc345);
-  emu.debug.set_breakpoint(0xC300);
+  // emu.debug.set_breakpoint(0xC300);
   while (true) {
     if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       if (msg.message == WM_QUIT) exit(0);
@@ -262,6 +262,8 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
     
     if (emu.debug.state.type == Debugger::State::PAUSE) {
       log("ime", emu.cpu.IME, "interrupt", emu.mmu.get(0xFFFF), emu.mmu.get(0xFF0F));
+      printf("Timer: CTL=%02x DIV=%02x TIMA=%02x, ticks=%08x\n",
+             emu.timer.Control, emu.timer.DIV, emu.timer.TIMA, (u32)emu.timer.monotonic_t);
       log("timer", emu.timer.Control, emu.timer.DIV, emu.timer.TIMA,
           (u32)emu.timer.counter_t,
           emu.timer.monoTIMA,
