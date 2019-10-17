@@ -338,6 +338,7 @@ struct InstructionDasher {
     case 0xC9: { cycles += 4; if (true)         { PC = _pop(); } break; }
     case 0xD0: { cycles += 4; if (!cpu.flags.C) { PC = _pop(); cycles += 4; } break; }
     case 0xD8: { cycles += 4; if (cpu.flags.C) { PC = _pop(); cycles += 4; } break; }
+    case 0xD9: { cycles += 4; if (true)         { cpu.IME = 1; PC = _pop(); } break; }
       // JP
     case 0xC2: { u16 target = _read_u16(); if (!cpu.flags.Z) { PC = target; cycles += 4; } break; }
     case 0xC3: { u16 target = _read_u16(); if (true)         { PC = target; cycles += 4; } break; }
@@ -441,7 +442,7 @@ struct InstructionDasher {
     #undef X
     default:
       log("unknown op", opcode);
-      return false;
+      _stop();
     }
     return true;
   }

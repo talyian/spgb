@@ -75,6 +75,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     auto* jp = &win32_emulator.emu.joypad;
     switch (wParam) {
     case VK_RETURN: jp->button_up(Buttons::START); return 0;
+    case VK_SHIFT:
     case VK_RSHIFT: jp->button_up(Buttons::SELECT); return 0;
     case 'J': jp->button_up(Buttons::B); return 0;
     case 'K': jp->button_up(Buttons::A); return 0;
@@ -90,6 +91,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     auto* jp = &win32_emulator.emu.joypad;
     switch (wParam) {
     case VK_RETURN: jp->button_down(Buttons::START); return 0;
+    case VK_SHIFT:
     case VK_RSHIFT: jp->button_down(Buttons::SELECT); return 0;
     case 'J': jp->button_down(Buttons::B); return 0;
     case 'K': jp->button_down(Buttons::A); return 0;
