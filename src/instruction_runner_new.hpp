@@ -18,12 +18,25 @@ struct InstructionDasher {
 
   u8 mmu_get(u16 addr) { cycles += 4; return mmu.get(addr); }
   void mmu_set(u16 addr, u8 val) { cycles += 4; mmu.set(addr, val); }
-
+  u16 _pop() {
+    // total 8 cycles
+    u16 v = mmu_get(cpu.registers.SP++);
+    return v + (mmu_get(cpu.registers.SP++) << 8);
+  }
+  void _push(u16 value) {
+    // total 12 cycles
+    mmu_set(--cpu.registers.SP, value >> 8);
+    mmu_set(--cpu.registers.SP, value);
+    cycles += 4;
+  }
   struct MemoryRef {
     InstructionDasher & parent;
     Reg16 &addr;
     operator u8 () const { return parent.mmu_get(addr); }
     MemoryRef& operator=(u8 val) { parent.mmu_set(addr, val); return *this; }
+    MemoryRef& operator=(const MemoryRef&) { return *this; }
+    void operator++(int) { parent.mmu_set(addr, parent.mmu_get(addr) + 1); }
+    void operator--(int) { parent.mmu_set(addr, parent.mmu_get(addr) - 1); }
   };
 
   u8 _read_u8() {
@@ -137,17 +150,50 @@ struct InstructionDasher {
     u16 opcode = _read_u8();
     if (opcode == 0xCB) opcode = 0x100 + _read_u8();
 
-    // I wonder if there's any difference between these two
-    // #define LD16_XXXX(RR) RR = _read_u16()
     #define LD16_XXXX(RR) RR.l = _read_u8(); RR.h = _read_u8()
-
+    #define INC(R) {R++; cpu.flags.Z = R == 0; cpu.flags.N = 0; cpu.flags.H = (R & 0xF) == 0;}
+    #define DEC(R) {R--; cpu.flags.Z = R == 0; cpu.flags.N = 1; cpu.flags.H = (R & 0xF) == 0xF;}
+    #define ADD(R) {u8 a = A, b = R; \
+      A = a + b; \
+      cpu.flags.Z = (u8)(a + b) == 0; \
+      cpu.flags.C = (u16)a + (u16)b > 0xFF; \
+      cpu.flags.H = (a & 0xF) + (b & 0xF) > 0xF; \
+      cpu.flags.N = 0;}
+    #define ADC(R) {u8 a = A, b = R, c = cpu.flags.C; \
+      A = a + b + c; \
+      cpu.flags.Z = (u8)(a + b + c) == 0; \
+      cpu.flags.C = (a + b + c) > 0xFF; \
+      cpu.flags.H = (a & 0xF) + (b & 0xF) + c > 0xF; \
+      cpu.flags.N = 0;}
+    #define SUB(R) {u8 a = A, b = R;            \
+      A = a - b;                                \
+      cpu.flags.Z = a == b;                     \
+      cpu.flags.C = a < b;                      \
+      cpu.flags.H = (a & 0xF) < (b & 0xF);      \
+      cpu.flags.N = 1;}
+    #define SBC(R) {u8 a = A, b = R, c = cpu.flags.C; \
+      A = a - b - c; \
+      cpu.flags.Z = a == (u8)(b + c); \
+      cpu.flags.N = 1; \
+      cpu.flags.C = (u16) a < (u16) b + c; \
+      cpu.flags.H = (a & 0xF) < (b & 0xF) + c; }
+    #define AND(R) {A = A & R; cpu.registers.F = 0x20 | ((A == 0) << 7); }
+    #define XOR(R) {A = A ^ R; cpu.registers.F = ((A == 0) << 7); }
+    #define  OR(R) {A = A | R; cpu.registers.F = ((A == 0) << 7); }
+    #define  CP(R) {u8 a = A, b = R;            \
+      cpu.flags.Z = a == b;                     \
+      cpu.flags.C = a < b;                      \
+      cpu.flags.H = (a & 0xF) < (b & 0xF);      \
+      cpu.flags.N = 1;}
+    
     Reg8 &A = cpu.registers.A,
       &B = cpu.registers.B,
       &C = cpu.registers.C,
       &D = cpu.registers.D,
       &E = cpu.registers.E,
       &H = cpu.registers.H,
-      &L = cpu.registers.L;
+      &L = cpu.registers.L,
+      &F = cpu.registers.F;
 
     Reg16 &HL = cpu.registers.HL,
       &BC = cpu.registers.BC,
@@ -155,13 +201,33 @@ struct InstructionDasher {
       &SP = cpu.registers.SP;
 
     MemoryRef LoadHL {*this, HL};
-    
+
+#define LOOP0(X)                                         \
+      X(0x0, B); X(0x1, C); X(0x2, D); X(0x3, E);       \
+      X(0x4, H); X(0x5, L); X(0x7, A);
+#define LOOP(X) LOOP0(X) X(0x6, LoadHL);
     switch(opcode) {
     case 0x00: /* NOP */; break;
+    case 0x10: cpu.stopped = cpu.halted = 1; break;
+      
     case 0x01: LD16_XXXX(BC); break;
+    case 0x11: LD16_XXXX(DE); break;
+    case 0x21: LD16_XXXX(HL); break;
+    case 0x31: LD16_XXXX(SP); break;
+      
     case 0x02: mmu_set(BC, A); break;
-    case 0x03: BC++; cycles += 4; break;
-    case 0x06: B = _read_u8(); break;
+
+    #define X(OP, R)                     \
+      case 0x04 + 8 * OP: INC(R); break; \
+      case 0x05 + 8 * OP: DEC(R); break;
+    LOOP(X)
+    #undef X
+      
+    #define X(OP, R) \
+      case 0x06 + 8 * OP: R = _read_u8(); break;
+    LOOP(X)
+    #undef X
+    
     case 0x08: // LD (xxxx), SP
       {
         u16 addr = _read_u16();
@@ -170,97 +236,132 @@ struct InstructionDasher {
       }
       break;
     case 0x0A: A = mmu_get(BC); break;
-    case 0x0E: C = _read_u8(); break;
-    case 0x11: LD16_XXXX(DE); break;
     case 0x12: mmu_set(DE, A); break;
+    case 0x03: BC++; cycles += 4; break;
     case 0x13: DE++; cycles += 4; break;
-    case 0x16: D = _read_u8(); break;
-    case 0x1A: A = mmu_get(DE); break;
-    case 0x1E: E = _read_u8(); break;
-    case 0x21: LD16_XXXX(HL); break;
-    case 0x22: mmu_set(HL++, A); break;
     case 0x23: HL++; cycles += 4; break;
-    case 0x26: H = _read_u8(); break;
-    case 0x2A: A = mmu_get(HL++); break;
-    case 0x2E: L = _read_u8(); break;
-    case 0x31: LD16_XXXX(SP); break;
-    case 0x32: mmu_set(HL--, A); break;
     case 0x33: SP++; cycles += 4; break;
-    case 0x36: mmu_set(HL, _read_u8()); break; // LD8 (HL), xx
+    case 0x0B: BC--; cycles += 4; break;
+    case 0x1B: DE--; cycles += 4; break;
+    case 0x2B: HL--; cycles += 4; break;
+    case 0x3B: SP--; cycles += 4; break;
+    case 0x1A: A = mmu_get(DE); break;
+    case 0x22: mmu_set(HL++, A); break;
+    case 0x2A: A = mmu_get(HL++); break;
+    case 0x32: mmu_set(HL--, A); break;
     case 0x3A: A = mmu_get(HL--); break;
-    case 0x3E: A = _read_u8(); break;
 
-    case 0x40: /*B = B;*/ break;
-    case 0x41: B = C; break;
-    case 0x42: B = D; break;
-    case 0x43: B = E; break;
-    case 0x44: B = H; break;
-    case 0x45: B = L; break;
-    case 0x46: B = mmu_get(HL); break;
-    case 0x47: B = A; break;
+    case 0xF3: cpu.IME = 0; break;
+    case 0xFB: cpu.IME = 1; break;
+    case 0x07: RLC(A); cpu.flags.Z = 0; break;
+    case 0x0F: RRC(A); cpu.flags.Z = 0; break;
+    case 0x17: RL(A); cpu.flags.Z = 0; break;
+    case 0x1F: RR(A); cpu.flags.Z = 0; break;
+    case 0x27: /* DAA */ {
+      if (cpu.flags.N) { 
+        if (cpu.flags.C) { A -= 0x60; } // N+C: borrow a 10 digit
+        if (cpu.flags.H) { A -= 0x06; } // N+H: borrow a 01 digit
+      } else {
+        if (cpu.flags.C || A > 0x99) { A += 0x60; cpu.flags.C = 1; } // C: carry a 10 digit
+        if (cpu.flags.H || (A & 0xF) > 0x09) { A += 0x06; } // H: carry a 01 digit
+      }
+      cpu.flags.Z = A == 0;
+      cpu.flags.H = 0;
+      break;
+    }
+    case 0x2F: A = ~A; F |= 0x60; break;             // Complement A
+    case 0x37: F = (F & 0x80) | 0x10; break;        // Set Carry
+    case 0x3F: F = (F & 0x80) | (~F & 0x10); break; // Complement Carry
 
-    case 0x48: C = B; break;
-    case 0x49: /*C = C;*/ break;
-    case 0x4A: C = D; break;
-    case 0x4B: C = E; break;
-    case 0x4C: C = H; break;
-    case 0x4D: C = L; break;
-    case 0x4E: C = mmu_get(HL); break;
-    case 0x4F: C = A; break;
-
-    case 0x50: D = B; break;
-    case 0x51: D = C; break;
-    case 0x52: /* D = D; */ break;
-    case 0x53: D = E; break;
-    case 0x54: D = H; break;
-    case 0x55: D = L; break;
-    case 0x56: D = mmu_get(HL); break;
-    case 0x57: D = A; break;
-
-    case 0x58: E = B; break;
-    case 0x59: E = C; break;
-    case 0x5A: E = D; break;
-    case 0x5B: /* E = E; */ break;
-    case 0x5C: E = H; break;
-    case 0x5D: E = L; break;
-    case 0x5E: E = mmu_get(HL); break;
-    case 0x5F: E = A; break;
-
-    case 0x60: H = B; break;
-    case 0x61: H = C; break;
-    case 0x62: H = D; break;
-    case 0x63: H = E; break;
-    case 0x64: /*H = H;*/ break;
-    case 0x65: H = L; break;
-    case 0x66: H = mmu_get(HL); break;
-    case 0x67: H = A; break;
-
-    case 0x68: L = B; break;
-    case 0x69: L = C; break;
-    case 0x6A: L = D; break;
-    case 0x6B: L = E; break;
-    case 0x6C: L = H; break;
-    case 0x6D: /* L = L; */ break;
-    case 0x6E: L = mmu_get(HL); break;
-    case 0x6F: L = A; break;
-
-    case 0x70: mmu_set(HL, B); break;
-    case 0x71: mmu_set(HL, C); break;
-    case 0x72: mmu_set(HL, D); break;
-    case 0x73: mmu_set(HL, E); break;
-    case 0x74: mmu_set(HL, H); break;
-    case 0x75: mmu_set(HL, L); break;
+    case 0xC7: _push(PC); PC = 0x00; break;
+    case 0xCF: _push(PC); PC = 0x08; break;
+    case 0xD7: _push(PC); PC = 0x10; break;
+    case 0xDF: _push(PC); PC = 0x18; break;
+    case 0xE7: _push(PC); PC = 0x20; break;
+    case 0xEF: _push(PC); PC = 0x28; break;
+    case 0xF7: _push(PC); PC = 0x30; break;
+    case 0xFF: _push(PC); PC = 0x38; break;
+    // HALT appears where the LD (HL), (HL) would be. Shift up the
+    // pathological case by 0x300 to keep the switch cases distinct.
+    #define X(OP, REG) \
+      case 0x40 + OP: B = REG; break; \
+      case 0x48 + OP: C = REG; break; \
+      case 0x50 + OP: D = REG; break; \
+      case 0x58 + OP: E = REG; break; \
+      case 0x60 + OP: H = REG; break; \
+      case 0x68 + OP: L = REG; break; \
+      case 0x70 + OP + 0x300 * (OP == 6): LoadHL = REG; break;    \
+      case 0x78 + OP: A = REG; break; 
+    LOOP(X)
+    #undef X
     case 0x76: cpu.halted = true; if (cpu.IME == 0) { PC++; } break;
-    case 0x77: mmu_set(HL, A); break;
+#define ADD_HL(RR) {u16 a = HL, b = RR; \
+      cycles += 4; \
+      HL = a + b; \
+      cpu.flags.N = 0; \
+      cpu.flags.C = a > (u16)~b; \
+      cpu.flags.H = (a & 0xFFF) + (b & 0xFFF) > 0xFFF;}
+    case 0x09: ADD_HL(BC); break;
+    case 0x19: ADD_HL(DE); break;
+    case 0x29: ADD_HL(HL); break;
+    case 0x39: ADD_HL(SP); break;
+    #define X(OP, REG) \
+      case 0x80 + OP: ADD(REG); break; \
+      case 0x88 + OP: ADC(REG); break; \
+      case 0x90 + OP: SUB(REG); break; \
+      case 0x98 + OP: SBC(REG); break; \
+      case 0xA0 + OP: AND(REG); break; \
+      case 0xA8 + OP: XOR(REG); break; \
+      case 0xB0 + OP:  OR(REG); break; \
+      case 0xB8 + OP:  CP(REG); break;         
+    LOOP(X)
+    #undef X
 
-    case 0x78: A = B; break;
-    case 0x79: A = C; break;
-    case 0x7A: A = D; break;
-    case 0x7B: A = E; break;
-    case 0x7C: A = H; break;
-    case 0x7D: A = L; break;
-    case 0x7E: A = mmu_get(HL); break;
-    case 0x7F: /* A = A; */ break;
+    case 0xC6: ADD(_read_u8()); break;
+    case 0xD6: SUB(_read_u8()); break;
+    case 0xE6: AND(_read_u8()); break;
+    case 0xF6:  OR(_read_u8()); break;
+    case 0xCE: ADC(_read_u8()); break;
+    case 0xDE: SBC(_read_u8()); break;
+    case 0xEE: XOR(_read_u8()); break;
+    case 0xFE:  CP(_read_u8()); break;
+
+      // CALL
+    case 0xC4: { u16 target = _read_u16(); if (!cpu.flags.Z) { _push(PC); PC = target; } break; }
+    case 0xCC: { u16 target = _read_u16(); if (cpu.flags.Z)  { _push(PC); PC = target; } break; }
+    case 0xCD: { u16 target = _read_u16(); if (true)         { _push(PC); PC = target; } break; }
+    case 0xD4: { u16 target = _read_u16(); if (!cpu.flags.C) { _push(PC); PC = target; } break; }
+    case 0xDC: { u16 target = _read_u16(); if (cpu.flags.C)  { _push(PC); PC = target; } break; }
+      // RET - 20/8/16 cycles
+    case 0xC0: { cycles += 4; if (!cpu.flags.Z) { PC = _pop(); cycles += 4; } break; }
+    case 0xC8: { cycles += 4; if (cpu.flags.Z) { PC = _pop(); cycles += 4; } break; }
+    case 0xC9: { cycles += 4; if (true)         { PC = _pop(); } break; }
+    case 0xD0: { cycles += 4; if (!cpu.flags.C) { PC = _pop(); cycles += 4; } break; }
+    case 0xD8: { cycles += 4; if (cpu.flags.C) { PC = _pop(); cycles += 4; } break; }
+      // JP
+    case 0xC2: { u16 target = _read_u16(); if (!cpu.flags.Z) { PC = target; cycles += 4; } break; }
+    case 0xC3: { u16 target = _read_u16(); if (true)         { PC = target; cycles += 4; } break; }
+    case 0xCA: { u16 target = _read_u16(); if (cpu.flags.Z)  { PC = target; cycles += 4; } break; }
+    case 0xD2: { u16 target = _read_u16(); if (!cpu.flags.C) { PC = target; cycles += 4; } break; }
+    case 0xDA: { u16 target = _read_u16(); if (cpu.flags.C)  { PC = target; cycles += 4; } break; }
+    case 0xE9: { PC = HL; break; }
+      
+      // JR
+    case 0x20: {i8 o = _read_u8(); if (!cpu.flags.Z) { PC += o; cycles += 4; }} break;
+    case 0x30: {i8 o = _read_u8(); if (!cpu.flags.C) { PC += o; cycles += 4; }} break;
+    case 0x18: {i8 o = _read_u8(); if (true)         { PC += o; cycles += 4; }} break;
+    case 0x28: {i8 o = _read_u8(); if (cpu.flags.Z)  { PC += o; cycles += 4; }} break;
+    case 0x38: {i8 o = _read_u8(); if (cpu.flags.C)  { PC += o; cycles += 4; }} break;
+
+    case 0xC1: BC = _pop(); break;
+    case 0xD1: DE = _pop(); break;
+    case 0xE1: HL = _pop(); break;
+    case 0xF1: cpu.registers.AF = 0xFFF0 & _pop(); break;
+    case 0xC5: _push(BC); break;
+    case 0xD5: _push(DE); break;
+    case 0xE5: _push(HL); break;
+    case 0xF5: _push(cpu.registers.AF); break;
+
     case 0xE0: mmu_set(0xFF00 + _read_u8(), A); break; // LD8 IO+u8, A
     case 0xE2: mmu_set(0xFF00 + C, A); break; // LD8 IO+C, A
     case 0xEA: mmu_set(_read_u16(), A); break; // LD8 xxxx, A
@@ -293,10 +394,6 @@ struct InstructionDasher {
       cycles += 4;
       break;
     case 0xFA: A = mmu_get(_read_u16()); break;
-
-#define LOOP(F)                                         \
-      F(0x0, B); F(0x1, C); F(0x2, D); F(0x3, E);       \
-      F(0x4, H); F(0x5, L); F(0x6, LoadHL); F(0x7, A);
 
     #define X(op, target) \
       case 0x100 + op: RLC(target); break;  \
@@ -343,7 +440,7 @@ struct InstructionDasher {
     LOOP(X)
     #undef X
     default:
-      // log("unknown op", opcode);
+      log("unknown op", opcode);
       return false;
     }
     return true;
