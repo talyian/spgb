@@ -1,4 +1,4 @@
-* [14/22] GBE Tasks
+* [15/23] GBE Tasks
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :END:
@@ -9,11 +9,16 @@ currently the test fails init_timer since our timer is way off.
 we'll need to emit accurate cycle counts for all the instructions used in
 the delay loop before init_timer can pass and we can actually test_timer
 
-** DOING New Instruction Decoder
+** DONE New Instruction Decoder
+   CLOSED: [2019-10-17 Thu 17:50]
+   - State "DONE"       from "DOING"      [2019-10-17 Thu 17:50]
 The current instruction decoder is too abstracted. we can simplify by
-removing the opcodes.inc python generator stuff
+removing the opcodes.inc python generator stuff.
+
+As a side-effect, this improved the instruction timings enough that Kirby and Links Awakening work. 
 
 ** TODO Palettes
+** TODO Sprite Rendering Order
 ** TODO Sound
 ** TODO CGB Features
 ** TODO HBlank Timing for BGB TEST

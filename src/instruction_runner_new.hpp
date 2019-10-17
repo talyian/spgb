@@ -4,7 +4,7 @@
 #include "system/cpu.hpp"
 #include "system/mmu.hpp"
 
-// Runs instructions
+// Decodes an instruction, 
 struct InstructionDasher {
   InstructionDasher(CPU & cpu, MemoryMapper & mmu) : cpu(cpu), mmu(mmu) { }
 
@@ -346,7 +346,6 @@ struct InstructionDasher {
     case 0xD2: { u16 target = _read_u16(); if (!cpu.flags.C) { PC = target; cycles += 4; } break; }
     case 0xDA: { u16 target = _read_u16(); if (cpu.flags.C)  { PC = target; cycles += 4; } break; }
     case 0xE9: { PC = HL; break; }
-      
       // JR
     case 0x20: {i8 o = _read_u8(); if (!cpu.flags.Z) { PC += o; cycles += 4; }} break;
     case 0x30: {i8 o = _read_u8(); if (!cpu.flags.C) { PC += o; cycles += 4; }} break;
@@ -390,10 +389,7 @@ struct InstructionDasher {
       }
       cycles += 4; // total 12 cycles
       break;
-    case 0xF9:
-      SP = HL;
-      cycles += 4;
-      break;
+    case 0xF9: SP = HL; cycles += 4; break;
     case 0xFA: A = mmu_get(_read_u16()); break;
 
     #define X(op, target) \

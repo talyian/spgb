@@ -66,33 +66,23 @@ u32 emulator_t::single_step() {
       cpu.IME = 0;
       decoder.ii._push(decoder.pc);
       decoder.pc = handler;
-      return 0; // this is so we have a debug step at the beginning of the
-                // handler
+
+      // return 0; // this is so we have a debug step at the beginning of the
+      //           // handler
+      goto AFTER_DECODER;
     } else {
       // TODO: halt bug?
     }
   }
 
-  joypad.tick();
-
-  if (mmu.get(IoPorts::DMA)) {
-    // technically this won't work if we transfer from 0
-    // but that seems highly unlikely
-    dma_transfer(&mmu, mmu.get(IoPorts::DMA));
-    mmu.set(IoPorts::DMA, 0);
-  }
-
   if (!cpu.halted) {
     _dasher.PC = decoder.pc;
     _dasher.cycles = 0;
-    if (ff ++ % 2) {
-      _dasher.decode();
-      decoder.pc_start = _dasher.PC_start;
-      decoder.pc = _dasher.PC;
-      dt = _dasher.cycles;
-    }
-    else 
-      decoder.decode();
+
+    _dasher.decode();
+    decoder.pc_start = _dasher.PC_start;
+    decoder.pc = _dasher.PC;
+    dt = _dasher.cycles;
     
     if (decoder.error) {
       log(decoder.pc_start, "decoder error", decoder.error);
@@ -106,8 +96,15 @@ u32 emulator_t::single_step() {
     }
   }
 
+ AFTER_DECODER:
+  joypad.tick();
+  if (mmu.get(IoPorts::DMA)) {
+    // technically this won't work if we transfer from 0
+    // but that seems highly unlikely
+    dma_transfer(&mmu, mmu.get(IoPorts::DMA));
+    mmu.set(IoPorts::DMA, 0);
+  }
   ppu.tick(dt);
-
   timer.tick(dt);
   return dt;
 }
