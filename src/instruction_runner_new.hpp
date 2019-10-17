@@ -18,7 +18,14 @@ struct InstructionDasher {
 
   u8 mmu_get(u16 addr) { cycles += 4; return mmu.get(addr); }
   void mmu_set(u16 addr, u8 val) { cycles += 4; mmu.set(addr, val); }
-  
+
+  struct MemoryRef {
+    InstructionDasher & parent;
+    Reg16 &addr;
+    operator u8 () const { return parent.mmu_get(addr); }
+    MemoryRef& operator=(u8 val) { parent.mmu_set(addr, val); return *this; }
+  };
+
   u8 _read_u8() {
     cycles += 4;
     return mmu.get(PC++);
@@ -29,15 +36,17 @@ struct InstructionDasher {
   }
 
   // 8 bit Rotate Right (i.e. x86 ROR)
-  inline void RRC(Reg8 &RR) {
+  template<class T> // T is either Reg8 or MemoryRef
+  inline void RRC(T &RR) {
     u8 v = RR;
     u8 v2 = (v >> 1) | (v << 7);
     cpu.registers.F = ((v & 0x01) << 4) | ((v2 == 0) << 7);
     RR = v2;
   }
 
-  // 8 bit Rotate Left 
-  inline void RLC(Reg8 &RR) {
+  // 8 bit Rotate Left
+  template<class T> // T is either Reg8 or MemoryRef
+  inline void RLC(T &RR) {
     u8 v = RR;
     u8 v2 = (v << 1) | (v >> 7);
     cpu.registers.F = 0;
@@ -47,7 +56,8 @@ struct InstructionDasher {
   }
 
   // 9-bit Rotate Right (i.e. x86 RCR)
-  inline void RR(Reg8 &RR) {
+  template<class T> // T is either Reg8 or MemoryRef
+  inline void RR(T &RR) {
     u8 v = RR;
     u8 v2 = (RR >> 1) | (cpu.flags.C << 7);
     cpu.registers.F = 0;
@@ -57,7 +67,8 @@ struct InstructionDasher {
   }
 
   // 9-bit Rotate Left
-  inline void RL(Reg8 &RR) {
+  template<class T> // T is either Reg8 or MemoryRef
+  inline void RL(T &RR) {
     u8 v = RR;
     u8 v2 = (RR << 1) | cpu.flags.C;
     cpu.registers.F = 0;
@@ -67,7 +78,8 @@ struct InstructionDasher {
   }
 
   // Shift Left
-  inline void SLA(Reg8 &RR) {
+  template<class T> // T is either Reg8 or MemoryRef
+  inline void SLA(T &RR) {
     u8 v = RR;
     u8 v2 = v << 1;
     cpu.registers.F = 0;
@@ -77,7 +89,8 @@ struct InstructionDasher {
   }
 
   // (Signed) Shift Right
-  inline void SRA(Reg8 &RR) {
+  template<class T> // T is either Reg8 or MemoryRef
+  inline void SRA(T &RR) {
     i8 v = RR;
     u8 v2 = v >> 1;
     cpu.registers.F = 0;
@@ -87,7 +100,8 @@ struct InstructionDasher {
   }
 
   // (Unsigned) Shift Right
-  inline void SRL(Reg8 &RR) {
+  template<class T> // T is either Reg8 or MemoryRef
+  inline void SRL(T &RR) {
     u8 v = RR;
     u8 v2 = v >> 1;
     cpu.registers.F = 0;
@@ -97,7 +111,8 @@ struct InstructionDasher {
   }
 
   // Rotate-4
-  inline void SWAP(Reg8 &RR) {
+  template<class T> // T is either Reg8 or MemoryRef
+  inline void SWAP(T &RR) {
     u8 v = RR;
     u8 v2 = (v >> 4) | (v << 4);
     cpu.registers.F = (v == 0) << 7;
@@ -111,29 +126,11 @@ struct InstructionDasher {
     cpu.flags.Z = v == 0;
   }
 
-  void RES(u8 bit, Reg8 &RR) {
-    RR = RR & ~(1 << bit);
-  }
+  template<class T> // T is either Reg8 or MemoryRef
+  void RES(u8 bit, T &RR) { RR = RR & ~(1 << bit); }
 
-  u8 RES(u8 bit, u8 && RR) {
-    return RR & ~(1 << bit);
-  }
-
-  void RES_(u8 bit, u16 RR) {
-    mmu.set(RR, RES(bit, mmu_get(RR))); cycles += 4;
-  }
-
-  void SET(u8 bit, Reg8 &RR) {
-    RR = RR | (1 << bit);
-  }
-
-  u8 SET(u8 bit, u8 && RR) {
-    return RR | (1 << bit);
-  }
-
-  void SET_(u8 bit, u16 RR) {
-    mmu.set(RR, SET(bit, mmu_get(RR))); cycles += 4;
-  }
+  template<class T> // T is either Reg8 or MemoryRef
+  void SET(u8 bit, T &RR) { RR = RR | (1 << bit); }
 
   bool decode() {
     PC_start = PC;
@@ -156,6 +153,8 @@ struct InstructionDasher {
       &BC = cpu.registers.BC,
       &DE = cpu.registers.DE,
       &SP = cpu.registers.SP;
+
+    MemoryRef LoadHL {*this, HL};
     
     switch(opcode) {
     case 0x00: /* NOP */; break;
@@ -295,294 +294,54 @@ struct InstructionDasher {
       break;
     case 0xFA: A = mmu_get(_read_u16()); break;
 
-    case 0x100: RLC(B); break;
-    case 0x101: RLC(C); break;
-    case 0x102: RLC(D); break;
-    case 0x103: RLC(E); break;
-    case 0x104: RLC(H); break;
-    case 0x105: RLC(L); break;
-    case 0x106: { Reg8 v = mmu_get(HL); RLC(v); mmu_set(HL, v); break; }
-    case 0x107: RLC(A); break;
+#define LOOP(F)                                         \
+      F(0x0, B); F(0x1, C); F(0x2, D); F(0x3, E);       \
+      F(0x4, H); F(0x5, L); F(0x6, LoadHL); F(0x7, A);
 
-    case 0x108: RRC(B); break;
-    case 0x109: RRC(C); break;
-    case 0x10A: RRC(D); break;
-    case 0x10B: RRC(E); break;
-    case 0x10C: RRC(H); break;
-    case 0x10D: RRC(L); break;
-    case 0x10E: { Reg8 v = mmu_get(HL); RRC(v); mmu_set(HL, v); break; }
-    case 0x10F: RRC(A); break;
-
-    case 0x110: RL(B); break;
-    case 0x111: RL(C); break;
-    case 0x112: RL(D); break;
-    case 0x113: RL(E); break;
-    case 0x114: RL(H); break;
-    case 0x115: RL(L); break;
-    case 0x116: { Reg8 v = mmu_get(HL); RL(v); mmu_set(HL, v); break; }
-    case 0x117: RL(A); break;
-
-    case 0x118: RR(B); break;
-    case 0x119: RR(C); break;
-    case 0x11A: RR(D); break;
-    case 0x11B: RR(E); break;
-    case 0x11C: RR(H); break;
-    case 0x11D: RR(L); break;
-    case 0x11E: { Reg8 v = mmu_get(HL); RR(v); mmu_set(HL, v); break; }
-    case 0x11F: RR(A); break;
-
-    case 0x120: SLA(B); break;
-    case 0x121: SLA(C); break;
-    case 0x122: SLA(D); break;
-    case 0x123: SLA(E); break;
-    case 0x124: SLA(H); break;
-    case 0x125: SLA(L); break;
-    case 0x126: { Reg8 v = mmu_get(HL); SLA(v); mmu_set(HL, v); break; }
-    case 0x127: SLA(A); break;
-
-    case 0x128: SRA(B); break;
-    case 0x129: SRA(C); break;
-    case 0x12A: SRA(D); break;
-    case 0x12B: SRA(E); break;
-    case 0x12C: SRA(H); break;
-    case 0x12D: SRA(L); break;
-    case 0x12E: { Reg8 v = mmu_get(HL); SRA(v); mmu_set(HL, v); break; }
-    case 0x12F: SRA(A); break;
-
-    case 0x130: SWAP(B); break;
-    case 0x131: SWAP(C); break;
-    case 0x132: SWAP(D); break;
-    case 0x133: SWAP(E); break;
-    case 0x134: SWAP(H); break;
-    case 0x135: SWAP(L); break;
-    case 0x136: { Reg8 v = mmu_get(HL); SWAP(v); mmu_set(HL, v); break; }
-    case 0x137: SWAP(A); break;
-
-    case 0x138: SRL(B); break;
-    case 0x139: SRL(C); break;
-    case 0x13A: SRL(D); break;
-    case 0x13B: SRL(E); break;
-    case 0x13C: SRL(H); break;
-    case 0x13D: SRL(L); break;
-    case 0x13E: { Reg8 v = mmu_get(HL); SRL(v); mmu_set(HL, v); break; }
-    case 0x13F: SRL(A); break;
-
-    case 0x140: BIT(0, B); break;
-    case 0x141: BIT(0, C); break;
-    case 0x142: BIT(0, D); break;
-    case 0x143: BIT(0, E); break;
-    case 0x144: BIT(0, H); break;
-    case 0x145: BIT(0, L); break;
-    case 0x146: BIT(0, mmu_get(HL)); cycles += 4; break;
-    case 0x147: BIT(0, A); break;
-
-    case 0x148: BIT(1, B); break;
-    case 0x149: BIT(1, C); break;
-    case 0x14A: BIT(1, D); break;
-    case 0x14B: BIT(1, E); break;
-    case 0x14C: BIT(1, H); break;
-    case 0x14D: BIT(1, L); break;
-    case 0x14E: BIT(1, mmu_get(HL)); cycles += 4; break;
-    case 0x14F: BIT(1, A); break;
-
-    case 0x150: BIT(2, B); break;
-    case 0x151: BIT(2, C); break;
-    case 0x152: BIT(2, D); break;
-    case 0x153: BIT(2, E); break;
-    case 0x154: BIT(2, H); break;
-    case 0x155: BIT(2, L); break;
-    case 0x156: BIT(2, mmu_get(HL)); cycles += 4; break;
-    case 0x157: BIT(2, A); break;
-
-    case 0x158: BIT(3, B); break;
-    case 0x159: BIT(3, C); break;
-    case 0x15A: BIT(3, D); break;
-    case 0x15B: BIT(3, E); break;
-    case 0x15C: BIT(3, H); break;
-    case 0x15D: BIT(3, L); break;
-    case 0x15E: BIT(3, mmu_get(HL)); cycles += 4; break;
-    case 0x15F: BIT(3, A); break;
-
-    case 0x160: BIT(4, B); break;
-    case 0x161: BIT(4, C); break;
-    case 0x162: BIT(4, D); break;
-    case 0x163: BIT(4, E); break;
-    case 0x164: BIT(4, H); break;
-    case 0x165: BIT(4, L); break;
-    case 0x166: BIT(4, mmu_get(HL)); cycles += 4; break;
-    case 0x167: BIT(4, A); break;
-
-    case 0x168: BIT(5, B); break;
-    case 0x169: BIT(5, C); break;
-    case 0x16A: BIT(5, D); break;
-    case 0x16B: BIT(5, E); break;
-    case 0x16C: BIT(5, H); break;
-    case 0x16D: BIT(5, L); break;
-    case 0x16E: BIT(5, mmu_get(HL)); cycles += 4; break;
-    case 0x16F: BIT(5, A); break;
-
-    case 0x170: BIT(6, B); break;
-    case 0x171: BIT(6, C); break;
-    case 0x172: BIT(6, D); break;
-    case 0x173: BIT(6, E); break;
-    case 0x174: BIT(6, H); break;
-    case 0x175: BIT(6, L); break;
-    case 0x176: BIT(6, mmu_get(HL)); cycles += 4; break;
-    case 0x177: BIT(6, A); break;
-
-    case 0x178: BIT(7, B); break;
-    case 0x179: BIT(7, C); break;
-    case 0x17A: BIT(7, D); break;
-    case 0x17B: BIT(7, E); break;
-    case 0x17C: BIT(7, H); break;
-    case 0x17D: BIT(7, L); break;
-    case 0x17E: BIT(7, mmu_get(HL)); cycles += 4; break;
-    case 0x17F: BIT(7, A); break;
-
-    case 0x180: RES(0, B); break;
-    case 0x181: RES(0, C); break;
-    case 0x182: RES(0, D); break;
-    case 0x183: RES(0, E); break;
-    case 0x184: RES(0, H); break;
-    case 0x185: RES(0, L); break;
-    case 0x186: RES_(3, HL); break;
-    case 0x187: RES(0, A); break;
-
-    case 0x188: RES(1, B); break;
-    case 0x189: RES(1, C); break;
-    case 0x18A: RES(1, D); break;
-    case 0x18B: RES(1, E); break;
-    case 0x18C: RES(1, H); break;
-    case 0x18D: RES(1, L); break;
-    case 0x18E: RES_(1, HL); break;
-    case 0x18F: RES(1, A); break;
-
-    case 0x190: RES(2, B); break;
-    case 0x191: RES(2, C); break;
-    case 0x192: RES(2, D); break;
-    case 0x193: RES(2, E); break;
-    case 0x194: RES(2, H); break;
-    case 0x195: RES(2, L); break;
-    case 0x196: RES_(2, HL); break; 
-    case 0x197: RES(2, A); break;
-
-    case 0x198: RES(3, B); break;
-    case 0x199: RES(3, C); break;
-    case 0x19A: RES(3, D); break;
-    case 0x19B: RES(3, E); break;
-    case 0x19C: RES(3, H); break;
-    case 0x19D: RES(3, L); break;
-    case 0x19E: RES_(3, HL); break; 
-    case 0x19F: RES(3, A); break;
-
-    case 0x1A0: RES(4, B); break;
-    case 0x1A1: RES(4, C); break;
-    case 0x1A2: RES(4, D); break;
-    case 0x1A3: RES(4, E); break;
-    case 0x1A4: RES(4, H); break;
-    case 0x1A5: RES(4, L); break;
-    case 0x1A6: RES_(4, HL); break; 
-    case 0x1A7: RES(4, A); break;
-
-    case 0x1A8: RES(5, B); break;
-    case 0x1A9: RES(5, C); break;
-    case 0x1AA: RES(5, D); break;
-    case 0x1AB: RES(5, E); break;
-    case 0x1AC: RES(5, H); break;
-    case 0x1AD: RES(5, L); break;
-    case 0x1AE: RES_(5, HL); break; 
-    case 0x1AF: RES(5, A); break;
-
-    case 0x1B0: RES(6, B); break;
-    case 0x1B1: RES(6, C); break;
-    case 0x1B2: RES(6, D); break;
-    case 0x1B3: RES(6, E); break;
-    case 0x1B4: RES(6, H); break;
-    case 0x1B5: RES(6, L); break;
-    case 0x1B6: RES_(6, HL); break; 
-    case 0x1B7: RES(6, A); break;
-
-    case 0x1B8: RES(7, B); break;
-    case 0x1B9: RES(7, C); break;
-    case 0x1BA: RES(7, D); break;
-    case 0x1BB: RES(7, E); break;
-    case 0x1BC: RES(7, H); break;
-    case 0x1BD: RES(7, L); break;
-    case 0x1BE: RES_(7, HL); break;
-    case 0x1BF: RES(7, A); break;
-
-    case 0x1C0: SET(0, B); break;
-    case 0x1C1: SET(0, C); break;
-    case 0x1C2: SET(0, D); break;
-    case 0x1C3: SET(0, E); break;
-    case 0x1C4: SET(0, H); break;
-    case 0x1C5: SET(0, L); break;
-    case 0x1C6: SET_(0, HL); break;
-    case 0x1C7: SET(0, A); break;
-
-    case 0x1C8: SET(1, B); break;
-    case 0x1C9: SET(1, C); break;
-    case 0x1CA: SET(1, D); break;
-    case 0x1CB: SET(1, E); break;
-    case 0x1CC: SET(1, H); break;
-    case 0x1CD: SET(1, L); break;
-    case 0x1CE: SET_(1, HL); break;
-    case 0x1CF: SET(1, A); break;
-
-    case 0x1D0: SET(2, B); break;
-    case 0x1D1: SET(2, C); break;
-    case 0x1D2: SET(2, D); break;
-    case 0x1D3: SET(2, E); break;
-    case 0x1D4: SET(2, H); break;
-    case 0x1D5: SET(2, L); break;
-    case 0x1D6: SET_(2, HL); break;
-    case 0x1D7: SET(2, A); break;
-
-    case 0x1D8: SET(3, B); break;
-    case 0x1D9: SET(3, C); break;
-    case 0x1DA: SET(3, D); break;
-    case 0x1DB: SET(3, E); break;
-    case 0x1DC: SET(3, H); break;
-    case 0x1DD: SET(3, L); break;
-    case 0x1DE: SET_(3, HL); break;
-    case 0x1DF: SET(3, A); break;
-
-    case 0x1E0: SET(4, B); break;
-    case 0x1E1: SET(4, C); break;
-    case 0x1E2: SET(4, D); break;
-    case 0x1E3: SET(4, E); break;
-    case 0x1E4: SET(4, H); break;
-    case 0x1E5: SET(4, L); break;
-    case 0x1E6: SET_(4, HL); break;
-    case 0x1E7: SET(4, A); break;
-
-    case 0x1E8: SET(5, B); break;
-    case 0x1E9: SET(5, C); break;
-    case 0x1EA: SET(5, D); break;
-    case 0x1EB: SET(5, E); break;
-    case 0x1EC: SET(5, H); break;
-    case 0x1ED: SET(5, L); break;
-    case 0x1EE: SET_(5, HL); break;
-    case 0x1EF: SET(5, A); break;
-
-    case 0x1F0: SET(6, B); break;
-    case 0x1F1: SET(6, C); break;
-    case 0x1F2: SET(6, D); break;
-    case 0x1F3: SET(6, E); break;
-    case 0x1F4: SET(6, H); break;
-    case 0x1F5: SET(6, L); break;
-    case 0x1F6: SET_(6, HL); break;
-    case 0x1F7: SET(6, A); break;
-
-    case 0x1F8: SET(7, B); break;
-    case 0x1F9: SET(7, C); break;
-    case 0x1FA: SET(7, D); break;
-    case 0x1FB: SET(7, E); break;
-    case 0x1FC: SET(7, H); break;
-    case 0x1FD: SET(7, L); break;
-    case 0x1FE: SET_(7, HL); break;
-    case 0x1FF: SET(7, A); break;
-      
+    #define X(op, target) \
+      case 0x100 + op: RLC(target); break;  \
+      case 0x108 + op: RRC(target); break;  \
+      case 0x110 + op: RL(target); break;   \
+      case 0x118 + op: RR(target); break;   \
+      case 0x120 + op: SLA(target); break;  \
+      case 0x128 + op: SRA(target); break;  \
+      case 0x130 + op: SWAP(target); break; \
+      case 0x138 + op: SRL(target); break;
+    LOOP(X)
+    #undef X
+    #define X(op, target) \
+      case 0x140 + op: BIT(0, target); break;\
+      case 0x148 + op: BIT(1, target); break;\
+      case 0x150 + op: BIT(2, target); break;\
+      case 0x158 + op: BIT(3, target); break;\
+      case 0x160 + op: BIT(4, target); break;\
+      case 0x168 + op: BIT(5, target); break;\
+      case 0x170 + op: BIT(6, target); break;\
+      case 0x178 + op: BIT(7, target); break;
+    LOOP(X)
+    #undef X
+    #define X(op, target) \
+      case 0x180 + op: RES(0, target); break;\
+      case 0x188 + op: RES(1, target); break;\
+      case 0x190 + op: RES(2, target); break;\
+      case 0x198 + op: RES(3, target); break;\
+      case 0x1A0 + op: RES(4, target); break;\
+      case 0x1A8 + op: RES(5, target); break;\
+      case 0x1B0 + op: RES(6, target); break;\
+      case 0x1B8 + op: RES(7, target); break;
+    LOOP(X)
+    #undef X
+    #define X(op, target) \
+      case 0x1C0 + op: SET(0, target); break;\
+      case 0x1C8 + op: SET(1, target); break;\
+      case 0x1D0 + op: SET(2, target); break;\
+      case 0x1D8 + op: SET(3, target); break;\
+      case 0x1E0 + op: SET(4, target); break;\
+      case 0x1E8 + op: SET(5, target); break;\
+      case 0x1F0 + op: SET(6, target); break;\
+      case 0x1F8 + op: SET(7, target); break;
+    LOOP(X)
+    #undef X
     default:
       // log("unknown op", opcode);
       return false;
