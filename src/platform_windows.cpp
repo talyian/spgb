@@ -13,6 +13,8 @@
 #include <gl/gl.h>
 #include "win32_opengl.hpp"
 
+#define NOSWAP
+
 extern "C" size_t sslen(const char* s) { return strlen(s); }
 
 // Platform API: these functions are declared in platform.hpp and must
@@ -28,12 +30,19 @@ extern "C" {
   void _logp(void* v) { printf("%p ", v); }
   void _serial_putc(u8 v) {
     static u64 sequence = 0;
-    printf("Serial [%c]\n", v);
+    static char line[20];
+    static u32 p = 0;
+    auto flush = [&]() { printf("<<< %.*s\n", p, line); p = 0; };
+    if (v == '\n' || p == 20) { flush(); } else { line[p++] = v; }
     sequence = sequence * 0x100 + v;
-    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"dessaP\0\0")
+    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"dessaP\0") {
+      flush();
       exit(0);
-    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"deliaF\0\0")
+    }
+    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"deliaF\0") {
+      flush();
       exit(-1);
+    }
   }
 }
 
@@ -212,7 +221,9 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
   glf::glLinkProgram(program);
   // glf::glUseProgram(program);
 
-  // glDrawBuffer(GL_FRONT);
+  #ifdef NOSWAP
+  glDrawBuffer(GL_FRONT);
+  #endif
   GLuint vbo = 0;
   {
     f32 w = 1.0f;
@@ -249,7 +260,8 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
   char line[64] {0};
   // emu.debug.name_function("main", 0xC300, 0xc315);
   // emu.debug.name_function("test_timer", 0xC318, 0xc345);
-  // emu.debug.set_breakpoint(0xC300);
+  if (argc > 1 && strstr(argv[1], "instr_timing"))
+    emu.debug.set_breakpoint(0xC300);
   while (true) {
     if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       if (msg.message == WM_QUIT) exit(0);
@@ -326,7 +338,10 @@ void _push_frame(u32 category, u8* memory, u32 len) {
       memory);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    // glFinish();
+    #ifdef NOSWAP
+    glFinish();
+    #else
     SwapBuffers(win32_emulator.hdc);
+    #endif
   }
 }
