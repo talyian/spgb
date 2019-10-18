@@ -125,7 +125,7 @@ struct Printer {
       
     case 0xE0: mlog("LD FF00+", _read_u8(), ", A"); break;
     case 0xE2: mlog("LD FF00+", "C, A"); break;
-    case 0xEA: mlog("LD (", _read_u16(),  "), A");
+    case 0xEA: mlog("LD (", _read_u16(),  "), A"); break;
     case 0xE8: mlog("ADD SP", (i8)_read_u8()); break;
     case 0xF0: mlog("LD A, FF00+", _read_u8()); break;
     case 0xF2: mlog("LD A, FF00+C"); break;
