@@ -50,7 +50,7 @@ void MessageCallback(
   F(GetShaderInfoLog, void (*)(glShader, GLsizei, GLsizei *, char*))  \
   F(GetProgramInfoLog, void (*)(GLuint, GLsizei, GLsizei *, char*))  \
   F(VertexAttribPointer, void (*)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid * pointer)); \
-  F(DeleteShader, void (*)(GLuint)) \
+  F(DeleteShader, void (*)(glShader)) \
   \
   F(GenBuffers, void (*)(GLsizei, GLuint*)) \
   F(BindBuffer, void (*)(BufferTarget, GLuint)) \
@@ -70,33 +70,111 @@ void MessageCallback(
 
 // GLOM: Object Model for GL resources
 namespace glom {
-  struct Vertex { f32 x, y, z, u, v; };
-  struct TriangleMesh {
-    Vertex * data;
-    u32 vertex_count;
-  };
+struct Vertex { f32 x, y, z, u, v; };
+struct TriangleMesh {
+  Vertex * data;
+  u32 vertex_count;
+};
 
-  // An 8-bit 216-color texture
-  struct Texture216 {
-    GLuint id;
-    u32 len = 0;
-    Texture216(GLuint id) : id(id) { }    
-    Texture216() {
-      glGenTextures(1, &id);
-      glBindTexture(GL_TEXTURE_2D, id);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    }
-    void setData(u8 * data, u32 w, u32 h) {
-      glBindTexture(GL_TEXTURE_2D, id);
-      glTexImage2D(
-        GL_TEXTURE_2D, 0,
-        GL_RED,
-        w, h, 0,
-        // format/type is GL_RED/GL_UNSIGNED_BYTE to load single channel 
+// An 8-bit 216-color texture
+struct Texture216 {
+  GLuint id;
+  u32 len = 0;
+  Texture216(GLuint id) : id(id) { }    
+  Texture216() {
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  }
+  void setData(u8 *data, u32 w, u32 h) {
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RED, w, h, 0,
+        // format/type is GL_RED/GL_UNSIGNED_BYTE to load single channel
         GL_RED, GL_UNSIGNED_BYTE, data);
-    }
-  };
+  }
+};
+
+struct VBO {
+  struct Vertex { f32 x, y, z; f32 u, v; };
+  GLuint id = 0;
+  VBO() { }
+  VBO(Vertex * data, u32 count) { init(data, count); }
+  void init(Vertex * data, u32 count) {
+    glf::GenBuffers(1, &id);
+    glf::BindBuffer(glf::ARRAY_BUFFER, id);
+    glf::BufferData(
+      glf::ARRAY_BUFFER,
+      sizeof(Vertex) * count,
+      data,
+      glf::DrawType::STATIC_DRAW);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glVertexPointer(3, GL_FLOAT, sizeof(Vertex), (void*)0);
+    glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), (void*)12);
+  }
+};
+
+struct Mesh {
+  VBO vbo;
+  Texture216 texture;
+  
+};
+struct Shader {
+  GLuint program = 0;
+  
+    const char *vs_source = R"STR(
+#version 110
+varying vec3 pos;
+varying vec2 uv;
+void main() { 
+  pos = gl_Vertex.xyz;
+  uv = gl_MultiTexCoord0.xy;
+  gl_Position = vec4(2.0 * pos - vec3(1.0), 1.0);
 }
+)STR";
+    const char *fs_source = R"STR(
+#version 110
+varying vec3 pos;
+varying vec2 uv;
+uniform sampler2D tx_screen;
+// Translate 8-bit 216-color-cube to RGB
+void main() { 
+  float vv = texture2D(tx_screen, uv).r;
+  float vf = vv * 255.0 / 216.0;
+  float r = floor(vf * 6.0);
+  float g = floor(vf * 36.0 - (r) * 6.0);
+  float b = vf * 216.0 - (r) * 36.0 - (g) * 6.0;
+  gl_FragColor = vec4(r / 5.0, g / 5.0, b / 5.0, 1.0);
+}
+)STR";
+  Shader() {
+    program = glf::glCreateProgram();
+    auto vertex_shader = glf::glCreateShader(glf::VERTEX_SHADER);
+    glf::ShaderSource(vertex_shader, 1, &vs_source, 0);
+    auto fragment_shader = glf::CreateShader(glf::FRAGMENT_SHADER);
+    glf::ShaderSource(fragment_shader, 1, &fs_source, 0);
+    glf::AttachShader(program, vertex_shader);
+    glf::CompileShader(fragment_shader);
+    glf::AttachShader(program, fragment_shader);
+    glf::CompileShader(vertex_shader);
+    glf::LinkProgram(program);
+    glf::UseProgram(program);
+
+    char *info_log = new char[1024];
+    glf::GetProgramInfoLog(program, 1024, nullptr, info_log);
+    printf("GLSL Log: '%s'\n", info_log);
+    glf::DeleteShader(vertex_shader);
+    glf::DeleteShader(fragment_shader);
+  }
+
+  void draw(VBO mesh, Texture216 texture) {
+    glf::BindBuffer(glf::ARRAY_BUFFER, mesh.id);
+    glBindTexture(GL_TEXTURE_2D, texture.id);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+  }
+};
+} // namespace glom

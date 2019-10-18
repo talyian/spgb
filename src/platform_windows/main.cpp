@@ -54,7 +54,11 @@ struct Win32Emulator {
   HGLRC gl = 0;
   HDC hdc = 0;
   emulator_t emu;
-  glom::Texture216 * screen_tex;
+  glom::Shader * shader;
+  int vbo_count = 0;
+  glom::Texture216 *texture_array;
+  glom::Texture216 *screen_tex;
+  glom::VBO *vbo_array;
 } win32_emulator;
 
 // Main Window event handler.
@@ -152,9 +156,12 @@ int main(int argc, char** argv) {
     return 101;
   }
 
+  struct v2i { u32 x, y; };
+  v2i viewport { 600, 400 };
+  v2i screen { 160 * 2, 144 * 2 };
   RECT r = RECT();
   r.top = 0; r.left = 0;
-  r.bottom = 144 * 2; r.right = 160 * 2;
+  r.bottom = viewport.y; r.right = viewport.x;
   AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
   HWND hwnd = win32_emulator.hwnd = CreateWindow(
     wnd_class.lpszClassName,
@@ -203,90 +210,29 @@ int main(int argc, char** argv) {
   glf::load_functions();
   glEnable(glf::GL_DEBUG_OUTPUT);
   glf::DebugMessageCallback(glf::MessageCallback, nullptr);
-  u32 display;
 
-  auto program = glf::glCreateProgram();
-  auto vertex_shader = glf::glCreateShader(glf::VERTEX_SHADER);
-  const char * vs_source = R"STR(
-#version 110
-varying vec3 pos;
-varying vec2 uv;
-void main() { 
-  pos = gl_Vertex.xyz;
-  uv = gl_MultiTexCoord0.xy;
-  gl_Position = 0.5 * gl_Vertex;
-}
-)STR";
-  glf::ShaderSource(vertex_shader, 1, &vs_source, 0);
-  auto fragment_shader = glf::CreateShader(glf::FRAGMENT_SHADER);
-  const char * fs_source = R"STR(
-#version 110
-varying vec3 pos;
-varying vec2 uv;
-uniform sampler2D tx_screen;
-// Translate 8-bit 216-color-cube to RGB
-void main() { 
-  float vv = texture2D(tx_screen, uv).r;
-  float vf = vv * 255.0 / 216.0;
-  float r = floor(vf * 6.0);
-  float g = floor(vf * 36.0 - (r) * 6.0);
-  float b = vf * 216.0 - (r) * 36.0 - (g) * 6.0;
-  gl_FragColor = vec4(r / 5.0, g / 5.0, b / 5.0, 1.0);
-}
-)STR";
-  glf::ShaderSource(fragment_shader, 1, &fs_source, 0);
-  glf::AttachShader(program, vertex_shader);
-  glf::CompileShader(fragment_shader);
-  auto get_log = [] (glf::glShader& shader) -> void { 
-    GLint info_log_size = 0;
-    glf::GetShaderiv(shader, glf::INFO_LOG_LENGTH, &info_log_size);
-    char * info_log = new char[info_log_size];
-    glf::GetShaderInfoLog(shader, info_log_size, nullptr, info_log);
-    printf("Shader Info Log: '%.*s'\n", info_log_size, info_log);
-    delete [] info_log;
+  glom::Shader shader {};
+  f32 w = screen.x / (f32)viewport.x;
+  f32 h = screen.y / (f32)viewport.y;
+  glom::VBO::Vertex vertices[] = {
+    {0, 0, 0, 0, 1},
+    {w, 0, 0,  1, 1},
+    {w, h, 0,   1, 0},
+    {0, 0, 0, 0, 1},
+    {w, h, 0,   1, 0},
+    {0, h, 0,  0, 0}
   };
-  get_log(fragment_shader);
-  glf::AttachShader(program, fragment_shader);
-  glf::CompileShader(vertex_shader);
-  get_log(vertex_shader);
-  glf::LinkProgram(program);
-  glf::UseProgram(program);
-  {
-    char * info_log = new char[1024];
-    glf::GetProgramInfoLog(program, 1024, nullptr, info_log);
-    printf("Vert Shader Info Log: '%s'\n", info_log);
-  }
+  win32_emulator.vbo_array = new glom::VBO[16];
+  win32_emulator.texture_array = new glom::Texture216[16];
+  win32_emulator.screen_tex = &win32_emulator.texture_array[0];
+  
+  win32_emulator.vbo_array[0] = glom::VBO {vertices, sizeof(vertices)/sizeof(vertices[0])};
+  win32_emulator.vbo_count = 1;
   #ifdef NOSWAP
   glDrawBuffer(GL_FRONT);
   #endif
-  GLuint vbo = 0;
-  {
-    f32 w = 1.0f;
-    struct Vertex { f32 x, y, z; f32 u, v; } vertices[] = {
-      {-w, -w, 0, 0, 1},
-      {w, -w, 0,  1, 1},
-      {w, w, 0,   1, 0},
-      {-w, -w, 0, 0, 1},
-      {w, w, 0,   1, 0},
-      {-w, w, 0,  0, 0}
-    };
-    glf::GenBuffers(1, &vbo);
-    glf::BindBuffer(glf::ARRAY_BUFFER, vbo);
-    glf::BufferData(
-      glf::ARRAY_BUFFER,
-      sizeof(vertices),
-      (const void*)vertices,
-      glf::DrawType::STATIC_DRAW);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glVertexPointer(3, GL_FLOAT, sizeof(vertices[0]), 0);
-    glTexCoordPointer(2, GL_FLOAT, sizeof(vertices[0]), (void*)12);
-  }
-  printf("vs: %d, fs: %d, error: %d\n", vertex_shader.id, fragment_shader.id, glGetError());
-
-  glom::Texture216 screen {};
-  win32_emulator.screen_tex = &screen;
-
+  win32_emulator.shader = &shader;
+  
   char line[64] {0};
   // emu.debug.name_function("main", 0xC300, 0xc315);
   // emu.debug.name_function("test_timer", 0xC318, 0xc345);
@@ -366,12 +312,16 @@ void main() {
   }
 }
 
-u32 display[144 * 160];
 void _push_frame(u32 category, u8* memory, u32 len) {
   if (category == 0x300) {
-    glEnable(GL_TEXTURE_2D);
+    if (len < 160 * 144) { log("bad frame buffer"); _stop(); }
     win32_emulator.screen_tex->setData(memory, 160, 144);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    for(int i=0; i<win32_emulator.vbo_count; i++) {
+      win32_emulator.shader->draw(
+        win32_emulator.vbo_array[i],
+        win32_emulator.texture_array[i]);
+    }
+
     #ifdef NOSWAP
     glFinish();
     #else
