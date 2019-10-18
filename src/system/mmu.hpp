@@ -1,8 +1,8 @@
 #pragma once
-#include "base.hpp"
-#include "system/io_ports.hpp"
-#include "system/timer.hpp"
-#include "system/cart.hpp"
+#include "../base.hpp"
+#include "io_ports.hpp"
+#include "timer.hpp"
+#include "cart.hpp"
 
 struct MemoryMapper {
   MemoryMapper(Cart &cart, IoPorts &io);

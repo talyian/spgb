@@ -13,7 +13,7 @@
 #include <gl/gl.h>
 #include "win32_opengl.hpp"
 
-#define NOSWAP
+// #define NOSWAP
 
 extern "C" size_t sslen(const char* s) { return strlen(s); }
 
@@ -208,21 +208,53 @@ int main(int argc, char** argv) {
   auto program = glf::glCreateProgram();
   auto vertex_shader = glf::glCreateShader(glf::VERTEX_SHADER);
   const char * vs_source = R"STR(
-void main() { gl_Position = ftransform(); }
+#version 110
+varying vec3 pos;
+varying vec2 uv;
+void main() { 
+  pos = gl_Vertex.xyz;
+  uv = gl_MultiTexCoord0.xy;
+  gl_Position = 0.5 * gl_Vertex;
+}
 )STR";
-  glf::glShaderSource(vertex_shader, 1, &vs_source, 0);
-  glf::glCompileShader(vertex_shader);
-  auto fragment_shader = glf::glCreateShader(glf::VERTEX_SHADER);
+  glf::ShaderSource(vertex_shader, 1, &vs_source, 0);
+  auto fragment_shader = glf::CreateShader(glf::FRAGMENT_SHADER);
   const char * fs_source = R"STR(
-void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
+#version 110
+varying vec3 pos;
+varying vec2 uv;
+uniform sampler2D tx_screen;
+// Translate 8-bit 216-color-cube to RGB
+void main() { 
+  float vf = texture2D(tx_screen, uv).r * 255.0 / 216.0;
+  float r = floor(vf * 6.0);
+  float g = floor(vf * 36.0 - (r) * 6.0);
+  float b = vf * 216.0 - (r) * 36.0 - (g) * 6.0;
+  gl_FragColor = vec4(r / 5.0, g / 5.0, b / 5.0, 1.0);
+}
 )STR";
-  glf::glShaderSource(fragment_shader, 1, &fs_source, 0);
-  glf::glCompileShader(fragment_shader);
-  glf::glAttachShader(program, vertex_shader);
-  glf::glAttachShader(program, fragment_shader);
-  glf::glLinkProgram(program);
-  // glf::glUseProgram(program);
-
+  glf::ShaderSource(fragment_shader, 1, &fs_source, 0);
+  glf::AttachShader(program, vertex_shader);
+  glf::CompileShader(fragment_shader);
+  auto get_log = [] (glf::glShader& shader) -> void { 
+    GLint info_log_size = 0;
+    glf::GetShaderiv(shader, glf::INFO_LOG_LENGTH, &info_log_size);
+    char * info_log = new char[info_log_size];
+    glf::GetShaderInfoLog(shader, info_log_size, nullptr, info_log);
+    printf("Shader Info Log: '%.*s'\n", info_log_size, info_log);
+    delete [] info_log;
+  };
+  get_log(fragment_shader);
+  glf::AttachShader(program, fragment_shader);
+  glf::CompileShader(vertex_shader);
+  get_log(vertex_shader);
+  glf::LinkProgram(program);
+  glf::UseProgram(program);
+  {
+    char * info_log = new char[1024];
+    glf::GetProgramInfoLog(program, 1024, nullptr, info_log);
+    printf("Vert Shader Info Log: '%s'\n", info_log);
+  }
   #ifdef NOSWAP
   glDrawBuffer(GL_FRONT);
   #endif
@@ -245,8 +277,8 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
       (const void*)vertices,
       glf::DrawType::STATIC_DRAW);
     glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(3, GL_FLOAT, sizeof(vertices[0]), 0);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glVertexPointer(3, GL_FLOAT, sizeof(vertices[0]), 0);
     glTexCoordPointer(2, GL_FLOAT, sizeof(vertices[0]), (void*)12);
   }
   printf("vs: %d, fs: %d, error: %d\n", vertex_shader.id, fragment_shader.id, glGetError());
@@ -320,22 +352,17 @@ void main() { gl_FragColor = vec4(0.5, 1.0, 0.2, 1.0); }
   }
 }
 
+u32 display[144 * 160];
 void _push_frame(u32 category, u8* memory, u32 len) {
   if (category == 0x300) {
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, win32_emulator.display_texture);
-    for (u32 i = 0; i < len; i++) {
-      memory[i] = memory[i] == 0 ? 0 :
-        memory[i] == 1 ? 0x60 :
-        memory[i] == 2 ? 0x90 :
-        0xFF;
-    }
     glTexImage2D(
       GL_TEXTURE_2D, 0,
-      GL_RGBA, // internal format
+      GL_RED, // internal format
       160, 144,   //dimensions
       0 /*border*/,
-      GL_GREEN /*format*/ ,
+      GL_RED /*format*/ ,
       GL_UNSIGNED_BYTE /*type*/,
       memory);
 

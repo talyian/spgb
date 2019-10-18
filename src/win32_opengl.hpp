@@ -35,6 +35,7 @@ namespace glf {
   enum ShaderType : GLenum { FRAGMENT_SHADER = 0x8B30, VERTEX_SHADER = 0x8B31 };
   enum BufferTarget : GLenum { ARRAY_BUFFER = 0x8892, ELEMENT_ARRAY_BUFFER = 0x8893 };
   enum DrawType : GLenum { STREAM_DRAW = 0x88E0, STATIC_DRAW = 0x88E4 };
+  enum ShaderIV : GLenum { COMPILE_STATUS = 0x8B81, VALIDATE_STATUS= 0x8B83, INFO_LOG_LENGTH = 0x8B84 };
   struct glShader { GLuint id; };
 
 #define ALL_FUNCTIONS(F) \
@@ -48,6 +49,10 @@ namespace glf {
   F(CreateShader, glShader (*)(ShaderType)) \
   F(ShaderSource, void (*)(glShader, GLsizei, const char**, GLint*)) \
   F(CompileShader, void (*)(glShader)) \
+  F(GetShaderiv, void(*)(glShader, GLenum, GLint *)) \
+  F(GetShaderInfoLog, void (*)(glShader, GLsizei, GLsizei *, char*))  \
+  F(GetProgramInfoLog, void (*)(GLuint, GLsizei, GLsizei *, char*))  \
+  F(VertexAttribPointer, void (*)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid * pointer)); \
   F(DeleteShader, void (*)(GLuint)) \
   \
   F(GenBuffers, void (*)(GLsizei, GLuint*)) \

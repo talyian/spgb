@@ -1,8 +1,17 @@
-#include "system/ppu.hpp"
-#include "system/mmu.hpp"
+#include "ppu.hpp"
+#include "mmu.hpp"
 
+u8 rgb(u8 r, u8 g, u8 b) {
+  return r * 36 + g * 6 + b;
+}
+u8 absolute_palette[4] = {
+  rgb(5, 5, 4),
+  rgb(3, 5, 2),
+  rgb(1, 2, 2),
+  rgb(0, 0, 0)
+};
 void PPU::set_display(u8 x, u8 y, u8 pixel) {
-  display[y * DISPLAY_W + x] = pixel;
+  display[y * DISPLAY_W + x] = absolute_palette[pixel % 4];
 }
 
 void PPU::tick(u16 delta) {
@@ -66,17 +75,6 @@ u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8 y) {
   return t | (t >> 7);
 }
 
-// given a tile specifier and a pixel position, return the pixel value
-// Each Tile is 8x8 pixels * 2 bits per pixel, so 16 bytes.
-u8 PPU::select_tile_pixel(u8 tile_index, u8 x, u8 y) {
-  bool bg_tile_map = LcdControl & 0x10;
-  if (bg_tile_map) {
-    return load_tile_pixel(mmu->VRAM + (2 * (tile_index * 8 + y)), x, y);
-  } else {
-    return load_tile_pixel(mmu->VRAM + (0x1000 + 2 * ((i8)tile_index * 8 + y)), x, y);
-  }
-}
-
 void PPU::scan_line() {
   // reads in LineY and writes that scanline to `display`
   u8 bg_y = LineY + ScrollY;
@@ -95,7 +93,9 @@ void PPU::scan_line() {
     }
     for(u8 tx = 0; tx < 8; tx++) {
       if (tile * 8 + tx >= DISPLAY_W) goto BG_DONE;
-      set_display(tile * 8 + tx, LineY, load_tile_pixel(tile_data, tx, ty));
+      auto pixel = load_tile_pixel(tile_data, tx, ty);
+      // pixel = BgPalette << (2 * pixel) & 0x03;
+      set_display(tile * 8 + tx, LineY, pixel);
     }
   }
  BG_DONE:

@@ -21,9 +21,10 @@ function draw_display(canvas, data) {
   for(var y = 0; y < H; y++) {
     for(var x = 0; x < W; x++) {
       p = data[i++];
-      idata[j++] = p * 80;
-      idata[j++] = p * 80;
-      idata[j++] = p / 2 ? 0 : 255;
+      
+      idata[j++] = (p / 36 | 0) * 51;
+      idata[j++] = (((p / 6) | 0) % 6) * 51;
+      idata[j++] = (p % 6) * 51;
       idata[j++] = 255;
     }
   }
