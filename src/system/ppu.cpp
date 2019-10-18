@@ -84,51 +84,82 @@ u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8 y) {
 }
 
 void PPU::scan_line() {
-  // reads in LineY and writes that scanline to `display`
-  u8 bg_y = LineY + ScrollY;
-  u8 bg_tile_y = bg_y / 8;
-  u8 bg_tile_x = ScrollX / 8;
-  for(u8 tile = 0; ; tile++) {
-    u8 tile_index = select_background_tile(bg_tile_x + tile, bg_tile_y);
-    // 0x0000-0x0800   (A:0-128)
-    // 0x0800-0x1000 (A:128-256) (B:128-256)
-    // 0x1000-0x1800   (B:0-128)
-    u8 * tile_data = 0, ty = bg_y % 8;
+  // we're rendering at screen-Y LineY
+  // for each screen x we're pulling the tile at bg: {sx + ScrollX, LineY + ScrollY}
+  for(u8 sx = 0; sx < DISPLAY_W; sx++) {
+    u8 bx = sx + ScrollX;
+    u8 by = LineY + ScrollY;
+    u8 tile_x = bx / 8;
+    u8 tile_y = by / 8;
+    u8 tile_index = select_background_tile(tile_x, tile_y);
+    u8 * tile_data = 0, tx = bx % 8, ty = by % 8;
     if ((tile_index & 0x80) | (LcdControl & 0x10)) {
       tile_data = mmu->VRAM + tile_index * 16 + ty * 2;
     } else {
       tile_data = mmu->VRAM + 0x1000 + tile_index * 16 + ty * 2;
     }
-    for(u8 tx = 0; tx < 8; tx++) {
-      if (tile * 8 + tx >= DISPLAY_W) goto BG_DONE;
-      auto pixel = load_tile_pixel(tile_data, tx, ty);
-      // pixel = BgPalette << (2 * pixel) & 0x03;
-      set_display(tile * 8 + tx, LineY, pixel);
+    u8 pixel = load_tile_pixel(tile_data, tx, ty);
+    pixel = (BgPalette >> (2 * pixel)) & 0x03;
+    set_display(sx, LineY, pixel);
+  }
+
+  auto render_sprite = [this](OamEntry sprite) {
+    u8 _ty = LineY - (sprite.y - 16);
+    if (_ty >= 8) return;
+    u8 ty = (sprite.flags.flip_y()) ? 7 - _ty : _ty;
+    for(u8 _tx = 0; _tx < 8; _tx++) {
+      u8 sx = _tx + sprite.x - 8;
+      u8 tx = sprite.flags.flip_x() ? 7 - _tx : _tx;
+      if (sx < DISPLAY_W) {
+        u8 * tile_data = mmu->VRAM + sprite.tile * 16 + ty * 2;
+        u8 pixel = load_tile_pixel(tile_data, tx, ty);
+        if (pixel) {
+          pixel = sprite.flags.dmg_pal() ?
+            (OamPalette2 >> (2 * pixel)) :
+            (OamPalette1 >> (2 * pixel));
+          set_display(sx, LineY, pixel);
+        }
+      }
+    }
+  };
+  // TODO : render Window
+  if (LcdControl & 4) {
+    for (u8 i = 0; i < 0xA0; i += 4) {
+       OamEntry sprite1 = *(OamEntry *)(mmu->OAM + i);
+       OamEntry sprite2 = sprite1;
+       sprite1.tile &= ~1;
+       sprite2.tile |= 1;
+       sprite2.y += 8;
+       render_sprite(sprite1);
+       render_sprite(sprite2);
     }
   }
- BG_DONE:
-  // TODO: window
-  
-  // scan entire sprite table for overlapping sprites
-  for (u8 i = 0; i < 0xA0; i += 4) {
-    OamEntry oam_entry = *(OamEntry *)(mmu->OAM + i);
-    u8 tile_index = oam_entry.tile;
-    u8 y = LineY - oam_entry.y + 16;
-    if (y >= 8) continue;
-    if (oam_entry.x == 0) continue;
-    if (oam_entry.x >= DISPLAY_W) continue;
-    u8 flipy = oam_entry.flags.flip_y();
-    u8 flipx = oam_entry.flags.flip_x();
-    if (flipy) y = 7 - y;
-
-    u8 * tile_data = mmu->VRAM + tile_index * 16 + y * 2;
-    for(u8 _x = 0; _x < 8; _x++) {
-      u8 screen_x = _x + oam_entry.x - 8, x;
-      if (screen_x >= DISPLAY_W) continue;
-      x = 7 * flipx - 2 * flipx * _x + _x;
-      auto tile_pixel = load_tile_pixel(tile_data, x, y);
-      if (tile_pixel)
-        set_display(screen_x, LineY, tile_pixel);
+  else {
+    for (u8 i = 0; i < 0xA0; i += 4) {
+      render_sprite(*(OamEntry *)(mmu->OAM + i));
     }
   }
 }
+//   // scan entire sprite table for overlapping sprites
+//   for (u8 i = 0; i < 0xA0; i += 4) {
+     // OamEntry oam_entry = *(OamEntry *)(mmu->OAM + i);
+     // u8 tile_index = oam_entry.tile;
+     // u8 y = LineY - oam_entry.y + 16;
+     // if (y >= 8) continue;
+//     if (oam_entry.x == 0) continue;
+//     if (oam_entry.x >= DISPLAY_W) continue;
+//     u8 flipy = oam_entry.flags.flip_y();
+//     u8 flipx = oam_entry.flags.flip_x();
+//     if (flipy) y = 7 - y;
+
+//     u8 * tile_data = mmu->VRAM + tile_index * 16 + y * 2;
+//     for(u8 _x = 0; _x < 8; _x++) {
+//       u8 screen_x = _x + oam_entry.x - 8, x;
+//       if (screen_x >= DISPLAY_W) continue;
+//       x = 7 * flipx - 2 * flipx * _x + _x;
+//       auto tile_pixel = load_tile_pixel(tile_data, x, y);
+//       if (tile_pixel)
+//         set_display(screen_x, LineY, tile_pixel);
+//     }
+//   }
+// }

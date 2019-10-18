@@ -28,6 +28,9 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
     timer.DIV = 0;
     timer.TIMA = 0;
     timer.TMA = 0;
+    ppu.BgPalette = 0x1B;
+    ppu.OamPalette1 = 0x1B;
+    ppu.OamPalette2 = 0x1B;
     _dasher.PC = _dasher.PC_start = 0;
     mmu.BiosLock = 0;
     // debug.state.type = Debugger::State::PAUSE;
