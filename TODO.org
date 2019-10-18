@@ -49,3 +49,4 @@ As a side-effect, this improved the instruction timings enough that Kirby and Li
 *** DONE Blargg CPU Test 11
 ** DONE Skip Bootstrap
 ** TODO Test Harness
+** TODO Bug: windows build doesn't load bgbtest anymore, perhaps due to corruption

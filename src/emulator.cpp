@@ -14,7 +14,7 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
   cpu.clear();
   mmu.clear();
   debug.state.type = Debugger::State::RUN;
-  if (true) { // skip bootrom
+  if (false) { // skip bootrom
     mmu.BiosLock = 0x1;
     _dasher.PC = _dasher.PC_start = 0x100;
     cpu.registers.AF = 0x01B0;

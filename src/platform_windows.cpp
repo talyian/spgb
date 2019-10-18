@@ -314,9 +314,9 @@ void main() {
           (u32)emu.timer.counter_t,
           emu.timer.monoTIMA,
           (u32)emu.timer.monotonic_t);
-      emu._runner.dump();
-      emu.printer.pc = emu.decoder.pc; emu.printer.decode();
-      printf("DEBUG %04x> ", emu.decoder.pc);
+      // emu._runner.dump();
+      // emu.printer.pc = emu.decoder.pc; emu.printer.decode();
+      // printf("DEBUG %04x> ", emu.decoder.pc);
 
       fgets(line, 63, stdin);
       for(int i = 0; i < 63; i++)
@@ -327,9 +327,10 @@ void main() {
         emu.debug.state.type = Debugger::State::STEP;
       }
       else if (!strcmp(line, "n")) {
-        log("scanning to", emu.printer.pc);
-        emu.debug.state.type = Debugger::State::RUN_TO;
-        emu.debug.state.addr = emu.printer.pc;
+        // log("scanning to", emu.printer.pc);
+        // emu.debug.state.type = Debugger::State::RUN_TO;
+        // emu.debug.state.addr = emu.printer.pc;
+        continue;
       }
       else if (!strcmp(line, "c")) {
         emu.debug.state.type = Debugger::State::RUN;
@@ -365,7 +366,6 @@ void _push_frame(u32 category, u8* memory, u32 len) {
       GL_RED /*format*/ ,
       GL_UNSIGNED_BYTE /*type*/,
       memory);
-
     glDrawArrays(GL_TRIANGLES, 0, 6);
     #ifdef NOSWAP
     glFinish();
