@@ -70,12 +70,6 @@ void MessageCallback(
 
 // GLOM: Object Model for GL resources
 namespace glom {
-struct Vertex { f32 x, y, z, u, v; };
-struct TriangleMesh {
-  Vertex * data;
-  u32 vertex_count;
-};
-
 // An 8-bit 216-color texture
 struct Texture216 {
   GLuint id;
@@ -111,10 +105,6 @@ struct VBO {
       sizeof(Vertex) * count,
       data,
       glf::DrawType::STATIC_DRAW);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glVertexPointer(3, GL_FLOAT, sizeof(Vertex), (void*)0);
-    glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), (void*)12);
   }
 };
 
@@ -131,7 +121,8 @@ struct Shader {
 varying vec3 pos;
 varying vec2 uv;
 void main() { 
-  pos = gl_Vertex.xyz;
+  vec4 vertex = ftransform();
+  pos = vertex.xyz / gl_Vertex.w;
   uv = gl_MultiTexCoord0.xy;
   gl_Position = vec4(2.0 * pos - vec3(1.0), 1.0);
 }
@@ -169,10 +160,15 @@ void main() {
     printf("GLSL Log: '%s'\n", info_log);
     glf::DeleteShader(vertex_shader);
     glf::DeleteShader(fragment_shader);
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
   }
 
   void draw(VBO mesh, Texture216 texture) {
     glf::BindBuffer(glf::ARRAY_BUFFER, mesh.id);
+    glVertexPointer(3, GL_FLOAT, sizeof(VBO::Vertex), (void*)0);
+    glTexCoordPointer(2, GL_FLOAT, sizeof(VBO::Vertex), (void*)12);
     glBindTexture(GL_TEXTURE_2D, texture.id);
     glDrawArrays(GL_TRIANGLES, 0, 6);
   }

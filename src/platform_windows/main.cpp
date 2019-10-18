@@ -56,6 +56,11 @@ struct Win32Emulator {
   emulator_t emu;
   glom::Shader * shader;
   int vbo_count = 0;
+  enum SCREEN_STATE {
+    MAIN = 0,
+    TILES,
+    BACKGROUND,
+  } screen_state = MAIN;
   glom::Texture216 *texture_array;
   glom::Texture216 *screen_tex;
   glom::VBO *vbo_array;
@@ -94,6 +99,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
   case WM_KEYDOWN: {
     auto* jp = &win32_emulator.emu.joypad;
     switch (wParam) {
+    case '1': win32_emulator.screen_state = Win32Emulator::MAIN; return 0;
+    case '2': win32_emulator.screen_state = Win32Emulator::TILES; return 0;
+    case '3': win32_emulator.screen_state = Win32Emulator::BACKGROUND; return 0;
     case VK_RETURN: jp->button_down(Buttons::START); return 0;
     case VK_SHIFT:
     case VK_RSHIFT: jp->button_down(Buttons::SELECT); return 0;
@@ -212,26 +220,47 @@ int main(int argc, char** argv) {
   glf::DebugMessageCallback(glf::MessageCallback, nullptr);
 
   glom::Shader shader {};
-  f32 w = screen.x / (f32)viewport.x;
-  f32 h = screen.y / (f32)viewport.y;
-  glom::VBO::Vertex vertices[] = {
-    {0, 0, 0, 0, 1},
-    {w, 0, 0,  1, 1},
-    {w, h, 0,   1, 0},
-    {0, 0, 0, 0, 1},
-    {w, h, 0,   1, 0},
-    {0, h, 0,  0, 0}
-  };
+  win32_emulator.shader = &shader;
   win32_emulator.vbo_array = new glom::VBO[16];
   win32_emulator.texture_array = new glom::Texture216[16];
   win32_emulator.screen_tex = &win32_emulator.texture_array[0];
-  
-  win32_emulator.vbo_array[0] = glom::VBO {vertices, sizeof(vertices)/sizeof(vertices[0])};
-  win32_emulator.vbo_count = 1;
+  {
+    f32 w = screen.x / (f32)viewport.x;
+    f32 h = screen.y / (f32)viewport.y;
+    glom::VBO::Vertex vertices[] = {
+      {0, 0, 0, 0, 1},
+      {w, 0, 0,  1, 1},
+      {w, h, 0,   1, 0},
+      {0, 0, 0, 0, 1},
+      {w, h, 0,   1, 0},
+      {0, h, 0,  0, 0}
+    };
+    win32_emulator.vbo_array[0].init(vertices, sizeof(vertices)/sizeof(vertices[0]));
+    win32_emulator.vbo_count++;
+  }
+  for(u8 sprite_bank = 0; sprite_bank < 3; sprite_bank++){
+    f32 scale = 1.5;
+    f32 w = (1 + 16.0 * 9) / viewport.x * scale;
+    f32 h = (1 +  8.0 * 9) / viewport.y * scale;
+    // f32 x = screen.x / (f32)viewport.x;
+    f32 x = 0;
+    f32 y = (sprite_bank * (8 * 9 + 2)) / (f32)viewport.y  * scale;
+    f32 u = (1 + 16.0 * 9) / (8 + 16.0 * 9);
+    f32 v = (1 + 8.0 * 9) / (8 + 8.0 * 9);
+    glom::VBO::Vertex vertices[6] = {
+      {x + 0, y + 0, 0, 0, v},
+      {x + w, y + 0, 0, u, v},
+      {x + w, y + h, 0, u, 0},
+      {x + 0, y + 0, 0, 0, v},
+      {x + w, y + h, 0, u, 0},
+      {x + 0, y + h, 0, 0, 0}
+    };
+    win32_emulator.vbo_array[sprite_bank+1].init(vertices, 6);
+    win32_emulator.vbo_count++;
+  }
   #ifdef NOSWAP
   glDrawBuffer(GL_FRONT);
   #endif
-  win32_emulator.shader = &shader;
   
   char line[64] {0};
   // emu.debug.name_function("main", 0xC300, 0xc315);
@@ -312,14 +341,65 @@ int main(int argc, char** argv) {
   }
 }
 
+struct Sprite {
+  u8 * data = 0;
+  Sprite(u8 * data) : data(data) { }
+  u8 get_pixel(u8 x, u8 y) {
+    u8 a = data[2 * y];
+    u8 b = data[2 * y + 1];
+    u16 v = (a << 8) + b;
+    u16 p = (v >> (7 - x)) & 0x0101;
+    return (p >> 7) | p;
+  }
+};
+
+u8 pal[4] = { 0, 36 + 12 + 2, 3 * 36  + 4 * 6 + 3, 215 };
+
+void show_tile_map(u32 category, u8* memory, u32 len) {
+    if (len != 0x800) { log("bad frame buffer"); _stop(); }
+    u8 sprite_bank = category - 0x100;
+    u32 buf_w = 16 * 9 + 8;
+    u32 buf_h = 8 * 9 + 8;
+    auto buf = new u8[buf_w * buf_h];
+    for(u32 j=0; j < buf_w * buf_h; j++) {
+      buf[j] = (4 * 36 + 3);
+    }
+    for(int tile = 0; tile < 16 * 8; tile++) {
+      Sprite sprite(memory + 16 * tile);
+      for(int y = 0; y < 8; y++)
+        for(int x = 0; x < 8; x++) {
+          u8 pixel = sprite.get_pixel(x, y);
+          u16 px = (tile % 16) * 9 + x;
+          u16 py = (tile / 16) * 9 + y;
+          u16 idx = py * buf_w + px;
+          if (idx < buf_w * buf_h)
+            buf[idx] = pal[pixel % 3];
+        }
+    }
+    win32_emulator.texture_array[sprite_bank+1].setData(buf, buf_w, buf_h);
+    delete[] buf;    
+}
 void _push_frame(u32 category, u8* memory, u32 len) {
-  if (category == 0x300) {
-    if (len < 160 * 144) { log("bad frame buffer"); _stop(); }
+  if (category - 0x100 < 3) {
+    show_tile_map(category, memory, len); 
+  }
+  else if (category == 0x300) {
+    glEnable(GL_DEPTH_TEST);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    if (len != 160 * 144) { log("bad frame buffer"); _stop(); }
     win32_emulator.screen_tex->setData(memory, 160, 144);
-    for(int i=0; i<win32_emulator.vbo_count; i++) {
+
+    if (win32_emulator.screen_state == Win32Emulator::MAIN) {
       win32_emulator.shader->draw(
-        win32_emulator.vbo_array[i],
-        win32_emulator.texture_array[i]);
+        win32_emulator.vbo_array[0],
+        win32_emulator.texture_array[0]);
+    } else if (win32_emulator.screen_state == Win32Emulator::TILES) {
+      for(int i=0; i<3; i++) {
+        win32_emulator.shader->draw(
+          win32_emulator.vbo_array[1 + i],
+          win32_emulator.texture_array[1 + i]);
+      }
     }
 
     #ifdef NOSWAP
