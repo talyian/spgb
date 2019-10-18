@@ -3,10 +3,7 @@
 
 emulator_t::emulator_t(u8 *cart_data, u32 cart_len) {
   mmu.bios_rom = DMG_ROM_bin;
-  decoder.mmu = &mmu;
-  decoder.ii.mmu = &mmu;
   ppu.mmu = &mmu;
-  printer.mmu = &mmu;
   load_cart(cart_data, cart_len);
 }
 
@@ -16,9 +13,10 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
   cart = Cart{cart_data, cart_len};
   cpu.clear();
   mmu.clear();
-  if (false) { // skip bootrom
+  debug.state.type = Debugger::State::RUN;
+  if (true) { // skip bootrom
     mmu.BiosLock = 0x1;
-    decoder.pc = decoder.pc_start = 0x100;
+    _dasher.PC = _dasher.PC_start = 0x100;
     cpu.registers.AF = 0x01B0;
     cpu.registers.BC = 0x0013;
     cpu.registers.DE = 0x00D8;
@@ -31,9 +29,8 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
     timer.TIMA = 0;
     timer.TMA = 0;
     _dasher.PC = _dasher.PC_start = 0;
-    decoder.pc = decoder.pc_start = 0;
     mmu.BiosLock = 0;
-    debug.state.type = Debugger::State::PAUSE;
+    // debug.state.type = Debugger::State::PAUSE;
   }
   mmu.load_cart(cart);
 }
@@ -70,39 +67,20 @@ u32 emulator_t::single_step() {
       } // something very strange happened here
 
       cpu.IME = 0;
-      decoder.ii._push(decoder.pc);
-      decoder.pc = handler;
+      _dasher._push(_dasher.PC);
+      _dasher.PC = handler;
 
-      // return 0; // this is so we have a debug step at the beginning of the
-      //           // handler
-      goto AFTER_DECODER;
     } else {
       // TODO: halt bug?
     }
   }
 
   if (!cpu.halted) {
-    _dasher.PC = decoder.pc;
     _dasher.cycles = 0;
-
     _dasher.decode();
-    decoder.pc_start = _dasher.PC_start;
-    decoder.pc = _dasher.PC;
     dt = _dasher.cycles;
-    
-    if (decoder.error) {
-      log(decoder.pc_start, "decoder error", decoder.error);
-      _stop();
-      return 0;
-    }
-    if (decoder.ii.error) {
-      log(decoder.pc_start, "runner error", decoder.ii.error);
-      _stop();
-      return 0;
-    }
   }
 
- AFTER_DECODER:
   joypad.tick();
   if (mmu.get(IoPorts::DMA)) {
     // technically this won't work if we transfer from 0
@@ -120,18 +98,11 @@ u32 emulator_t::single_step() {
 void emulator_t::step(i32 ticks) {
   // _runner.verbose_log = true;
   while (ticks > 0) {
-    if (decoder.error || decoder.ii.error)
-      break;
-
     debug.step();
 
     // is_debugging means we don't run any code
     if (debug.state.type == Debugger::State::PAUSE) {
-      printer.pc = decoder.pc_start;
-      decoder.ii.dump();
       _log("breakpoint");
-      _log(decoder.pc_start);
-      printer.decode();
       break;
     }
     ticks -= single_step();

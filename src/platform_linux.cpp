@@ -79,9 +79,9 @@ int main(int argc, char ** argv) {
           (u32)emu.timer.counter_t,
           emu.timer.monoTIMA,
           (u32)emu.timer.monotonic_t);
-      emu._runner.dump();
-      emu.printer.pc = emu.decoder.pc; emu.printer.decode();
-      printf("DEBUG %04x> ", emu.decoder.pc);
+
+      // emu.small_dump();
+      printf("DEBUG %04x> ", emu._dasher.PC);
 
       fgets(line, 63, stdin);
       for(int i = 0; i < 63; i++)
@@ -92,9 +92,10 @@ int main(int argc, char ** argv) {
         emu.debug.state.type = Debugger::State::STEP;
       }
       else if (!strcmp(line, "n")) {
-        log("scanning to", emu.printer.pc);
-        emu.debug.state.type = Debugger::State::RUN_TO;
-        emu.debug.state.addr = emu.printer.pc;
+        // log("scanning to", emu._dasher.PC_next());
+        // emu.debug.state.type = Debugger::State::RUN_TO;
+        // emu.debug.state.addr = emu._dasher.PC_next());
+        continue;
       }
       else if (!strcmp(line, "c")) {
         emu.debug.state.type = Debugger::State::RUN;
@@ -115,6 +116,6 @@ int main(int argc, char ** argv) {
   }
 }
 
-void _push_frame(u32 category, u8 * memory, u32 len) {
+void _push_frame(u32 , u8 * , u32 ) {
   return;
 }

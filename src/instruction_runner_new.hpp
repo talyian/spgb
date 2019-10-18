@@ -31,7 +31,7 @@ struct InstructionDasher {
   }
   struct MemoryRef {
     InstructionDasher & parent;
-    Reg16 &addr;
+    CPU::Reg16 &addr;
     operator u8 () const { return parent.mmu_get(addr); }
     MemoryRef& operator=(u8 val) { parent.mmu_set(addr, val); return *this; }
     MemoryRef& operator=(const MemoryRef&) { return *this; }
@@ -186,7 +186,7 @@ struct InstructionDasher {
       cpu.flags.H = (a & 0xF) < (b & 0xF);      \
       cpu.flags.N = 1;}
     
-    Reg8 &A = cpu.registers.A,
+    CPU::Reg8 &A = cpu.registers.A,
       &B = cpu.registers.B,
       &C = cpu.registers.C,
       &D = cpu.registers.D,
@@ -195,7 +195,7 @@ struct InstructionDasher {
       &L = cpu.registers.L,
       &F = cpu.registers.F;
 
-    Reg16 &HL = cpu.registers.HL,
+    CPU::Reg16 &HL = cpu.registers.HL,
       &BC = cpu.registers.BC,
       &DE = cpu.registers.DE,
       &SP = cpu.registers.SP;

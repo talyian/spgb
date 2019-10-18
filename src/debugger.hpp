@@ -1,19 +1,16 @@
 #pragma once
 #include "base.hpp"
+#include "system/cpu.hpp"
 #include "system/mmu.hpp"
-#include "instruction_decoder.hpp"
-
-using RunnerDecoder = InstructionDecoderT<InstructionRunner>;
 
 struct Debugger {
   Debugger(
     MemoryMapper * mmu,
-    RunnerDecoder * decoder,
-    CPU * cpu) : mmu(mmu), decoder(decoder), cpu(cpu) { }
+    CPU * cpu,
+    u16 * PC) : mmu(mmu), cpu(cpu), PC(PC) { }
   MemoryMapper * mmu;
-  RunnerDecoder * decoder;
   CPU * cpu;
-  u16 pc = 0;
+  u16 * PC = 0;
 
   struct State {
     enum { RUN = 0, PAUSE, STEP, RUN_TO, RUN_TO_RET } type;
@@ -65,22 +62,22 @@ struct Debugger {
     case State::RUN:
       if (mmu->BiosLock)
         for(int i = 0; i < break_n; i++)
-          if (breakpoints[i] == decoder->pc) {
+          if (breakpoints[i] == *PC) {
             state.type = State::PAUSE;
             break;
           }
       break;
     case State::RUN_TO:
-      if (state.addr == decoder->pc)
+      if (state.addr == *PC)
         state.type = State::PAUSE;
       break;
     case State::RUN_TO_RET:
-      if (IS_CALL(decoder->pc)) {
-        log("      ", decoder->pc, "call", mmu->get16(decoder->pc + 1), state.call_depth);
+      if (IS_CALL(*PC)) {
+        log("      ", *PC, "call", mmu->get16(*PC + 1), state.call_depth);
         state.call_depth++;
       }
-      if (IS_RET(decoder->pc)) {
-        log("      ", decoder->pc, "ret", mmu->get16(decoder->pc + 1), state.call_depth);
+      if (IS_RET(*PC)) {
+        log("      ", *PC, "ret", mmu->get16(*PC + 1), state.call_depth);
         state.call_depth--;
       }
       if (state.call_depth == 0) state.type = State::PAUSE;

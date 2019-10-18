@@ -49,9 +49,9 @@ extern "C" {
   void WASM_EXPORT button_up(emulator_t * e, u16 button) { e->joypad.button_up((Buttons)button); }
 
   void WASM_EXPORT step_instruction(emulator_t * e) {
-    e->printer.pc = e->decoder.pc_start;
-    e->printer.decode();
-    e->_runner.dump();
+    // e->printer.pc = e->decoder.pc_start;
+    // e->printer.decode();
+    // e->_runner.dump();
     e->single_step();
   }
   

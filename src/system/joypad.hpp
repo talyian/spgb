@@ -1,5 +1,5 @@
-#include "base.hpp"
-#include "system/io_ports.hpp"
+#include "../base.hpp"
+#include "io_ports.hpp"
 
 enum Buttons {
   RIGHT = 0,

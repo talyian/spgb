@@ -44,7 +44,7 @@ else()
     -Wall
     -Wno-unused-variable
     -g
-    -O3
+    -O1
     #    -fsanitize=undefined
     -I ${CMAKE_SOURCE_DIR}
     -I ${CMAKE_SOURCE_DIR}/utils
@@ -53,7 +53,7 @@ else()
   add_link_options(
     #    -fsanitize=undefined
     -flto
-    -O3
+    -O1
   )
 
   add_executable(gb_emulator_console main.cpp platform_linux.cpp)

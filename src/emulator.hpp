@@ -3,16 +3,12 @@
 #include "base.hpp"
 #include "system/cart.hpp"
 #include "debugger.hpp"
-#include "instruction_decoder.hpp"
 #include "instruction_runner_new.hpp"
 #include "system/io_ports.hpp"
 #include "system/joypad.hpp"
 #include "system/mmu.hpp"
 #include "system/ppu.hpp"
 #include "system/timer.hpp"
-
-using RunnerDecoder = InstructionDecoderT<InstructionRunner>;
-using PrinterDecoder = InstructionDecoderT<InstructionPrinter>;
 
 struct emulator_t {
   // Hardware resources
@@ -25,12 +21,12 @@ struct emulator_t {
   PPU ppu{io, mmu};
 
   // Subsystems
-  InstructionRunner _runner{cpu};
-  InstructionPrinter _printer;
-  RunnerDecoder decoder{_runner};
-  PrinterDecoder printer{_printer};
+  // InstructionRunner _runner{cpu};
+  // InstructionPrinter _printer;
+  // RunnerDecoder decoder{_runner};
+  // PrinterDecoder printer{_printer};
   InstructionDasher _dasher{cpu, mmu};
-  Debugger debug{&mmu, &decoder, &cpu};
+  Debugger debug{&mmu,  &cpu, &_dasher.PC};
 
   emulator_t(u8 *, u32);
   emulator_t();
