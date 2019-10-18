@@ -1,6 +1,6 @@
-#include "base.hpp"
-#include "emulator.hpp"
-#include "platform.hpp"
+#include "../base.hpp"
+#include "../emulator.hpp"
+#include "../platform.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,9 +11,9 @@
 #include <commdlg.h>
 
 #include <gl/gl.h>
-#include "win32_opengl.hpp"
+#include "opengl_utils.hpp"
 
-// #define NOSWAP
+#define NOSWAP
 
 extern "C" size_t sslen(const char* s) { return strlen(s); }
 
@@ -54,7 +54,7 @@ struct Win32Emulator {
   HGLRC gl = 0;
   HDC hdc = 0;
   emulator_t emu;
-  u32 display_texture = 0;
+  glom::Texture216 * screen_tex;
 } win32_emulator;
 
 // Main Window event handler.
@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
 
   glf::load_functions();
   glEnable(glf::GL_DEBUG_OUTPUT);
-  glf::DebugMessageCallback(MessageCallback, nullptr);
+  glf::DebugMessageCallback(glf::MessageCallback, nullptr);
   u32 display;
 
   auto program = glf::glCreateProgram();
@@ -283,14 +283,9 @@ void main() {
     glTexCoordPointer(2, GL_FLOAT, sizeof(vertices[0]), (void*)12);
   }
   printf("vs: %d, fs: %d, error: %d\n", vertex_shader.id, fragment_shader.id, glGetError());
-  
-  glGenTextures(1, &display);
-  glBindTexture(GL_TEXTURE_2D, display);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  win32_emulator.display_texture = display;
+
+  glom::Texture216 screen {};
+  win32_emulator.screen_tex = &screen;
 
   char line[64] {0};
   // emu.debug.name_function("main", 0xC300, 0xc315);
@@ -375,15 +370,7 @@ u32 display[144 * 160];
 void _push_frame(u32 category, u8* memory, u32 len) {
   if (category == 0x300) {
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, win32_emulator.display_texture);
-    glTexImage2D(
-      GL_TEXTURE_2D, 0,
-      GL_RED, // internal format
-      160, 144,   //dimensions
-      0 /*border*/,
-      GL_RED /*format*/ ,
-      GL_UNSIGNED_BYTE /*type*/,
-      memory);
+    win32_emulator.screen_tex->setData(memory, 160, 144);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     #ifdef NOSWAP
     glFinish();

@@ -21,21 +21,23 @@ platform.wasm-o: platform_wasm.o
 	$(WASM_CC_LINK) -o $@ main.wasm-o platform.wasm-o
 
 gb-emu.exe: deps.Makefile
-gb-emu.exe: main.o platform_windows.o
-	clang++.exe -o $@ -flto -O2 main.o platform_windows.o \
+gb-emu.exe: lib_gb.o main.o
+	clang++.exe -o $@ -flto -O2 lib_gb.o main.o \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/User32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/OpenGL32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Gdi32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Comdlg32.Lib \
 
 # clang -MM generates backslash-delimited paths, but Make wants forward-delimited paths
-deps.Makefile: ../main.cpp ../platform_windows.cpp ../platform_wasm.cpp ../platform_linux.cpp
-	clang++.exe -E -MM ../main.cpp ../platform_windows.cpp ../platform_linux.cpp ../platform_wasm.cpp | sed 's/\\\([^\x0d]\)/\/\1/g' > deps.Makefile
+deps.Makefile: ../lib_gb.cpp ../platform_windows/main.cpp ../platform_wasm.cpp ../platform_linux/main.cpp
+	clang++.exe -E -MM $^ | sed 's/\\\([^\x0d]\)/\/\1/g' > deps.Makefile
 
 include deps.Makefile
 
 platform_wasm.o:
-	# ok
+	@true
 
 %.o: ../%.cpp Makefile
+	clang++.exe -D_CRT_SECURE_NO_WARNINGS -Wall -pedantic -O2 -o $@ -c $< -I .. -I ../utils
+%%/%.o: ../%%/%.cpp Makefile
 	clang++.exe -D_CRT_SECURE_NO_WARNINGS -Wall -pedantic -O2 -o $@ -c $< -I .. -I ../utils

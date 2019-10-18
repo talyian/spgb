@@ -1,6 +1,6 @@
-#include "base.hpp"
-#include "platform.hpp"
-#include "emulator.hpp"
+#include "../base.hpp"
+#include "../platform.hpp"
+#include "../emulator.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
