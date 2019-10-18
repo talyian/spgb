@@ -1,7 +1,5 @@
 // main compilation unit
 #include "platform.hpp"
-
-#include "instructions.cpp"
 #include "system/mmu.cpp"
 #include "system/ppu.cpp"
 #include "emulator.cpp"
