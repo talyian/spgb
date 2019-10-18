@@ -15,6 +15,7 @@ void PPU::set_display(u8 x, u8 y, u8 pixel) {
 }
 
 void PPU::tick(u16 delta) {
+  LcdStatusMatch = 0;  
   line_timer += delta;
   monotonic_timer += delta;
 START:
@@ -127,8 +128,7 @@ void PPU::scan_line() {
       x = 7 * flipx - 2 * flipx * _x + _x;
       auto tile_pixel = load_tile_pixel(tile_data, x, y);
       if (tile_pixel)
-        set_display(screen_x, LineY, tile_pixel);        
-      set_display(screen_x, LineY, 3);        
+        set_display(screen_x, LineY, tile_pixel);
     }
   }
 }

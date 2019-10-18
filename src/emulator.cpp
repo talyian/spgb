@@ -70,6 +70,7 @@ u32 emulator_t::single_step() {
       _dasher._push(_dasher.PC);
       _dasher.PC = handler;
 
+      return 0;  // we return to give the debugger a chance to latch.
     } else {
       // TODO: halt bug?
     }

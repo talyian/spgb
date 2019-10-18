@@ -10,7 +10,6 @@ var instance, line=[], dec = new TextDecoder();
 var memory = new WebAssembly.Memory({ initial: 32 });
 var tile_maps = [0, 0, 0];
 function draw_display(canvas, data) {
-  printf("drawing");
   frames++;
   var p = 0, i = 0;
   var image_buffer = canvas._buffer;
@@ -151,9 +150,10 @@ fetch("build/gb_emulator.wasm")
     let DEBUG = 2;
     let ERROR = 3;
     function loop() {
-      switch(instance.exports.step_frame(emulator)) {
-      }
-    }    
+      if (chkPaused.checked) return;
+      instance.exports.step_frame(emulator);
+      requestAnimationFrame(loop);
+    }
     requestAnimationFrame(loop);
     chkPaused.addEventListener("change", loop);
 
