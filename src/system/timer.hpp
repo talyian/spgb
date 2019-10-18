@@ -22,6 +22,7 @@ struct Timer {
   u64 monotonic_t = 0; // increases at 4MHz
   u64 counter_t = 0;   // increases at 4MHz, wraps after TIMA updates
   u32 monoTIMA = 0;    // increases with TIMA, never wraps
+
   void tick(u32 ticks) {
     monotonic_t += ticks;
     // DIV increments at 16 khz, which is 4MHz / 256

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../base.hpp"
+#include "../platform.hpp"
 
 struct IoPorts {
   const static u16 JOYP = 0xFF00;
@@ -10,6 +11,7 @@ struct IoPorts {
   u8 data[0x80];
 
   IoPorts() {
+    memset(data, 0, sizeof(data));
     data[0x4D] = 0xFF;
   }
 };

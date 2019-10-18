@@ -9,6 +9,7 @@
 #include "system/mmu.hpp"
 #include "system/ppu.hpp"
 #include "system/timer.hpp"
+#include "debug/printer.hpp"
 
 struct emulator_t {
   // Hardware resources
@@ -20,12 +21,8 @@ struct emulator_t {
   CPU cpu;
   PPU ppu{io, mmu};
 
-  // Subsystems
-  // InstructionRunner _runner{cpu};
-  // InstructionPrinter _printer;
-  // RunnerDecoder decoder{_runner};
-  // PrinterDecoder printer{_printer};
   InstructionDasher _dasher{cpu, mmu};
+  Printer _printer{mmu};
   Debugger debug{&mmu,  &cpu, &_dasher.PC};
 
   emulator_t(u8 *, u32);

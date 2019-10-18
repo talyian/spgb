@@ -209,7 +209,6 @@ struct InstructionDasher {
     switch(opcode) {
     case 0x00: /* NOP */; break;
     case 0x10: cpu.stopped = cpu.halted = 1; break;
-      
     case 0x01: LD16_XXXX(BC); break;
     case 0x11: LD16_XXXX(DE); break;
     case 0x21: LD16_XXXX(HL); break;
@@ -219,15 +218,16 @@ struct InstructionDasher {
 
     #define X(OP, R)                     \
       case 0x04 + 8 * OP: INC(R); break; \
-      case 0x05 + 8 * OP: DEC(R); break;
-    LOOP(X)
-    #undef X
-      
-    #define X(OP, R) \
+      case 0x05 + 8 * OP: DEC(R); break; \
       case 0x06 + 8 * OP: R = _read_u8(); break;
     LOOP(X)
     #undef X
-    
+
+    case 0x07: RLC(A); cpu.flags.Z = 0; break;
+    case 0x0F: RRC(A); cpu.flags.Z = 0; break;
+    case 0x17: RL(A); cpu.flags.Z = 0; break;
+    case 0x1F: RR(A); cpu.flags.Z = 0; break;
+      
     case 0x08: // LD (xxxx), SP
       {
         u16 addr = _read_u16();
@@ -237,14 +237,17 @@ struct InstructionDasher {
       break;
     case 0x0A: A = mmu_get(BC); break;
     case 0x12: mmu_set(DE, A); break;
+      
     case 0x03: BC++; cycles += 4; break;
     case 0x13: DE++; cycles += 4; break;
     case 0x23: HL++; cycles += 4; break;
     case 0x33: SP++; cycles += 4; break;
+      
     case 0x0B: BC--; cycles += 4; break;
     case 0x1B: DE--; cycles += 4; break;
     case 0x2B: HL--; cycles += 4; break;
     case 0x3B: SP--; cycles += 4; break;
+      
     case 0x1A: A = mmu_get(DE); break;
     case 0x22: mmu_set(HL++, A); break;
     case 0x2A: A = mmu_get(HL++); break;
@@ -253,10 +256,6 @@ struct InstructionDasher {
 
     case 0xF3: cpu.IME = 0; break;
     case 0xFB: cpu.IME = 1; break;
-    case 0x07: RLC(A); cpu.flags.Z = 0; break;
-    case 0x0F: RRC(A); cpu.flags.Z = 0; break;
-    case 0x17: RL(A); cpu.flags.Z = 0; break;
-    case 0x1F: RR(A); cpu.flags.Z = 0; break;
     case 0x27: /* DAA */ {
       if (cpu.flags.N) { 
         if (cpu.flags.C) { A -= 0x60; } // N+C: borrow a 10 digit
