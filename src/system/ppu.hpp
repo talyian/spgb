@@ -23,9 +23,25 @@ struct PPU {
   MemoryMapper *mmu = 0;
   u32 line_timer = 0, frame = 0;
   u64 monotonic_timer = 0;
+
+  template<int offset> struct bit {
+    u8 &r;
+    bit(u8 & _register) : r(_register) { }
+    void operator=(bool n) { r ^= (((r >> offset) & 1) ^ n) << offset; }
+    operator bool() { return (r >> offset) & 1; }
+  };
   
+  bool LcdStatusMatch = 0, LcdStatusLastMatch = 0;
   u8 &LcdControl = io.data[0x40];
-  u8 &LcdStatus = io.data[0x41];
+  struct STAT {
+    STAT(u8 & v) : v(v) { }
+    u8 &v;
+    bit<6> IrqLYMatch {v};
+    bit<5> IrqOAM {v};
+    bit<4> IrqVBlank {v};
+    bit<3> IrqHBlank {v};
+    bit<2> LYMatch{v};
+  } LcdStatus { io.data[0x41] };
   u8 &ScrollY = io.data[0x42];
   u8 &ScrollX = io.data[0x43];
   u8 &LineY = io.data[0x44];

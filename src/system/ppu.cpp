@@ -29,6 +29,7 @@ START:
       break;
     }
     state = HSCAN;
+    if (LcdStatus.IrqHBlank) { LcdStatusMatch = 1; }
   case HSCAN: // horizontal scan
     if (line_timer < 0x1C8) {
       break;
@@ -37,19 +38,25 @@ START:
     if (LineY < 144)
       scan_line(); // [0 - 144) -- scan line
     else if (LineY == 144) {
+      if (LcdStatus.IrqVBlank) { LcdStatusMatch = 1; }
       push_frame();
     }
     else if (LineY == 153) {
       LineY = -1;
     }
     LineY++;
-    
+    LcdStatus.LYMatch = LineY == LineYMark;
+    if (LcdStatus.LYMatch && LcdStatus.IrqLYMatch) { LcdStatusMatch = 1; }
+    if (LcdStatus.IrqOAM) { LcdStatusMatch = 1; }
     state = OAM_SCAN;
     goto START;
   default:
     log("invalid PPU state", state);
     state = OAM_SCAN;
   };
+
+  if (LcdStatusMatch - LcdStatusLastMatch == 1) { InterruptV |= 2; } // LCD
+  LcdStatusLastMatch = LcdStatusMatch;
 }
 
 void PPU::push_frame() {
@@ -121,6 +128,7 @@ void PPU::scan_line() {
       auto tile_pixel = load_tile_pixel(tile_data, x, y);
       if (tile_pixel)
         set_display(screen_x, LineY, tile_pixel);        
+      set_display(screen_x, LineY, 3);        
     }
   }
 }

@@ -75,12 +75,6 @@ u32 emulator_t::single_step() {
     }
   }
 
-  // if (_dasher.PC > 0x10) {
-  if (_dasher.PC >= 0x100) {
-    _printer.PC = _dasher.PC;
-    _printer.decode();
-  }
-  
   if (!cpu.halted) {
     _dasher.cycles = 0;
     _dasher.decode();

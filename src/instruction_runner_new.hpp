@@ -213,7 +213,7 @@ struct InstructionDasher {
     case 0x11: LD16_XXXX(DE); break;
     case 0x21: LD16_XXXX(HL); break;
     case 0x31: LD16_XXXX(SP); break;
-      
+    #undef LD16_XXXX
     case 0x02: mmu_set(BC, A); break;
 
     #define X(OP, R)                     \

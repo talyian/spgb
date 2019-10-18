@@ -226,7 +226,8 @@ varying vec2 uv;
 uniform sampler2D tx_screen;
 // Translate 8-bit 216-color-cube to RGB
 void main() { 
-  float vf = texture2D(tx_screen, uv).r * 255.0 / 216.0;
+  float vv = texture2D(tx_screen, uv).r;
+  float vf = vv * 255.0 / 216.0;
   float r = floor(vf * 6.0);
   float g = floor(vf * 36.0 - (r) * 6.0);
   float b = vf * 216.0 - (r) * 36.0 - (g) * 6.0;
@@ -296,6 +297,16 @@ void main() {
   // emu.debug.name_function("test_timer", 0xC318, 0xc345);
   if (argc > 1 && strstr(argv[1], "instr_timing"))
     emu.debug.set_breakpoint(0xC300);
+  if (argc > 1 && strstr(argv[1], "bgbtest")) {
+    emu.debug.set_breakpoint(0x50); // vblank
+    emu.debug.set_breakpoint(0x58); // lcdc
+    // emu.debug.set_breakpoint(0x150); // entry
+    // emu.debug.set_breakpoint(0x416);
+    // emu.debug.set_breakpoint(0x1e7); // vblank
+    // emu.debug.set_breakpoint(0x1e7); // vblank
+    // emu.debug.set_breakpoint(0x1e1); // halt loop
+    // emu.debug.set_breakpoint(0x219); // badfunction ?
+  }
   while (true) {
     if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       if (msg.message == WM_QUIT) exit(0);
@@ -307,16 +318,17 @@ void main() {
     emu.debug.step();
     
     if (emu.debug.state.type == Debugger::State::PAUSE) {
-      log("ime", emu.cpu.IME, "interrupt", emu.mmu.get(0xFFFF), emu.mmu.get(0xFF0F));
-      printf("Timer: CTL=%02x DIV=%02x TIMA=%02x, ticks=%08x\n",
-             emu.timer.Control, emu.timer.DIV, emu.timer.TIMA, (u32)emu.timer.monotonic_t);
-      log("timer", emu.timer.Control, emu.timer.DIV, emu.timer.TIMA,
-          (u32)emu.timer.counter_t,
-          emu.timer.monoTIMA,
-          (u32)emu.timer.monotonic_t);
-      // emu._runner.dump();
-      // emu.printer.pc = emu.decoder.pc; emu.printer.decode();
-      // printf("DEBUG %04x> ", emu.decoder.pc);
+      log("\x1b[1;31mime\x1b[0m", (u8)emu.cpu.IME, "interrupt", emu.mmu.get(0xFFFF), emu.mmu.get(0xFF0F));
+      printf("Timer: CTL=%02x DIV=%02x TIMA=%02x, ticks=%d\n",
+             emu.timer.Control, emu.timer.DIV, emu.timer.TIMA, (u16)emu.timer.monotonic_t);
+      auto rr = emu.cpu.registers;
+      printf("AF   BC   DE   HL   SP   PC\n");
+      printf("%04x %04x %04x %04x %04x %04x\n",
+             (u16)rr.AF, (u16)rr.BC, (u16)rr.DE, (u16)rr.HL, (u16)rr.SP,
+             emu._dasher.PC);
+      _log("\x1b[1;32m                  ");
+      emu._printer.PC = emu._dasher.PC; emu._printer.decode();
+      printf("\x1b[0m DEBUG %04x> ", emu._dasher.PC);
 
       fgets(line, 63, stdin);
       for(int i = 0; i < 63; i++)
@@ -327,9 +339,9 @@ void main() {
         emu.debug.state.type = Debugger::State::STEP;
       }
       else if (!strcmp(line, "n")) {
-        // log("scanning to", emu.printer.pc);
-        // emu.debug.state.type = Debugger::State::RUN_TO;
-        // emu.debug.state.addr = emu.printer.pc;
+        log("scanning to", emu._printer.PC);
+        emu.debug.state.type = Debugger::State::RUN_TO;
+        emu.debug.state.addr = emu._printer.PC;
         continue;
       }
       else if (!strcmp(line, "c")) {
