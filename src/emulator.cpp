@@ -13,6 +13,8 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
   cart = Cart{cart_data, cart_len};
   cpu.clear();
   mmu.clear();
+  timer.clear();
+  ppu.clear();
   debug.state.type = Debugger::State::RUN;
   if (false) { // skip bootrom
     mmu.BiosLock = 0x1;
@@ -24,13 +26,6 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
     cpu.registers.SP = 0xFFFE;
     mmu.set(io.IF, 0xE1);
   } else {
-    timer.Control = 0;
-    timer.DIV = 0;
-    timer.TIMA = 0;
-    timer.TMA = 0;
-    ppu.BgPalette = 0x1B;
-    ppu.OamPalette1 = 0x1B;
-    ppu.OamPalette2 = 0x1B;
     _executor.PC = _executor.PC_start = 0;
     mmu.BiosLock = 0;
     // debug.state.type = Debugger::State::PAUSE;

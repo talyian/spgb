@@ -22,7 +22,6 @@ struct PPU {
   IoPorts &io;
   MemoryMapper *mmu = 0;
   u32 line_timer = 0, frame = 0;
-  u64 monotonic_timer = 0;
 
   template<int offset> struct bit {
     u8 &r;
@@ -66,4 +65,13 @@ struct PPU {
   static const int DISPLAY_W = 160, DISPLAY_H = 144;
   u8 display[DISPLAY_W * DISPLAY_H];
   void set_display(u8 x, u8 y, u8 pixel);
+
+  void clear() {
+    ScrollX = ScrollY = LcdControl = LineYMark = LineY = 0;
+    BgPalette = OamPalette1 = OamPalette2 = 0x1B;
+    WindowX = WindowY = 0;
+    LcdStatusMatch = 0;
+    line_timer = frame = 0;
+    state = OAM_SCAN;
+  }
 };

@@ -17,7 +17,6 @@ void PPU::set_display(u8 x, u8 y, u8 pixel) {
 void PPU::tick(u16 delta) {
   LcdStatusMatch = 0;  
   line_timer += delta;
-  monotonic_timer += delta;
 START:
   switch (state) {
   case OAM_SCAN: // scanning oam

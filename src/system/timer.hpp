@@ -17,7 +17,8 @@ struct Timer {
   u8 &TMA;   // FF06 - timer modulus - when TIMA wraps, reset it to TMA
   u8 &Control; // FF07
   u8 &InterruptV;
-  
+
+  void clear() { DIV = 0; TIMA = 0; TMA = 0; Control = 0; }
   bool enabled() { return Control & 4; }
   u16 speed_modifier() { return 1 << (2 * ((Control - 1) & 3) + 4); }
   
