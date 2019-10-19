@@ -338,8 +338,8 @@ int main(int argc, char** argv) {
     }
       
     // 456 * 154 ticks is one emulator frame 
-    // emu.step(456 * 154);
-    emu.single_step();
+    emu.step(456 * 154);
+    // emu.single_step();
   }
 }
 
