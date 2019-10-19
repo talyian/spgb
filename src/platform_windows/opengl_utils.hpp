@@ -158,8 +158,9 @@ void main() {
     glf::UseProgram(program);
 
     char info_log[1025];
-    glf::GetProgramInfoLog(program, 1024, nullptr, info_log);
-    printf("GLSL Log: '%s'\n", info_log);
+    GLsizei size = 0;
+    glf::GetProgramInfoLog(program, 1024, &size, info_log);
+    if (size > 0) printf("GLSL Log: '%s'\n", info_log);
     glf::DeleteShader(vertex_shader);
     glf::DeleteShader(fragment_shader);
     glEnableClientState(GL_VERTEX_ARRAY);
