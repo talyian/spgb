@@ -325,9 +325,7 @@ struct Executor {
     case 0xEE: XOR(_read_u8()); break;
     case 0xFE:  CP(_read_u8()); break;
 
-    #define CALL(OP, COND) case OP: { \
-       u16 target = _read_u16();                      \
-       if (COND) { _push(PC); PC_next = PC; PC = target;} break; }
+#define CALL(OP, COND) case OP: { u16 target = _read_u16(); if (COND) { _push(PC); PC_next = PC; PC = target;} break; }
     CALL(0xC4, !cpu.flags.Z)
     CALL(0xCC, cpu.flags.Z)
     CALL(0xCD, true)
