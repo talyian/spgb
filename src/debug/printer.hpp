@@ -12,8 +12,8 @@ struct Printer {
   template<class T> void mlog(T x) { log(PC_start, x); }
   template<class T, class ... TS> void mlog(T x, TS ... xs) { log(PC_start, x, xs ...); }
   
-  void decode() {
-    PC_start = PC;
+  void decode(u16 pc) {
+    PC_start = PC = pc;
     u16 opcode = mmu.get(PC++);
     if (opcode == 0xCB) opcode = 0x100 + mmu.get(PC++);
 
@@ -195,4 +195,5 @@ struct Printer {
       _stop();
     }
   }
+  void decode() { decode(PC); }
 };

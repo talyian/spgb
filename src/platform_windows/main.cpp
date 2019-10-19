@@ -305,7 +305,7 @@ int main(int argc, char** argv) {
              (u16)rr.AF, (u16)rr.BC, (u16)rr.DE, (u16)rr.HL, (u16)rr.SP,
              emu._executor.PC);
       _log("\x1b[1;32m                  ");
-      emu._printer.PC = emu._executor.PC; emu._printer.decode();
+      emu._printer.decode(emu._executor.PC);
       printf("\x1b[0m DEBUG %04x> ", emu._executor.PC);
 
       fgets(line, 63, stdin);
