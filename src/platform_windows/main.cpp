@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
   }
 
   struct v2i { u32 x, y; };
-  v2i viewport { 600, 400 };
+  v2i viewport { 160 * 2, 144 * 2 };
   v2i screen { 160 * 2, 144 * 2 };
   RECT r = RECT();
   r.top = 0; r.left = 0;
@@ -379,6 +379,7 @@ void show_tile_map(u32 category, u8* memory, u32 len) {
     win32_emulator.texture_array[sprite_bank+1].setData(buf, buf_w, buf_h);
     delete[] buf;    
 }
+
 void _push_frame(u32 category, u8* memory, u32 len) {
   if (category - 0x100 < 3) {
     show_tile_map(category, memory, len); 

@@ -5,7 +5,12 @@ lib_gb.o: ../lib_gb.cpp ../platform.hpp ../base.hpp ../system/mmu.cpp \
   ../system/ppu.hpp ../system/ppu.cpp ../emulator.cpp ../emulator.hpp \
   ../debugger.hpp ../system/cpu.hpp ../instruction_runner_new.hpp \
   ../system/joypad.hpp ../debug/printer.hpp ../debug/../base.hpp \
-  ../debug/../system/mmu.hpp ../data/dmg_boot.hpp
+  ../debug/../system/mmu.hpp ../data/dmg_boot.hpp \
+  ../platform_windows/platform_limited.cpp \
+  ../platform_windows/../emulator.hpp
+main_limited.o: ../platform_windows/main_limited.cpp \
+  ../platform_windows/../base.hpp ../platform_windows/../platform.hpp \
+  ../platform_windows/opengl_utils.hpp
 main.o: ../platform_windows/main.cpp ../platform_windows/../base.hpp \
   ../platform_windows/../emulator.hpp \
   ../platform_windows/../system/cart.hpp \

@@ -3,6 +3,7 @@
 #include "system/mmu.cpp"
 #include "system/ppu.cpp"
 #include "emulator.cpp"
+#include "platform_base.cpp"
 
 namespace logs {
   void _log(CPU::Reg16 v) { _logx16((u16)v); };
