@@ -13,7 +13,7 @@ struct Debugger {
   u16 * PC = 0;
 
   struct State {
-    enum { RUN = 0, PAUSE, STEP, RUN_TO, RUN_TO_RET } type;
+    enum { RUN = 0, PAUSE, STEP, STEP1, RUN_TO, RUN_TO_RET } type;
     union {
       u16 addr;
       u16 call_depth;
@@ -57,6 +57,9 @@ struct Debugger {
     case State::PAUSE:
       break;
     case State::STEP:
+      state.type = State::STEP1;
+      break;
+    case State::STEP1:
       state.type = State::PAUSE;
       break;
     case State::RUN:
