@@ -1,4 +1,4 @@
-* [15/25] GBE Tasks
+* [18/26] GBE Tasks
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :END:
@@ -9,20 +9,6 @@ currently the test fails init_timer since our timer is way off.
 we'll need to emit accurate cycle counts for all the instructions used in
 the delay loop before init_timer can pass and we can actually test_timer
 
-** DONE New Instruction Decoder
-   CLOSED: [2019-10-17 Thu 17:50]
-   - State "DONE"       from "DOING"      [2019-10-17 Thu 17:50]
-The current instruction decoder is too abstracted. we can simplify by
-removing the opcodes.inc python generator stuff.
-
-As a side-effect, this improved the instruction timings enough that Kirby and Links Awakening work. 
-
-** TODO Palettes
-** TODO Sprite Rendering Order
-** TODO Sound
-** TODO CGB Features
-** TODO HBlank Timing for BGB TEST
-** DONE Handle DMA (FF46)
 ** TODO Blargg mem_timing
 ** [11/11] Blargg CPU Tests
 *** DONE Blargg CPU Test 01
@@ -47,6 +33,29 @@ As a side-effect, this improved the instruction timings enough that Kirby and Li
     - State "DONE"       from "TODO"       [2019-10-06 Sun 10:27]
 *** DONE Blargg CPU Test 10
 *** DONE Blargg CPU Test 11
+** DONE New Instruction Decoder
+   CLOSED: [2019-10-17 Thu 17:50]
+   - State "DONE"       from "DOING"      [2019-10-17 Thu 17:50]
+The current instruction decoder is too abstracted. we can simplify by
+removing the opcodes.inc python generator stuff.
+
+As a side-effect, this improved the instruction timings enough that Kirby and Links Awakening work. 
+
+** DONE DMG Palettes
+   CLOSED: [2019-10-18 Fri 20:59]
+   - State "DONE"       from "TODO"       [2019-10-18 Fri 20:59]
+done - Links Awakening Intro works now
+
+** DONE Render Window
+** TODO Sprite Rendering Priority
+** DONE Sprite Flip/Rotation bug
+   CLOSED: [2019-10-18 Fri 23:50]
+It was an issue with 8x16 sprites; need to flip the entire 16-pixel
+sprite when flipY is on
+
+** TODO Sound
+** TODO CGB Features
+** DONE Handle DMA (FF46)
 ** DONE Skip Bootstrap
 ** TODO Test Harness
 ** TODO Bug: windows build doesn't load bgbtest anymore, perhaps due to corruption

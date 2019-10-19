@@ -60,7 +60,7 @@ struct PPU {
   void push_frame();
   void scan_line();
 
-  u8 select_background_tile(u8 x, u8 y);
+  u8 select_background_tile(u8 x, u8 y, u8 tile_map);
   u8 select_tile_pixel(u8 tile_index, u8 x, u8 y);
 
   static const int DISPLAY_W = 160, DISPLAY_H = 144;

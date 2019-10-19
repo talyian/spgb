@@ -71,9 +71,9 @@ void PPU::push_frame() {
 }
 
 // Given a bg coordinate between 0,0 and 32,32, return the tile specifier
-u8 PPU::select_background_tile(u8 x, u8 y) {
-  u8 bg_tile_source = LcdControl & 0x8;
-  return mmu->VRAM[0x80 * bg_tile_source + 0x1800 + y * 32 + x];
+u8 PPU::select_background_tile(u8 x, u8 y, u8 source) {
+  source = source != 0;
+  return mmu->VRAM[0x400 * source + 0x1800 + y * 32 + x];
 };
 
 u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8 y) {
@@ -83,6 +83,7 @@ u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8 y) {
   return t | (t >> 7);
 }
 
+// TODO: this is currently a pretty naive implementation and turns up hot in profiler.
 void PPU::scan_line() {
   // we're rendering at screen-Y LineY
   // for each screen x we're pulling the tile at bg: {sx + ScrollX, LineY + ScrollY}
@@ -91,7 +92,8 @@ void PPU::scan_line() {
     u8 by = LineY + ScrollY;
     u8 tile_x = bx / 8;
     u8 tile_y = by / 8;
-    u8 tile_index = select_background_tile(tile_x, tile_y);
+    u8 bg_tile_source = LcdControl & 0x8;
+    u8 tile_index = select_background_tile(tile_x, tile_y, bg_tile_source);
     u8 * tile_data = 0, tx = bx % 8, ty = by % 8;
     if ((tile_index & 0x80) | (LcdControl & 0x10)) {
       tile_data = mmu->VRAM + tile_index * 16 + ty * 2;
@@ -103,6 +105,31 @@ void PPU::scan_line() {
     set_display(sx, LineY, pixel);
   }
 
+  // TODO : render Window
+  if (LcdControl & 0x20)
+  if (LineY >= this->WindowY) {
+    u8 wy = LineY - this->WindowY;
+    for(u8 sx = 0; sx < DISPLAY_W; sx++) {
+      u8 wx = sx - WindowX + 7;
+      if (wx >= DISPLAY_W) continue;
+      u8 tile_x = wx / 8;
+      u8 tile_y = wy / 8;
+      u8 tile_index = select_background_tile(tile_x, tile_y, LcdControl & 0x40);
+
+      u8 * tile_data = 0, tx = wx % 8, ty = wy % 8;
+      if ((tile_index & 0x80) | (LcdControl & 0x10)) {
+        tile_data = mmu->VRAM + tile_index * 16 + ty * 2;
+      } else {
+        tile_data = mmu->VRAM + 0x1000 + tile_index * 16 + ty * 2;
+      }
+      u8 pixel = load_tile_pixel(tile_data, tx, ty);
+      pixel = (BgPalette >> (2 * pixel)) & 3;
+      set_display(sx, LineY, pixel);
+      // set_display(sx, LineY, (tile_y ^ tile_x) & 3);
+    }
+  }
+  
+  
   auto render_sprite = [this](OamEntry sprite) {
     u8 _ty = LineY - (sprite.y - 16);
     if (_ty >= 8) return;
@@ -122,14 +149,20 @@ void PPU::scan_line() {
       }
     }
   };
-  // TODO : render Window
-  if (LcdControl & 4) {
+
+  if (LcdControl & 4) { // double-height sprite
     for (u8 i = 0; i < 0xA0; i += 4) {
        OamEntry sprite1 = *(OamEntry *)(mmu->OAM + i);
        OamEntry sprite2 = sprite1;
-       sprite1.tile &= ~1;
-       sprite2.tile |= 1;
-       sprite2.y += 8;
+       if (sprite1.flags.flip_y()) {
+         sprite1.tile &= ~1;
+         sprite2.tile |= 1;
+         sprite1.y += 8;
+       } else {
+         sprite1.tile &= ~1;
+         sprite2.tile |= 1;
+         sprite2.y += 8;
+       }
        render_sprite(sprite1);
        render_sprite(sprite2);
     }
@@ -140,26 +173,3 @@ void PPU::scan_line() {
     }
   }
 }
-//   // scan entire sprite table for overlapping sprites
-//   for (u8 i = 0; i < 0xA0; i += 4) {
-     // OamEntry oam_entry = *(OamEntry *)(mmu->OAM + i);
-     // u8 tile_index = oam_entry.tile;
-     // u8 y = LineY - oam_entry.y + 16;
-     // if (y >= 8) continue;
-//     if (oam_entry.x == 0) continue;
-//     if (oam_entry.x >= DISPLAY_W) continue;
-//     u8 flipy = oam_entry.flags.flip_y();
-//     u8 flipx = oam_entry.flags.flip_x();
-//     if (flipy) y = 7 - y;
-
-//     u8 * tile_data = mmu->VRAM + tile_index * 16 + y * 2;
-//     for(u8 _x = 0; _x < 8; _x++) {
-//       u8 screen_x = _x + oam_entry.x - 8, x;
-//       if (screen_x >= DISPLAY_W) continue;
-//       x = 7 * flipx - 2 * flipx * _x + _x;
-//       auto tile_pixel = load_tile_pixel(tile_data, x, y);
-//       if (tile_pixel)
-//         set_display(screen_x, LineY, tile_pixel);
-//     }
-//   }
-// }
