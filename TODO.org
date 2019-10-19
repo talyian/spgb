@@ -1,9 +1,13 @@
-* [18/26] GBE Tasks
+* [20/28] GBE Tasks
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :END:
 ** DONE Memory Banking - MBC1
-** TODO Memory Banking - MBC3
+** DONE Memory Banking - MBC3
+   CLOSED: [2019-10-19 Sat 12:24]
+   - State "DONE"       from "TODO"       [2019-10-19 Sat 12:24]
+   marking as "done" for now. Need to revisit for the RTC.
+** TODO RTC - MBC3
 ** DOING Blargg instr_timing
 currently the test fails init_timer since our timer is way off.
 we'll need to emit accurate cycle counts for all the instructions used in
@@ -59,3 +63,8 @@ sprite when flipY is on
 ** DONE Skip Bootstrap
 ** TODO Test Harness
 ** TODO Bug: windows build doesn't load bgbtest anymore, perhaps due to corruption
+** DONE WASM platform doesn't run Kirby/Zelda etc when Win32 does
+   CLOSED: [2019-10-19 Sat 12:23]
+   - State "DONE"       from "DOING"      [2019-10-19 Sat 12:23]
+   Turns out that localstorage encoding is broken. need to find some eficient way
+   to do hex or base64 encoding.

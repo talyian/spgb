@@ -1,8 +1,8 @@
 /// handles uploading roms
 function encode(buf, start, len) {
-  if (len <= 0x8000)
+  if (len <= 0x1000)
     return String.fromCharCode.apply(null, new Uint8Array(buf, start, len));
-  return encode(buf, 0, 0x8000) + encode(buf, 0x8000, len - 0x8000);
+  return encode(buf, start, 0x1000) + encode(buf, start + 0x1000, len - 0x1000);
 }
 
 function decode(str) {
@@ -22,8 +22,7 @@ class FileList {
       let file = file_upload.files[0];
       file.arrayBuffer()
         .then(buffer => {
-          console.log('run-expected', 33, 0, 192);
-          console.log('run-read', buffer.slice(0x14ad6, 0x14ad9));
+          let encoded = encode(buffer, 0, buffer.byteLength);
           let count = localStorage.getItem("rom_count") | 0;
           localStorage.setItem("rom_" + count + "_name", file.name);
           localStorage.setItem("rom_" + count + "_data", encode(buffer, 0, buffer.byteLength));
@@ -34,11 +33,11 @@ class FileList {
     });
   }
 
+  // Given an ArrayBuffer, copy it into a WASM-accessible buffer and run it
   load_cart(arrayBuffer) {
     let file_data = new Uint8Array(arrayBuffer);
     let rom_ptr = instance.exports.get_rom_area(emulator, file_data.byteLength);
     let rom = new Uint8Array(memory.buffer);
-    console.log("js-loading", rom_ptr);
     for(let i = 0; i < file_data.byteLength; i++) {
       rom[rom_ptr + i] = file_data[i];
     }
@@ -47,6 +46,7 @@ class FileList {
   
   redraw() {
     this.file_list.innerHTML = "";
+    let list_object = this;
     let count = localStorage.getItem("rom_count");
     for(let i = 0; i < count; i++) {
       let file_name = localStorage.getItem("rom_" + i + "_name");
@@ -55,12 +55,10 @@ class FileList {
       a.innerHTML = file_name;
       a.href = "#";
       a.addEventListener("click", e => {
-        let li = a.parentElement;
-        console.log(this);
-        let index = li.dataset.index;
+        let index = a.parentElement.dataset.index;
         let file_name = localStorage.getItem("rom_" + index + "_name");
         let file_data = localStorage.getItem("rom_" + index + "_data");
-        load_cart(decode(file_data))
+        list_object.load_cart(decode(file_data))
         return false;
       });
       li.appendChild(a);
@@ -69,8 +67,6 @@ class FileList {
     }
     if (!count) { this.file_list.innerHTML = "No Saved Roms"; }
   }
-
-  
 };
 
   
