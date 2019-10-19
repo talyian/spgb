@@ -51,19 +51,11 @@ struct Cart {
     else
       mapper = ERROR;
 
-    _log("cart");
-    _log(name);
-    _log(len);
-    _log("mapper-type");
-    _log(data[0x147]);
-    _log("rom-size");
-    _log(data[0x148]);
-    _log(rom_size);
-    _log("ram-size");
-    _log(data[0x149]);
-    _log(ram_size);
-    _showlog();
-
+    log("cart", name, len,
+        "mapper-type", data[0x147],
+        "rom-size", data[0x148], rom_size,
+        "ram-size", data[0x149], ram_size);
+    if (len < rom_size) { _stop(); }
     if (mapper == ERROR) {
       log("Unsupported Mapper", data[0x147]);
       _stop();
@@ -103,8 +95,7 @@ struct Cart {
         // log("MBC1: rom bank switch", val, mbc1.rom_bank);
         return;
       } else if (addr < 0x6000) {
-        // log("MBC1: ram bank switch", addr, val, mbc1.bank_mode == MBC1::ROM ?
-        // "rom" : "ram");
+        // log("MBC1: ram bank switch", addr, val, mbc1.bank_mode == BankMode::ROM ? "rom" : "ram");
         val = 0x3 & val;
         if (mbc1.bank_mode == BankMode::ROM)
           mbc1.rom_bank = (mbc1.rom_bank & ~0x60) | (val << 5);
@@ -112,7 +103,7 @@ struct Cart {
           mbc1.ram_bank = val;
         return;
       } else if (addr < 0x8000) {
-        // log("MBC1: mode switch", val);
+        // log("MBC1: mode switch", val ? "RAM" : "ROM", val);
         mbc1.bank_mode = val == 0 ? BankMode::ROM : BankMode::RAM;
         return;
       } else if (addr < 0xC000) {
@@ -163,8 +154,11 @@ struct Cart {
       if (addr < 0x4000)
         return data[addr];
       // bank 1 ROM
-      if (addr < 0x8000)
-        return data[(addr - 0x4000) + mbc1.rom_bank * 0x4000];
+      if (addr < 0x8000) {
+        u32 index = (addr - 0x4000) + mbc1.rom_bank * 0x4000;
+        // log("reading", mbc1.rom_bank, ":", addr, "::", index);
+        return data[index];
+      }
       // RAM
       if (addr < 0xC000)
         return ram[addr - 0xA000 + 0x2000 * mbc1.ram_bank];

@@ -10,7 +10,7 @@ struct Executor {
 
   CPU & cpu;
   MemoryMapper & mmu;
-
+  bool error = 0;
   u16 PC = 0;
   u16 PC_start = 0;
   u16 PC_next = 0;
@@ -146,7 +146,7 @@ struct Executor {
   void SET(u8 bit, T &RR) { RR = RR | (1 << bit); }
 
   bool decode() {
-    PC_start = PC;
+    PC_start = PC; PC_next = 0;
     u16 opcode = _read_u8();
     if (opcode == 0xCB) opcode = 0x100 + _read_u8();
 
@@ -325,12 +325,14 @@ struct Executor {
     case 0xEE: XOR(_read_u8()); break;
     case 0xFE:  CP(_read_u8()); break;
 
-      // CALL
-    case 0xC4: { u16 target = _read_u16(); if (!cpu.flags.Z) { _push(PC); PC = target; } break; }
-    case 0xCC: { u16 target = _read_u16(); if (cpu.flags.Z)  { _push(PC); PC = target; } break; }
-    case 0xCD: { u16 target = _read_u16(); if (true)         { _push(PC); PC = target; } break; }
-    case 0xD4: { u16 target = _read_u16(); if (!cpu.flags.C) { _push(PC); PC = target; } break; }
-    case 0xDC: { u16 target = _read_u16(); if (cpu.flags.C)  { _push(PC); PC = target; } break; }
+    #define CALL(OP, COND) case OP: { \
+       u16 target = _read_u16();                      \
+       if (COND) { _push(PC); PC_next = PC; PC = target;} break; }
+    CALL(0xC4, !cpu.flags.Z)
+    CALL(0xCC, cpu.flags.Z)
+    CALL(0xCD, true)
+    CALL(0xD4, !cpu.flags.C)
+    CALL(0xDC, cpu.flags.C)
       // RET - 20/8/16 cycles
     case 0xC0: { cycles += 4; if (!cpu.flags.Z) { PC = _pop(); cycles += 4; } break; }
     case 0xC8: { cycles += 4; if (cpu.flags.Z) { PC = _pop(); cycles += 4; } break; }
@@ -436,8 +438,9 @@ struct Executor {
     LOOP(X)
     #undef X
     default:
-      log("unknown op", opcode);
-      _stop();
+      log(PC_start, "unknown op", opcode);
+      error = 1;
+      return false;
     }
     return true;
   }

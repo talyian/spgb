@@ -34,7 +34,6 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
 }
 
 u32 emulator_t::single_step() {
-
   u32 dt = 16; // TODO: do timing based on actual instruction decodetime
   u8 interrupt = (mmu.get(IoPorts::IE) & mmu.get(IoPorts::IF));
 
@@ -98,7 +97,7 @@ void emulator_t::step(i32 ticks) {
   // _runner.verbose_log = true;
   while (ticks > 0) {
     debug.step();
-
+    if (_executor.error) break;
     // is_debugging means we don't run any code
     if (debug.state.type == Debugger::State::PAUSE) {
       _log("breakpoint");

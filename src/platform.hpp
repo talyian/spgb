@@ -3,6 +3,7 @@
 
 #pragma once
 #include "base.hpp"
+#include "utils/str.hpp"
 
 // Imports - these are provided by the platform
 extern "C" {
@@ -34,6 +35,7 @@ void _log(u32 v);
 void _log(i32 v);
 void _log(double f);
 void _log(const char * s);
+void _log(str s);
 void _log(void* s);
 
 template<class T>

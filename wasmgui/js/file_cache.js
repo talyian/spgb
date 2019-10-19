@@ -22,15 +22,29 @@ class FileList {
       let file = file_upload.files[0];
       file.arrayBuffer()
         .then(buffer => {
+          console.log('run-expected', 33, 0, 192);
+          console.log('run-read', buffer.slice(0x14ad6, 0x14ad9));
           let count = localStorage.getItem("rom_count") | 0;
           localStorage.setItem("rom_" + count + "_name", file.name);
           localStorage.setItem("rom_" + count + "_data", encode(buffer, 0, buffer.byteLength));
           localStorage.setItem("rom_count", count + 1);
           list_object.redraw();
+          list_object.load_cart(buffer);
         });
     });
   }
 
+  load_cart(arrayBuffer) {
+    let file_data = new Uint8Array(arrayBuffer);
+    let rom_ptr = instance.exports.get_rom_area(emulator, file_data.byteLength);
+    let rom = new Uint8Array(memory.buffer);
+    console.log("js-loading", rom_ptr);
+    for(let i = 0; i < file_data.byteLength; i++) {
+      rom[rom_ptr + i] = file_data[i];
+    }
+    instance.exports.reset(emulator, rom_ptr, file_data.byteLength);
+  }
+  
   redraw() {
     this.file_list.innerHTML = "";
     let count = localStorage.getItem("rom_count");
@@ -46,14 +60,7 @@ class FileList {
         let index = li.dataset.index;
         let file_name = localStorage.getItem("rom_" + index + "_name");
         let file_data = localStorage.getItem("rom_" + index + "_data");
-        file_data = new Uint8Array(decode(file_data));
-        let rom_ptr = instance.exports.get_rom_area(emulator, file_data.byteLength);
-        let rom = new Uint8Array(memory.buffer);
-        console.log("js-loading", index, file_name, rom_ptr);
-        for(let i = 0; i < file_data.byteLength; i++) {
-          rom[rom_ptr + i] = file_data[i];
-        }
-        instance.exports.reset(emulator, rom_ptr, file_data.byteLength);
+        load_cart(decode(file_data))
         return false;
       });
       li.appendChild(a);

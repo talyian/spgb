@@ -21,7 +21,6 @@ function draw_display(canvas, data) {
   for(var y = 0; y < H; y++) {
     for(var x = 0; x < W; x++) {
       p = data[i++];
-      
       idata[j++] = (p / 36 | 0) * 51;
       idata[j++] = (((p / 6) | 0) % 6) * 51;
       idata[j++] = (p % 6) * 51;
@@ -70,21 +69,22 @@ function draw_vram(canvas, data) {
 function push_frame(category, data, len) {
   var buf = new Uint8Array(memory.buffer.slice(data, data + len));
   if (category == 0x100) { // tile data
-    draw_vram(tile0, buf);
+    // draw_vram(tile0, buf);
     tile_maps[0] = buf;
   }
   if (category == 0x101) { // tile data
-    draw_vram(tile1, buf);
+    // draw_vram(tile1, buf);
     tile_maps[1] = buf;
   }
   if (category == 0x102) { // tile data
-    draw_vram(tile2, buf);
+    // draw_vram(tile2, buf);
     tile_maps[2] = buf;
   }
   if (category == 0x300) { // screen
     draw_display(cvscreen, buf, len);
   }
   if (category == 0x200) { // background
+    return;
     var ctx = bg.getContext("2d");
     var image_buffer = bg._buffer, k = 0;
     var ctx = bg.getContext("2d");
@@ -178,8 +178,11 @@ fetch("build/gb_emulator.wasm")
       else if (e.key == "Pause") {
         chkPaused.click();
       }
-      else if (e.keyCode in key_map)
+      else if (e.keyCode in key_map) {
         instance.exports.button_down(emulator, key_map[e.keyCode]);
+        e.preventDefault();
+        return false;
+      }
       else
         ; // console.log("keydown", e.key, e.keyCode);
     });

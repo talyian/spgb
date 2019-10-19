@@ -277,7 +277,9 @@ int main(int argc, char** argv) {
     // emu.debug.set_breakpoint(0x1e1); // halt loop
     // emu.debug.set_breakpoint(0x219); // badfunction ?
   }
-
+  if (argc > 1 && strstr(argv[1], "Kirby")) {
+    emu.debug.set_breakpoint(0x4B30);
+  }
   while (true) {
     if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       if (msg.message == WM_QUIT) exit(0);
@@ -301,10 +303,10 @@ int main(int argc, char** argv) {
       printf("AF   BC   DE   HL   SP   PC\n");
       printf("%04x %04x %04x %04x %04x %04x\n",
              (u16)rr.AF, (u16)rr.BC, (u16)rr.DE, (u16)rr.HL, (u16)rr.SP,
-             emu._dasher.PC);
+             emu._executor.PC);
       _log("\x1b[1;32m                  ");
-      emu._printer.PC = emu._dasher.PC; emu._printer.decode();
-      printf("\x1b[0m DEBUG %04x> ", emu._dasher.PC);
+      emu._printer.PC = emu._executor.PC; emu._printer.decode();
+      printf("\x1b[0m DEBUG %04x> ", emu._executor.PC);
 
       fgets(line, 63, stdin);
       for(int i = 0; i < 63; i++)
