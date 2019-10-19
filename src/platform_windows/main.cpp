@@ -239,14 +239,13 @@ int main(int argc, char** argv) {
     win32_emulator.vbo_count++;
   }
   for(u8 sprite_bank = 0; sprite_bank < 3; sprite_bank++){
-    f32 scale = 1.5;
+    f32 scale = 2.0;
     f32 w = (1 + 16.0 * 9) / viewport.x * scale;
     f32 h = (1 +  8.0 * 9) / viewport.y * scale;
-    // f32 x = screen.x / (f32)viewport.x;
     f32 x = 0;
     f32 y = (sprite_bank * (8 * 9 + 2)) / (f32)viewport.y  * scale;
-    f32 u = (1 + 16.0 * 9) / (8 + 16.0 * 9);
-    f32 v = (1 + 8.0 * 9) / (8 + 8.0 * 9);
+    f32 u = (1 + 16.0 * 9) / 256.0;
+    f32 v = (1 + 8.0 * 9) / 256.0;
     glom::VBO::Vertex vertices[6] = {
       {x + 0, y + 0, 0, 0, v},
       {x + w, y + 0, 0, u, v},
@@ -268,7 +267,7 @@ int main(int argc, char** argv) {
   if (argc > 1 && strstr(argv[1], "instr_timing"))
     emu.debug.set_breakpoint(0xC300);
   if (argc > 1 && strstr(argv[1], "bgbtest")) {
-    emu.debug.set_breakpoint(0x40); // vblank
+    // emu.debug.set_breakpoint(0x40); // vblank
     // emu.debug.set_breakpoint(0x40); // vblank
     // emu.debug.set_breakpoint(0x48); // lcdc
     // emu.debug.set_breakpoint(0x150); // entry
@@ -359,8 +358,8 @@ u8 pal[4] = { 0, 36 + 12 + 2, 3 * 36  + 4 * 6 + 3, 215 };
 void show_tile_map(u32 category, u8* memory, u32 len) {
     if (len != 0x800) { log("bad frame buffer"); _stop(); }
     u8 sprite_bank = category - 0x100;
-    u32 buf_w = 16 * 9 + 8;
-    u32 buf_h = 8 * 9 + 8;
+    u32 buf_w = 256;
+    u32 buf_h = 256;
     auto buf = new u8[buf_w * buf_h];
     for(u32 j=0; j < buf_w * buf_h; j++) {
       buf[j] = (4 * 36 + 3);

@@ -10,18 +10,18 @@ run: gb-emu.exe
 run_blargg: gb-emu.exe
 	find ../../data/cpu_instrs/individual/*.gb | while read f; do ./gb-emu.exe "$$f"; echo; done
 
-main.wasm-o: main.o
-	$(WASM_CC_COMPILE) -o main.wasm-o ../main.cpp
+lib_gb.wasm-o: lib_gb.o
+	$(WASM_CC_COMPILE) -o $@ ../lib_gb.cpp
 
 platform_wasm.o:
 	@true
 
 platform.wasm-o: platform_wasm.o
-	$(WASM_CC_COMPILE) -o platform.wasm-o ../platform_wasm.cpp
+	$(WASM_CC_COMPILE) -o $@ ../platform_wasm.cpp
 
-../../wasmgui/build/gb_emulator.wasm: main.wasm-o platform.wasm-o
+../../wasmgui/build/gb_emulator.wasm: lib_gb.wasm-o platform.wasm-o
 	mkdir -p ../../wasmgui/build
-	$(WASM_CC_LINK) -o $@ main.wasm-o platform.wasm-o
+	$(WASM_CC_LINK) -o $@ lib_gb.wasm-o platform.wasm-o
 
 CLANG_OPTS:=-D_CRT_SECURE_NO_WARNINGS -Wall -pedantic -O2 -fsanitize=undefined
 CLANG_LINK_OPTS:=-flto -O2 -fsanitize=undefined
