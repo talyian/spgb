@@ -40,7 +40,7 @@ C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Comdlg32.Lib
 	clang++.exe ${CLANG_OPTS} -o $@ -c $< -I .. -I ../utils
 
 # clang -MM generates backslash-delimited paths, but Make wants forward-delimited paths
-deps.Makefile: ../lib_gb.cpp ../platform_windows/main_limited.cpp ../platform_windows/main.cpp ../platform_wasm.cpp ../platform_linux/main.cpp
+deps.Makefile: ../lib_gb.cpp ../win32/main_limited.cpp ../win32/main.cpp ../platform_wasm.cpp ../platform_linux/main.cpp
 	clang++.exe -E -MM $^ | sed 's/\\\([^\x0d]\)/\/\1/g' > deps.Makefile
 
 include deps.Makefile

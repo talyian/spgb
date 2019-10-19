@@ -6,32 +6,21 @@ lib_gb.o: ../lib_gb.cpp ../platform.hpp ../base.hpp ../utils/str.hpp \
   ../debugger.hpp ../system/cpu.hpp ../executor.hpp ../system/joypad.hpp \
   ../debug/printer.hpp ../debug/../base.hpp ../debug/../system/mmu.hpp \
   ../data/dmg_boot.hpp ../platform_base.cpp
-main_limited.o: ../platform_windows/main_limited.cpp \
-  ../platform_windows/../base.hpp ../platform_windows/../platform.hpp \
-  ../platform_windows/../utils/str.hpp \
-  ../platform_windows/../utils/../base.hpp \
-  ../platform_windows/opengl_utils.hpp
-main.o: ../platform_windows/main.cpp ../platform_windows/../base.hpp \
-  ../platform_windows/../emulator.hpp \
-  ../platform_windows/../system/cart.hpp \
-  ../platform_windows/../system/../base.hpp \
-  ../platform_windows/../system/../utils/str.hpp \
-  ../platform_windows/../system/../utils/../base.hpp \
-  ../platform_windows/../system/../platform.hpp \
-  ../platform_windows/../utils/str.hpp \
-  ../platform_windows/../debugger.hpp \
-  ../platform_windows/../system/cpu.hpp \
-  ../platform_windows/../system/mmu.hpp \
-  ../platform_windows/../system/io_ports.hpp \
-  ../platform_windows/../system/timer.hpp \
-  ../platform_windows/../executor.hpp \
-  ../platform_windows/../system/joypad.hpp \
-  ../platform_windows/../system/ppu.hpp \
-  ../platform_windows/../debug/printer.hpp \
-  ../platform_windows/../debug/../base.hpp \
-  ../platform_windows/../debug/../system/mmu.hpp \
-  ../platform_windows/../platform.hpp \
-  ../platform_windows/opengl_utils.hpp
+main_limited.o: ../win32/main_limited.cpp ../win32/../base.hpp \
+  ../win32/../platform.hpp ../win32/../utils/str.hpp \
+  ../win32/../utils/../base.hpp ../win32/opengl_utils.hpp
+main.o: ../win32/main.cpp ../win32/../base.hpp ../win32/../emulator.hpp \
+  ../win32/../system/cart.hpp ../win32/../system/../base.hpp \
+  ../win32/../system/../utils/str.hpp \
+  ../win32/../system/../utils/../base.hpp \
+  ../win32/../system/../platform.hpp ../win32/../utils/str.hpp \
+  ../win32/../debugger.hpp ../win32/../system/cpu.hpp \
+  ../win32/../system/mmu.hpp ../win32/../system/io_ports.hpp \
+  ../win32/../system/timer.hpp ../win32/../executor.hpp \
+  ../win32/../system/joypad.hpp ../win32/../system/ppu.hpp \
+  ../win32/../debug/printer.hpp ../win32/../debug/../base.hpp \
+  ../win32/../debug/../system/mmu.hpp ../win32/../platform.hpp \
+  ../win32/opengl_utils.hpp
 platform_wasm.o: ../platform_wasm.cpp ../base.hpp ../platform.hpp \
   ../utils/str.hpp ../utils/../base.hpp ../emulator.hpp \
   ../system/cart.hpp ../system/../base.hpp ../system/../utils/str.hpp \

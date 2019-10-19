@@ -1,5 +1,5 @@
 #if defined _WIN32
-#include "platform_windows/main.cpp"
+#include "win32/main.cpp"
 #elif defined __linux__
 #include "platform_linux/main.cpp"
 #endif
