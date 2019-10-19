@@ -73,7 +73,6 @@ namespace glom {
 // An 8-bit 216-color texture
 struct Texture216 {
   GLuint id;
-  u32 len = 0;
   Texture216(GLuint id) : id(id) { }    
   Texture216() {
     glGenTextures(1, &id);
@@ -155,12 +154,11 @@ void main() {
     glf::LinkProgram(program);
     glf::UseProgram(program);
 
-    char *info_log = new char[1024];
+    char info_log[1025];
     glf::GetProgramInfoLog(program, 1024, nullptr, info_log);
     printf("GLSL Log: '%s'\n", info_log);
     glf::DeleteShader(vertex_shader);
     glf::DeleteShader(fragment_shader);
-
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
   }

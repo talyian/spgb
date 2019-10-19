@@ -92,8 +92,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     case 'S': jp->button_up(Buttons::DOWN); return 0;
     case 'A': jp->button_up(Buttons::LEFT); return 0;
     case 'D': jp->button_up(Buttons::RIGHT); return 0;
-    case VK_ESCAPE:
-      DestroyWindow(hwnd); return 0;
+
     }
   }
   case WM_KEYDOWN: {
@@ -112,7 +111,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     case 'A': jp->button_down(Buttons::LEFT); return 0;
     case 'D': jp->button_down(Buttons::RIGHT); return 0;
     case VK_ESCAPE:
-      DestroyWindow(hwnd); return 0;
+      if (win32_emulator.hwnd) DestroyWindow(win32_emulator.hwnd); return 0;
     }
   }
   }
@@ -139,7 +138,8 @@ int main(int argc, char** argv) {
   }
   else {
     char filename[0x100] = { 0 };
-    OPENFILENAME ofn {0};
+    OPENFILENAME ofn;
+    ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = NULL;
     ofn.lpstrFile = filename;
@@ -278,6 +278,7 @@ int main(int argc, char** argv) {
     // emu.debug.set_breakpoint(0x1e1); // halt loop
     // emu.debug.set_breakpoint(0x219); // badfunction ?
   }
+
   while (true) {
     if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       if (msg.message == WM_QUIT) exit(0);

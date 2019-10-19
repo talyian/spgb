@@ -37,7 +37,7 @@ struct Cart {
     rom_size = (32 * 1024) << data[0x148];
 
     if (data[0x149])
-      ram_size = 1 << (2 * data[0x149] - 1);
+      ram_size = 1024 << (2 * data[0x149] - 1);
     else
       ram_size = 0;
     ram = new u8[ram_size];
