@@ -1,4 +1,4 @@
-* [20/28] GBE Tasks
+* [21/28] GBE Tasks
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :END:
@@ -62,7 +62,10 @@ sprite when flipY is on
 ** DONE Handle DMA (FF46)
 ** DONE Skip Bootstrap
 ** TODO Test Harness
-** TODO Bug: windows build doesn't load bgbtest anymore, perhaps due to corruption
+** DONE Bug: windows build doesn't load bgbtest anymore, perhaps due to corruption
+   CLOSED: [2019-10-19 Sat 13:35]
+   - State "DONE"       from "TODO"       [2019-10-19 Sat 13:35]
+   fopen(..., "rb") ftw
 ** DONE WASM platform doesn't run Kirby/Zelda etc when Win32 does
    CLOSED: [2019-10-19 Sat 12:23]
    - State "DONE"       from "DOING"      [2019-10-19 Sat 12:23]
