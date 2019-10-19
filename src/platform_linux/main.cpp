@@ -43,7 +43,7 @@ int main(int argc, char ** argv) {
   emulator_t emu {};
 
   if (argc > 1) {
-    FILE * f = fopen(argv[1], "r");
+    FILE * f = fopen(argv[1], "rb");
     if (!f) { fprintf(stderr, "%s: file not found\n", argv[1]); exit(19); }
     fseek(f,0,SEEK_END);
     size_t len = ftell(f);

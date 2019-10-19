@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
 
   // Select Cart from argv or open file Dialog box
   auto load_cart_file = [] (char* path, emulator_t* emu) -> void {
-    FILE* f = fopen(path, "r");
+    FILE* f = fopen(path, "rb");
     if (!f) { fprintf(stderr, "%s: file not found\n", path); exit(19); }
     fseek(f, 0, SEEK_END);
     size_t len = ftell(f);
@@ -315,6 +315,7 @@ int main(int argc, char** argv) {
       
       if (!strcmp(line, "") || !strcmp(line, "s")) {
         emu.debug.state.type = Debugger::State::STEP;
+        continue;
       }
       else if (!strcmp(line, "n")) {
         log("scanning to", emu._printer.PC);
