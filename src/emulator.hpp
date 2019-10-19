@@ -3,7 +3,7 @@
 #include "base.hpp"
 #include "system/cart.hpp"
 #include "debugger.hpp"
-#include "instruction_runner_new.hpp"
+#include "executor.hpp"
 #include "system/io_ports.hpp"
 #include "system/joypad.hpp"
 #include "system/mmu.hpp"
@@ -21,9 +21,9 @@ struct emulator_t {
   CPU cpu;
   PPU ppu{io, mmu};
 
-  InstructionDasher _dasher{cpu, mmu};
+  Executor _executor{cpu, mmu};
   Printer _printer{mmu};
-  Debugger debug{&mmu,  &cpu, &_dasher.PC};
+  Debugger debug{&mmu,  &cpu, &_executor.PC};
 
   emulator_t(u8 *, u32);
   emulator_t();

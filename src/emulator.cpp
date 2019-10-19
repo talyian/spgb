@@ -16,7 +16,7 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
   debug.state.type = Debugger::State::RUN;
   if (false) { // skip bootrom
     mmu.BiosLock = 0x1;
-    _dasher.PC = _dasher.PC_start = 0x100;
+    _executor.PC = _executor.PC_start = 0x100;
     cpu.registers.AF = 0x01B0;
     cpu.registers.BC = 0x0013;
     cpu.registers.DE = 0x00D8;
@@ -31,7 +31,7 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
     ppu.BgPalette = 0x1B;
     ppu.OamPalette1 = 0x1B;
     ppu.OamPalette2 = 0x1B;
-    _dasher.PC = _dasher.PC_start = 0;
+    _executor.PC = _executor.PC_start = 0;
     mmu.BiosLock = 0;
     // debug.state.type = Debugger::State::PAUSE;
   }
@@ -70,8 +70,8 @@ u32 emulator_t::single_step() {
       } // something very strange happened here
 
       cpu.IME = 0;
-      _dasher._push(_dasher.PC);
-      _dasher.PC = handler;
+      _executor._push(_executor.PC);
+      _executor.PC = handler;
 
       return 0;  // we return to give the debugger a chance to latch.
     } else {
@@ -80,9 +80,9 @@ u32 emulator_t::single_step() {
   }
 
   if (!cpu.halted) {
-    _dasher.cycles = 0;
-    _dasher.decode();
-    dt = _dasher.cycles;
+    _executor.cycles = 0;
+    _executor.decode();
+    dt = _executor.cycles;
   }
 
   joypad.tick();

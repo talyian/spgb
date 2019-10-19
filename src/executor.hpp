@@ -5,8 +5,8 @@
 #include "system/mmu.hpp"
 
 // Decodes an instruction, 
-struct InstructionDasher {
-  InstructionDasher(CPU & cpu, MemoryMapper & mmu) : cpu(cpu), mmu(mmu) { }
+struct Executor {
+  Executor(CPU & cpu, MemoryMapper & mmu) : cpu(cpu), mmu(mmu) { }
 
   CPU & cpu;
   MemoryMapper & mmu;
@@ -30,7 +30,7 @@ struct InstructionDasher {
     cycles += 4;
   }
   struct MemoryRef {
-    InstructionDasher & parent;
+    Executor & parent;
     CPU::Reg16 &addr;
     operator u8 () const { return parent.mmu_get(addr); }
     MemoryRef& operator=(u8 val) { parent.mmu_set(addr, val); return *this; }
