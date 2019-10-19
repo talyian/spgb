@@ -26,13 +26,16 @@ namespace glf {
   enum DrawType : GLenum { STREAM_DRAW = 0x88E0, STATIC_DRAW = 0x88E4 };
   enum ShaderIV : GLenum { COMPILE_STATUS = 0x8B81, VALIDATE_STATUS= 0x8B83, INFO_LOG_LENGTH = 0x8B84 };
   enum DebugType : GLenum { ERR = 0x824C, DEPRECATED = 0x824D, UNDEFINED_BEHAVIOR = 0x824E, PERFORMANCE = 0x8250 };
+  enum DebugSeverity : GLenum { HIGH = 0x9146, MEDIUM, LOW, NOTIFICATION=0x826B };
   struct glShader { GLuint id; };
 
 void MessageCallback(
   GLenum source, GLenum type, GLuint id, GLenum severity,
   GLsizei length, const char* message, const void*) {
-  printf("GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %.*s\n",
-         ( type == DebugType::ERR ? "** GL ERROR **" : "" ), type, severity, length, message);
+  if (severity == DebugSeverity::NOTIFICATION) return;
+  printf(
+    "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %.*s\n",
+    ( type == DebugType::ERR ? "** GL ERROR **" : "" ), type, severity, length, message);
 }
 
 #define ALL_FUNCTIONS(F) \
