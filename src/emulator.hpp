@@ -8,6 +8,7 @@
 #include "system/joypad.hpp"
 #include "system/mmu.hpp"
 #include "system/ppu.hpp"
+#include "system/audio.hpp"
 #include "system/timer.hpp"
 #include "debug/printer.hpp"
 
@@ -16,11 +17,12 @@ struct emulator_t {
   Cart cart{0, 0};
   IoPorts io;
   Timer timer{io};
-  MemoryMapper mmu{cart, io};
+  Audio audio;
+  MemoryMapper mmu{cart, audio, io};
   Joypad joypad{io};
   CPU cpu;
   PPU ppu{io, mmu};
-
+  
   Executor _executor{cpu, mmu};
   Printer _printer{mmu};
   Debugger debug{&mmu,  &cpu, &_executor.PC};

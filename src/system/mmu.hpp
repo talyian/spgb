@@ -3,13 +3,15 @@
 #include "io_ports.hpp"
 #include "timer.hpp"
 #include "cart.hpp"
+#include "audio.hpp"
 
 struct MemoryMapper {
-  MemoryMapper(Cart &cart, IoPorts &io);
+  MemoryMapper(Cart &cart, Audio &audio, IoPorts &io);
   Cart &cart;
-  
+  Audio &audio;
   u8 *bios_rom = 0;
-
+  
+  // TODO put VRAM and OAM in the PPU
   u8 VRAM[0x2000];    // at 0x8000
   u8 WRAM[8][0x1000]; // work ram at 0xC000 / banks at 0xD000
   u8 OAM[0x100];      // OAM at 0xFE00
@@ -42,6 +44,8 @@ struct MemoryMapper {
       return 
         addr < 0xFE00 ? WRAM[1][addr & 0xFFF] : // echo
         addr < 0xFF00 ? OAM[addr & 0xFF] :
+        addr < 0xFF10 ? io.data[addr & 0xFF] :
+        addr < 0xFF40 ? audio.read(addr - 0xFF10) :
         addr < 0xFF80 ? io.data[addr & 0xFF] :
         HRAM[addr - 0xFF80];
     }
@@ -59,20 +63,16 @@ struct MemoryMapper {
     else if (addr < 0xF000) WRAM[0][addr - 0xE000] = val; // echo
     else if (addr < 0xFE00) WRAM[1][addr - 0xF000] = val; // echo
     else if (addr < 0xFF00) OAM[addr - 0xFE00] = val;
-    else if (addr < 0xFF80) {
-      switch(addr) {
-      case 0xFF02:
-        if (val & 0x80) {
-          _serial_putc(io.data[0x01]);
-          io.data[0x02] = val & ~0x80;
-        }
-        break;
-      // bios always locked when writing here
-      case 0xFF50: BiosLock = 1; break; 
-      default:
-        io.data[addr - 0xFF00] = val;
+    else if (addr == 0xFF02)  {
+      if (val & 0x80) {
+        _serial_putc(io.data[0x01]);
+        io.data[0x02] = val & ~0x80;
       }
     }
+    else if (addr < 0xFF10) { io.data[addr - 0xFF00] = val; }
+    else if (addr < 0xFF40) { audio.write(addr - 0xFF10, val); }
+    else if (addr == 0xFF50) { BiosLock = 1; }
+    else if (addr < 0xFF80) { io.data[addr - 0xFF00] = val; }
     else HRAM[addr - 0xFF80] = val;
   }
 

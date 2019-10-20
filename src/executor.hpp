@@ -339,11 +339,14 @@ struct Executor {
     case 0xD8: { cycles += 4; if (cpu.flags.C) { PC = _pop(); cycles += 4; } break; }
     case 0xD9: { cycles += 4; if (true)         { cpu.IME = 1; PC = _pop(); } break; }
       // JP
-    case 0xC2: { u16 target = _read_u16(); if (!cpu.flags.Z) { PC = target; cycles += 4; } break; }
-    case 0xC3: { u16 target = _read_u16(); if (true)         { PC = target; cycles += 4; } break; }
-    case 0xCA: { u16 target = _read_u16(); if (cpu.flags.Z)  { PC = target; cycles += 4; } break; }
-    case 0xD2: { u16 target = _read_u16(); if (!cpu.flags.C) { PC = target; cycles += 4; } break; }
-    case 0xDA: { u16 target = _read_u16(); if (cpu.flags.C)  { PC = target; cycles += 4; } break; }
+    #define JP(OP, COND) case OP: { u16 target = _read_u16(); if (COND) { PC_next = PC; PC = target; cycles += 4; } break; }
+    JP(0xC2, !cpu.flags.Z);
+    JP(0xC3, true);
+    JP(0xCA, cpu.flags.Z);
+    JP(0xD2, !cpu.flags.C);
+    JP(0xDA, cpu.flags.C);
+    #undef JP
+    #undef CALL
     case 0xE9: { PC = HL; break; }
       // JR
     case 0x20: {i8 o = _read_u8(); if (!cpu.flags.Z) { PC += o; cycles += 4; }} break;

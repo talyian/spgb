@@ -23,7 +23,7 @@ platform.wasm-o: platform_wasm.o
 	mkdir -p ../../wasmgui/build
 	$(WASM_CC_LINK) -o $@ lib_gb.wasm-o platform.wasm-o
 
-CLANG_OPTS:=-D_CRT_SECURE_NO_WARNINGS -Wall -pedantic -O2
+CLANG_OPTS:=-D_CRT_SECURE_NO_WARNINGS -Wall -pedantic -O2 -g
 CLANG_LINK_OPTS:=-flto -O2
 
 gb-emu.exe: deps.Makefile
@@ -33,6 +33,7 @@ C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/User32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/OpenGL32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Gdi32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Comdlg32.Lib \
+C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/OLE32.Lib \
 
 %.o: ../%.cpp Makefile
 	clang++.exe ${CLANG_OPTS} -o $@ -c $< -I .. -I ../utils

@@ -12,8 +12,9 @@
 
 #include <gl/gl.h>
 #include "opengl_utils.hpp"
+#include "audio.hpp"
 
-#define NOSWAP
+// #define NOSWAP
 
 extern "C" size_t sslen(const char* s) { return strlen(s); }
 
@@ -66,6 +67,12 @@ struct Win32Emulator {
   glom::VBO *vbo_array;
 } win32_emulator;
 
+u16 get_pc() {
+  return win32_emulator.emu._executor.PC_start;
+}
+str get_symbol_name() {
+  return "??";
+}
 // Main Window event handler.
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
   switch (message) {
@@ -181,6 +188,8 @@ int main(int argc, char** argv) {
     r.bottom - r.top, NULL, NULL, NULL, NULL);
   ShowWindow(hwnd, SW_RESTORE);
 
+  audio_init();
+
   MSG msg;
 
   // init WGL -- set hdc pixel format, then use wgl to create GL
@@ -280,6 +289,9 @@ int main(int argc, char** argv) {
   if (argc > 1 && strstr(argv[1], "Kirby")) {
     emu.debug.set_breakpoint(0x4B30);
   }
+  if (argc > 1 && strstr(argv[1], "01-registers")) {
+    // emu.debug.set_breakpoint(0xC2E0); // test_rw register
+  }
   while (true) {
     if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
       if (msg.message == WM_QUIT) exit(0);
@@ -339,8 +351,9 @@ int main(int argc, char** argv) {
     }
       
     // 456 * 154 ticks is one emulator frame 
-    emu.step(456 * 154);
-    // emu.single_step();
+    // emu.step(456 * 154);
+    // we need to singlestep here for debugging to work correctly
+    emu.single_step();
   }
 }
 
@@ -384,6 +397,7 @@ void show_tile_map(u32 category, u8* memory, u32 len) {
 }
 
 void _push_frame(u32 category, u8* memory, u32 len) {
+  // audio_loop(1000.0 / 60);
   if (category - 0x100 < 3) {
     show_tile_map(category, memory, len); 
   }
