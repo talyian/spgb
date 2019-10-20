@@ -56,18 +56,8 @@ else()
     -O1
   )
 
-  add_executable(gb_emulator_console main.cpp platform_linux.cpp)
-  # add_dependencies(gb_emulator_console opcodes.inc)
+  add_executable(gb_emulator_console lib_gb.cpp main.cpp)
   add_custom_target(run
     COMMAND ./gb_emulator_console
     DEPENDS gb_emulator_console)
 endif()
-
-# add_custom_command(
-#   OUTPUT generated_instruction_decode_table.inc
-#   DEPENDS opcode_table.csv generate_instruction_decode_table.py
-#   COMMAND python generate_instruction_decode_table.py > generated_instruction_decode_table.inc)
-add_custom_target(opcodes.inc
-  COMMAND python3 ${CMAKE_SOURCE_DIR}/generate_instruction_decode_table.py > ${CMAKE_SOURCE_DIR}/opcodes.inc
-  DEPENDS ${CMAKE_SOURCE_DIR}/generate_instruction_decode_table.py ${CMAKE_SOURCE_DIR}/opcode_table.csv
-)
