@@ -45,7 +45,7 @@ struct MemoryMapper {
         addr < 0xFE00 ? WRAM[1][addr & 0xFFF] : // echo
         addr < 0xFF00 ? OAM[addr & 0xFF] :
         addr < 0xFF10 ? io.data[addr & 0xFF] :
-        addr < 0xFF40 ? audio.read(addr - 0xFF10) :
+        // addr < 0xFF40 ? audio.read(addr - 0xFF10) :
         addr < 0xFF80 ? io.data[addr & 0xFF] :
         HRAM[addr - 0xFF80];
     }
@@ -70,7 +70,7 @@ struct MemoryMapper {
       }
     }
     else if (addr < 0xFF10) { io.data[addr - 0xFF00] = val; }
-    else if (addr < 0xFF40) { audio.write(addr - 0xFF10, val); }
+    // else if (addr < 0xFF40) { audio.write(addr - 0xFF10, val); }
     else if (addr == 0xFF50) { BiosLock = 1; }
     else if (addr < 0xFF80) { io.data[addr - 0xFF00] = val; }
     else HRAM[addr - 0xFF80] = val;

@@ -5,197 +5,152 @@
 
 #include <stdio.h>
 #include <math.h>
-#define CHECKFAIL if (FAILED(hr)) { printf("failed line %d\n", __LINE__); goto LFAIL; };
 // code mostly copied from https://docs.microsoft.com/en-us/windows/win32/coreaudio/rendering-a-stream
-
 struct AudioPlayer {
-  IMMDeviceEnumerator * devices;
+  bool error = 1;
   IMMDevice * device;
-  IAudioClient * audio_client;
+  IAudioClient *       audio_client;
   IAudioRenderClient * audio_renderer;
-  WAVEFORMATEX * mix_format;
-  HRESULT hr;
-  REFERENCE_TIME requested_duration = 10000000, duration = 0;
-  u32 buffer_frame_count = 0, flags = 0, padding_frames = 0, available_frames = 0;
-  u8 * data = 0;
-  bool error = 0;
-  double timer = 0;
-  u32 ticks = 0, ticks2 = 0;
+
+  u32 buffer_length = 0; // buffer length in frames
+  
+  double elapsed_s = 0; 
+  u32 elapsed_frames = 0;
+  WAVEFORMATEX mix_format;
   AudioPlayer();
-  ~AudioPlayer();
   void loop(double elapsed_ms);
+
+
+  f32 freq_raw = 440;
+  f32 freq_real_target = 440;
+  f32 freq_real = 440;
+  u32 period_frames = 0;
+  f32 volume_target = 0.0;
+  f32 volume = 0.0;
+
+  f32 (*queue_audio_buffer[2])[1024] {0, 0};
+  u32 queue_position[2] {0, 0};
+  
+  void set_frequency(f32 f, f32 v) {
+    freq_raw = f;
+    freq_real_target = 80000 / (2048 - f);
+    period_frames = mix_format.nSamplesPerSec;
+    volume_target = v;
+  }
+
+  void enqueue_data(u8 channel, f32 (&buffer)[1024]) {
+    if (channel > 1) return;
+    // if (queue_position[channel])
+    //   log("underrun", queue_position[channel]);
+    queue_audio_buffer[channel] = &buffer;
+    queue_position[channel] = 0;
+  }
 };
 
+AudioPlayer * g_audio = 0;
 
-AudioPlayer::AudioPlayer() {
-    hr = CoCreateInstance(
-      __uuidof(MMDeviceEnumerator),
-      NULL,
-      CLSCTX_ALL,
-      _uuidof(IMMDeviceEnumerator),
-      (void **)&devices);
-    CHECKFAIL;
-
-    hr = devices->GetDefaultAudioEndpoint(
-      EDataFlow::eRender,
-      ERole::eConsole,
-      &device);
-    CHECKFAIL;
-
-    hr = device->Activate(
-      __uuidof(IAudioClient),
-      CLSCTX_ALL,
-      nullptr,
-      (void **)&audio_client);
-    
-    CHECKFAIL;
-
-    hr = audio_client->GetMixFormat(&mix_format);
-    CHECKFAIL;
-
-    {
-      printf("channels=%d   bits/sample=%d   bits/sample=%lu\n",
-             mix_format->nChannels,
-             mix_format->wBitsPerSample,
-             mix_format->nAvgBytesPerSec * 8 / mix_format->nSamplesPerSec);
-      switch(mix_format->wFormatTag) {
-      case WAVE_FORMAT_IEEE_FLOAT: printf("floating wave\n"); break;
-      case WAVE_FORMAT_PCM: printf("PCM wave \n"); break;
-      case WAVE_FORMAT_EXTENSIBLE: {
-        auto ex_mix_format = reinterpret_cast<WAVEFORMATEXTENSIBLE *>(mix_format);
-        if(ex_mix_format->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT) {
-          printf("Extensible-ieee float\n");
-          goto DONE;
-        }
-        if(ex_mix_format->SubFormat == KSDATAFORMAT_SUBTYPE_PCM) {
-          printf("Extensible-PCM\n");
-          goto DONE;
-        }          
-        else
-          printf("Extensible wave\n");
-        break;
-      }
-      default:
-        printf("unknown wave format\n");
-      }
-    }
-DONE:
-   
-    hr = audio_client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, requested_duration, 0,
-                                  mix_format, nullptr);
-    CHECKFAIL;
-
-    // Get the actual size of the allocated buffer.
-    hr = audio_client->GetBufferSize(&buffer_frame_count);
-    CHECKFAIL;
-
-    hr = audio_client->GetService(__uuidof(IAudioRenderClient),
-                                  (void **)&audio_renderer);
-    CHECKFAIL;
-
-    // Grab the entire buffer for the initial fill operation.
-    hr = audio_renderer->GetBuffer(buffer_frame_count, &data);
-    CHECKFAIL;
-
-    // Load the initial data into the shared buffer.
-    printf("bufferframecount: %d\n", buffer_frame_count);
-    for(u32 i = 0; i < buffer_frame_count; i++) {
-      data[i] = i;
-    }
-
-    hr = audio_renderer->ReleaseBuffer(buffer_frame_count, flags);
-    CHECKFAIL;
-
-    // Calculate the actual duration of the allocated buffer.
-    duration = (double)requested_duration * buffer_frame_count / mix_format->nSamplesPerSec;
-    printf("requested duration: %llu\n", requested_duration);
-    printf("actual    duration: %llu\n", duration);
-    
-    hr = audio_client->Start(); // Start playing.
-    CHECKFAIL;
-
-    timer = 0;
-    // Wait for last data in buffer to play before stopping.
-    // Sleep((DWORD)(duration / (REF_HZ / 1000) / 2));
-
-    // hr = audio_client->Stop(); // Stop playing.
-    CHECKFAIL;
-    return;
-  LFAIL:
-    error = true;
-    return;
-  }
-
-void AudioPlayer::loop(double elapsed_ms) {
-    u32 out_index = 0;
-    f32 * sample_data = 0;
-    static i64 t = 0; // monotonic ticks @ 48Hz
-
-    if (error) return;
-    if (flags == AUDCLNT_BUFFERFLAGS_SILENT) return;
-    timer += elapsed_ms;
-    ticks++;
-
-    // Sleep for half the buffer duration.
-    if (timer < duration / (requested_duration / 1000) / 2) return;
-
-    // See how much buffer space is available.
-    padding_frames = 0;
-    hr = audio_client->GetCurrentPadding(&padding_frames);
-    CHECKFAIL;
-    
-    available_frames = buffer_frame_count - padding_frames;
-    if (!available_frames) return;
-
-    if (ticks2++ % 10 == 0) {
-     printf("tick %d\n", ticks);
-    }
-    //  printf("1 audio loop %f / %llu\n", timer, duration);
-    //  printf("available frames: %d\n", available_frames);
-    //  printf("padding frames: %d\n", padding_frames);
-    //  printf("total frames: %d\n", buffer_frame_count);
-    //  printf("mix samples per ms  %lu\n", mix_format->nSamplesPerSec / 1000 );
-    //}
-
-    // Grab all the available space in the shared buffer.
-    hr = audio_renderer->GetBuffer(available_frames, &data);
-    CHECKFAIL;
-    
-    sample_data = (f32 *)data;
-    out_index = 0;
-
-    for(u32 i = 0; i < available_frames; i++) {
-      t++; // one tick is one frame is 48khz, divided by 1000 is 480hz.
-      f64 sinewave = sin(6.28 * t / 200.0);
-      for(int j = 0; j < mix_format->nChannels; j++) { 
-        sample_data[out_index++] = sinewave;
-      }
-      if (out_index != i * 2 + 2) {
-        printf("oooops\n");
-        _stop();
-      }
-      if ( out_index > available_frames * 2) {
-        printf("oops\n");
-        _stop();
-      }
-    }
-    // Get next 1/2-second of data from the audio source.
-    // hr = pMySource->LoadData(numFramesAvailable, pData, &flags);
-    CHECKFAIL;
-    
-    hr = audio_renderer->ReleaseBuffer(available_frames, flags);
-    CHECKFAIL;
-  LFAIL:
-    return;
-  }
-
-AudioPlayer::~AudioPlayer() {
-    hr = audio_client->Stop(); // Stop playing.
-    CHECKFAIL;
-  LFAIL:
-    return;
+void write_audio_frame_out(f32 freq, f32 volume) {
+  if (g_audio) { g_audio->set_frequency(freq, volume); }
 }
 
+// writes 1024 frames (at 48khz, so about 2ms);
+void write_1024_frame(u8 channel, f32 (&buffer)[1024]) {
+  if (g_audio) { g_audio->enqueue_data(channel, buffer); }
+}
+
+AudioPlayer::AudioPlayer() {
+#define CHECKFAIL if (FAILED(hr)) { printf("[%d]audio error %ld\n", __LINE__, hr); exit(1); }
+  // Get default device
+  IMMDeviceEnumerator * devices;
+  HRESULT hr = CoCreateInstance(
+    __uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, _uuidof(IMMDeviceEnumerator), (void **)&devices);
+  if (FAILED(hr)) return;
+  hr = devices->GetDefaultAudioEndpoint(
+    EDataFlow::eRender,
+    ERole::eConsole,
+    &device);
+  CHECKFAIL;
+
+  // Get audio_client
+  hr = device->Activate(
+    __uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void **)&audio_client);
+  CHECKFAIL;
+
+  u32 samples_per_second = 48000;
+  u32 buffer_length_req = 2 * 1024;
+  WAVEFORMATEXTENSIBLE WaveFormat;
+  auto _format = &WaveFormat.Format;
+  _format = &WaveFormat.Format;
+  _format->cbSize = sizeof(WaveFormat);
+  _format->wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+  _format->wBitsPerSample = 32;
+  _format->nChannels = 2;
+  _format->nSamplesPerSec = samples_per_second;
+  _format->nBlockAlign = (WORD)(2 * 32 / 8);
+  _format->nAvgBytesPerSec = _format->nSamplesPerSec * _format->nBlockAlign;
+  WaveFormat.Samples.wValidBitsPerSample = 32;
+  WaveFormat.dwChannelMask = KSAUDIO_SPEAKER_STEREO;
+  WaveFormat.SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+  mix_format = *_format; 
+  REFERENCE_TIME buffer_duration = 10000000ULL * buffer_length_req / samples_per_second;
+  hr = audio_client->Initialize(
+    AUDCLNT_SHAREMODE_SHARED,
+    AUDCLNT_STREAMFLAGS_NOPERSIST,
+    buffer_duration,
+    0, _format, nullptr);
+  CHECKFAIL;
+   
+  // Get the actual size of the allocated buffer.
+  hr = audio_client->GetBufferSize(&buffer_length);
+  CHECKFAIL;
+  printf("WASAPI: requested %d-size buffer, got %d\n", buffer_length_req, buffer_length);
+  printf("WASAPI: buffer duration: %f ms\n", 1000.0 * buffer_length / _format->nSamplesPerSec);
+  printf("WASAPI: samples/sec: %lu\n", _format->nSamplesPerSec);
+  
+  hr = audio_client->GetService(__uuidof(IAudioRenderClient), (void **)&audio_renderer);
+  CHECKFAIL;
+  hr = audio_client->Start(); // Start playing.
+  CHECKFAIL;
+  error = false;
+  g_audio = this;
+}
+
+
+void AudioPlayer::loop(double elapsed_ms) {
+  // printf("WASAPI: step: %d\n", 0);
+  if (error) return;
+  // printf("WASAPI: step: %d\n", 1);
+  // if (volume_target <= 0) return;
+
+  this->elapsed_s += elapsed_ms / 1000;
+  // this->elapsed_frames += elapsed_ms * mix_format->nSamplesPerSec / 1000;
+  u32 padding_frames;
+  HRESULT hr = audio_client->GetCurrentPadding(&padding_frames);
+  CHECKFAIL;
+
+  u32 available_frames = buffer_length - padding_frames;
+  if (!available_frames) return;
+  f32 * data;
+  hr = audio_renderer->GetBuffer(available_frames, (u8 **)&data);
+  CHECKFAIL;
+
+  // log("available frames", available_frames);
+  for(u32 i = 0; i < available_frames; i++) {
+    if (!this->queue_audio_buffer[0]) continue;
+    if (!this->queue_audio_buffer[1]) continue;
+    f32 left = (*this->queue_audio_buffer[0])[queue_position[0]];
+    f32 right = (*this->queue_audio_buffer[1])[queue_position[1]];
+    data[2 * i] = left;
+    data[2 * i + 1] = right;
+    // wrap samples if we overrun
+    queue_position[0]++;    
+    queue_position[1]++;
+    if (queue_position[0] == 1024) { queue_position[0] = 0; }
+    if (queue_position[1] == 1024) { queue_position[1] = 0; }
+  }
+  hr = audio_renderer->ReleaseBuffer(available_frames, 0);
+  CHECKFAIL;
+}
 
 AudioPlayer * player = 0;
 

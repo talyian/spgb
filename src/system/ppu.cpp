@@ -29,7 +29,7 @@ START:
       break;
     }
     state = HSCAN;
-    if (LcdStatus.IrqHBlank) { LcdStatusMatch = 1; }
+    if (LcdStatus.IrqHBlank()) { LcdStatusMatch = 1; }
   case HSCAN: // horizontal scan
     if (line_timer < 0x1C8) {
       break;
@@ -38,16 +38,16 @@ START:
     if (LineY < 144)
       scan_line(); // [0 - 144) -- scan line
     else if (LineY == 144) {
-      if (LcdStatus.IrqVBlank) { LcdStatusMatch = 1; }
+      if (LcdStatus.IrqVBlank()) { LcdStatusMatch = 1; }
       push_frame();
     }
     else if (LineY == 153) {
       LineY = -1;
     }
     LineY++;
-    LcdStatus.LYMatch = LineY == LineYMark;
-    if (LcdStatus.LYMatch && LcdStatus.IrqLYMatch) { LcdStatusMatch = 1; }
-    if (LcdStatus.IrqOAM) { LcdStatusMatch = 1; }
+    LcdStatus.LYMatch(LineY == LineYMark);
+    if (LcdStatus.LYMatch() && LcdStatus.IrqLYMatch()) { LcdStatusMatch = 1; }
+    if (LcdStatus.IrqOAM()) { LcdStatusMatch = 1; }
     state = OAM_SCAN;
     goto START;
   default:
@@ -75,7 +75,7 @@ u8 PPU::select_background_tile(u8 x, u8 y, u8 source) {
   return mmu->VRAM[0x400 * source + 0x1800 + y * 32 + x];
 };
 
-u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8 y) {
+u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8) {
   u16 t = *(u16 *)tile_ptr;
   t = t >> (7 - x);
   t = t & 0x0101;
@@ -128,8 +128,7 @@ void PPU::scan_line() {
     }
   }
   
-  
-  auto render_sprite = [this](OamEntry sprite) {
+  auto render_sprite = [this](OamEntry &sprite) {
     u8 _ty = LineY - (sprite.y - 16);
     if (_ty >= 8) return;
     u8 ty = (sprite.flags.flip_y()) ? 7 - _ty : _ty;
@@ -138,20 +137,19 @@ void PPU::scan_line() {
       u8 tx = sprite.flags.flip_x() ? 7 - _tx : _tx;
       if (sx < DISPLAY_W) {
         u8 * tile_data = mmu->VRAM + sprite.tile * 16 + ty * 2;
-        u8 pixel = load_tile_pixel(tile_data, tx, ty);
-        if (pixel) {
-          pixel = sprite.flags.dmg_pal() ?
-            (OamPalette2 >> (2 * pixel)) :
-            (OamPalette1 >> (2 * pixel));
-          set_display(sx, LineY, pixel);
-        }
+        u8 raw_pixel = load_tile_pixel(tile_data, tx, ty);
+        if (!raw_pixel) continue;
+        u8 pixel = sprite.flags.dmg_pal() ?
+          (OamPalette2 >> (2 * raw_pixel)) :
+          (OamPalette1 >> (2 * raw_pixel));
+        set_display(sx, LineY, pixel);
       }
     }
   };
 
   if (LcdControl & 4) { // double-height sprite
     for (u8 i = 0; i < 0xA0; i += 4) {
-       OamEntry sprite1 = *(OamEntry *)(mmu->OAM + i);
+       OamEntry &sprite1 = *(OamEntry *)(mmu->OAM + i);
        OamEntry sprite2 = sprite1;
        if (sprite1.flags.flip_y()) {
          sprite1.tile &= ~1;

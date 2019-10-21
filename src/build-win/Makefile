@@ -23,7 +23,7 @@ platform.wasm-o: platform_wasm.o
 	mkdir -p ../../wasmgui/build
 	$(WASM_CC_LINK) -o $@ lib_gb.wasm-o platform.wasm-o
 
-CLANG_OPTS:=-D_CRT_SECURE_NO_WARNINGS -Wall -pedantic -O2 -g
+CLANG_OPTS:=-D_CRT_SECURE_NO_WARNINGS -Wall -pedantic -O2 -g -Wno-language-extension-token
 CLANG_LINK_OPTS:=-flto -O2
 
 gb-emu.exe: deps.Makefile

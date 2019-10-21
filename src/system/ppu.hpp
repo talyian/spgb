@@ -13,6 +13,8 @@ struct OamEntry {
     bool flip_y() const { return value & 0x40; }
     bool flip_x() const { return value & 0x20; }
     bool dmg_pal() const { return value & 0x10; }
+    bool tile_bank() const { return value & 0xF; }
+    u8 cbg_pal() const { return value & 0x7; }
   } flags;
 };
 
@@ -23,23 +25,20 @@ struct PPU {
   MemoryMapper *mmu = 0;
   u32 line_timer = 0, frame = 0;
 
-  template<int offset> struct bit {
-    u8 &r;
-    bit(u8 & _register) : r(_register) { }
-    void operator=(bool n) { r ^= (((r >> offset) & 1) ^ n) << offset; }
-    operator bool() { return (r >> offset) & 1; }
-  };
-  
   bool LcdStatusMatch = 0, LcdStatusLastMatch = 0;
   u8 &LcdControl = io.data[0x40];
   struct STAT {
     STAT(u8 & v) : v(v) { }
     u8 &v;
-    bit<6> IrqLYMatch {v};
-    bit<5> IrqOAM {v};
-    bit<4> IrqVBlank {v};
-    bit<3> IrqHBlank {v};
-    bit<2> LYMatch{v};
+    bool IrqLYMatch() { return (v >> 6) & 1; }
+    bool IrqOAM() { return (v >> 5) & 1; }
+    bool IrqVBlank() { return (v >> 4) & 1; }
+    bool IrqHBlank() { return (v >> 3) & 1; }
+    bool LYMatch() { return (v >> 2) & 1; }
+    void LYMatch(bool m) {
+      v &= ~(1 << 4);
+      v |= m << 2;
+    }
   } LcdStatus { io.data[0x41] };
   u8 &ScrollY = io.data[0x42];
   u8 &ScrollX = io.data[0x43];

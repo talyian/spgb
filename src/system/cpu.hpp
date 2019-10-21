@@ -24,15 +24,6 @@ struct CPU {
     struct { Reg16 BC, DE, AF, HL, SP; };
   } registers;
 
-  // the `flag<offset> struct` allows us to access
-  // a single bit inside of the F register like a boolean.
-  // "fl.Z = 1; fl.C = 1;" is equivalent to "registers.F & 0b10010000";
-  template<int offset> struct bit {
-    u8 &r;
-    bit(u8 & _register) : r(_register) { }
-    void operator=(bool n) { r ^= (((r >> offset) & 1) ^ n) << offset; }
-    operator bool() { return (r >> offset) & 1; }
-  };
   struct { 
     bit<7> Z;
     bit<6> N;

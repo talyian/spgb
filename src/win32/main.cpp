@@ -70,9 +70,13 @@ struct Win32Emulator {
 u16 get_pc() {
   return win32_emulator.emu._executor.PC_start;
 }
+u64 get_monotonic_timer() {
+  return win32_emulator.emu.timer.monotonic_t;
+}
 str get_symbol_name() {
   return "??";
 }
+
 // Main Window event handler.
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
   switch (message) {
@@ -288,7 +292,7 @@ int main(int argc, char** argv) {
     // emu.debug.set_breakpoint(0x219); // badfunction ?
   }
   if (argc > 1 && strstr(argv[1], "Kirby")) {
-    emu.debug.set_breakpoint(0x4B30);
+    // emu.debug.set_breakpoint(0x4B30);
   }
   if (argc > 1 && strstr(argv[1], "01-registers")) {
     // emu.debug.set_breakpoint(0xC2E0); // test_rw register
@@ -350,7 +354,7 @@ int main(int argc, char** argv) {
         continue;
       }
     }
-      
+
     // 456 * 154 ticks is one emulator frame 
     // emu.step(456 * 154);
     // we need to singlestep here for debugging to work correctly
@@ -398,7 +402,7 @@ void show_tile_map(u32 category, u8* memory, u32 len) {
 }
 
 void _push_frame(u32 category, u8* memory, u32 len) {
-  // audio_loop(1000.0 / 60);
+  audio_loop(1000.0 / 60);
   if (category - 0x100 < 3) {
     show_tile_map(category, memory, len); 
   }

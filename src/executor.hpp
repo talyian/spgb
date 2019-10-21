@@ -69,8 +69,7 @@ struct Executor {
   // seems more obvious to let the cycles speak for themselves rather
   // than manually assigning cycles += 12 for "LD (HL), C" and cycles
   // += 4 for "LD A, C"
-  template<class T> // T is either Reg8 or MemoryRef
-  inline void INC(T &RR) {
+  template<class T> inline void INC(T &RR) {
     u8 v = RR + 1;
     RR = v;
     cpu.flags.Z = v == 0;
@@ -78,8 +77,7 @@ struct Executor {
     cpu.flags.H = (v & 0xF) == 0;
   }
 
-  template<class T> // T is either Reg8 or MemoryRef
-  inline void DEC(T &RR) {
+  template<class T> inline void DEC(T &RR) {
     u8 v = RR - 1;
     RR = v;
     cpu.flags.Z = v == 0;
@@ -88,8 +86,7 @@ struct Executor {
   }
 
   // 8 bit Rotate Right (i.e. x86 ROR)
-  template<class T> // T is either Reg8 or MemoryRef
-  inline void RRC(T &RR) {
+  template<class T> inline void RRC(T &RR) {
     u8 v = RR;
     u8 v2 = (v >> 1) | (v << 7);
     cpu.registers.F = ((v & 0x01) << 4) | ((v2 == 0) << 7);
@@ -97,8 +94,7 @@ struct Executor {
   }
 
   // 8 bit Rotate Left
-  template<class T> // T is either Reg8 or MemoryRef
-  inline void RLC(T &RR) {
+  template<class T> inline void RLC(T &RR) {
     u8 v = RR;
     u8 v2 = (v << 1) | (v >> 7);
     cpu.registers.F = 0;
@@ -108,8 +104,7 @@ struct Executor {
   }
 
   // 9-bit Rotate Right (i.e. x86 RCR)
-  template<class T> // T is either Reg8 or MemoryRef
-  inline void RR(T &RR) {
+  template<class T> inline void RR(T &RR) {
     u8 v = RR;
     u8 v2 = (v >> 1) | (cpu.flags.C << 7);
     cpu.registers.F = 0;
@@ -119,8 +114,7 @@ struct Executor {
   }
 
   // 9-bit Rotate Left
-  template<class T> // T is either Reg8 or MemoryRef
-  inline void RL(T &RR) {
+  template<class T> inline void RL(T &RR) {
     u8 v = RR;
     u8 v2 = (v << 1) | cpu.flags.C;
     cpu.registers.F = 0;
@@ -130,8 +124,7 @@ struct Executor {
   }
 
   // Shift Left
-  template<class T> // T is either Reg8 or MemoryRef
-  inline void SLA(T &RR) {
+  template<class T> inline void SLA(T &RR) {
     u8 v = RR;
     u8 v2 = v << 1;
     cpu.registers.F = 0;
@@ -141,8 +134,7 @@ struct Executor {
   }
 
   // (Signed) Shift Right
-  template<class T> // T is either Reg8 or MemoryRef
-  inline void SRA(T &RR) {
+  template<class T> inline void SRA(T &RR) {
     i8 v = RR;
     u8 v2 = v >> 1;
     cpu.registers.F = 0;
@@ -152,8 +144,7 @@ struct Executor {
   }
 
   // (Unsigned) Shift Right
-  template<class T> // T is either Reg8 or MemoryRef
-  inline void SRL(T &RR) {
+  template<class T> inline void SRL(T &RR) {
     u8 v = RR;
     u8 v2 = v >> 1;
     cpu.registers.F = 0;
@@ -162,9 +153,7 @@ struct Executor {
     RR = v2;
   }
 
-  // Rotate-4
-  template<class T> // T is either Reg8 or MemoryRef
-  inline void SWAP(T &RR) {
+  template<class T> inline void SWAP(T &RR) {
     u8 v = RR;
     u8 v2 = (v >> 4) | (v << 4);
     cpu.registers.F = (v == 0) << 7;
@@ -317,8 +306,7 @@ struct Executor {
     case 0xEF: _push(PC); PC = 0x28; break;
     case 0xF7: _push(PC); PC = 0x30; break;
     case 0xFF: _push(PC); PC = 0x38; break;
-    // HALT appears where the LD (HL), (HL) would be. Shift up the
-    // pathological case by 0x300 to keep the switch cases distinct.
+
     #define X(OP, REG) \
       case 0x40 + OP: B = REG; break; \
       case 0x48 + OP: C = REG; break; \
@@ -326,12 +314,15 @@ struct Executor {
       case 0x58 + OP: E = REG; break; \
       case 0x60 + OP: H = REG; break; \
       case 0x68 + OP: L = REG; break; \
-      case 0x70 + OP + 0x300 * (OP == 6): LoadHL = REG; break;    \
       case 0x78 + OP: A = REG; break;
     LOOP(X)
     #undef X
+    #define X(OP, REG) \
+      case 0x70 + OP: LoadHL = REG; break;
+    LOOP0(X)
+    #undef X
     case 0x76: cpu.halted = true; if (cpu.IME == 0) { PC++; } break;
-#define ADD_HL(RR) {u16 a = HL, b = RR; \
+    #define ADD_HL(RR) {u16 a = HL, b = RR; \
       cycles += 4; \
       HL = a + b; \
       cpu.flags.N = 0; \
