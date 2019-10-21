@@ -1,4 +1,4 @@
-* [21/28] GBE Tasks
+* [22/28] GBE Tasks
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :END:
@@ -8,11 +8,11 @@
    - State "DONE"       from "TODO"       [2019-10-19 Sat 12:24]
    marking as "done" for now. Need to revisit for the RTC.
 ** TODO RTC - MBC3
-** DOING Blargg instr_timing
-currently the test fails init_timer since our timer is way off.
-we'll need to emit accurate cycle counts for all the instructions used in
-the delay loop before init_timer can pass and we can actually test_timer
-
+** DONE Blargg instr_timing
+   CLOSED: [2019-10-20 Sun 21:59]
+   - State "DONE"       from              [2019-10-20 Sun 21:59]
+   the new executor is fantastic. bugfix to timer frequency and some
+   edits related to LoadHL and all tests pass.
 ** TODO Blargg mem_timing
 ** [11/11] Blargg CPU Tests
 *** DONE Blargg CPU Test 01

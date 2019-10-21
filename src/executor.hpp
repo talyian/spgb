@@ -4,7 +4,7 @@
 #include "system/cpu.hpp"
 #include "system/mmu.hpp"
 
-// Decodes an instruction, 
+// Decodes an instruction and runs it.
 struct Executor {
   Executor(CPU & cpu, MemoryMapper & mmu) : cpu(cpu), mmu(mmu) { }
 
@@ -29,6 +29,16 @@ struct Executor {
     mmu_set(--cpu.registers.SP, value);
     cycles += 4;
   }
+
+  // A value representing the (HL) register. Supports enough
+  // overloaded operators that it works basically like an 8-bit
+  // register.
+
+  // ====GB asm:===|====C++ code:====
+  // LD (HL), 0xFF | LoadHL = 0xFF;
+  // LD B, 0xFF    | B = 0xFF;
+  // ADD (HL)      | A += LoadHL;
+  // ADD B         | A += B;
   struct MemoryRef {
     Executor & parent;
     CPU::Reg16 &addr;
@@ -46,6 +56,35 @@ struct Executor {
   u16 _read_u16() {
     u16 v = _read_u8();
     return v + 256 * _read_u8();
+  }
+
+  ////// The following are generalized Operation functions where the
+  // template class T is either an 8-bit register or a LoadHL struct
+  // which behaves similarly to an 8-bit register. The main difference
+  // is that LoadHL costs 4 cycles to read or write from.  This means
+  // we must use a temporary value "u8 v" instead of directly
+  // operating on RR to avoid costing the wrong number of cycles.
+
+  // This makes the implementation a bit "magical action"-y, but it
+  // seems more obvious to let the cycles speak for themselves rather
+  // than manually assigning cycles += 12 for "LD (HL), C" and cycles
+  // += 4 for "LD A, C"
+  template<class T> // T is either Reg8 or MemoryRef
+  inline void INC(T &RR) {
+    u8 v = RR + 1;
+    RR = v;
+    cpu.flags.Z = v == 0;
+    cpu.flags.N = 0;
+    cpu.flags.H = (v & 0xF) == 0;
+  }
+
+  template<class T> // T is either Reg8 or MemoryRef
+  inline void DEC(T &RR) {
+    u8 v = RR - 1;
+    RR = v;
+    cpu.flags.Z = v == 0;
+    cpu.flags.N = 1;
+    cpu.flags.H = (v & 0xF) == 0xF;
   }
 
   // 8 bit Rotate Right (i.e. x86 ROR)
@@ -72,7 +111,7 @@ struct Executor {
   template<class T> // T is either Reg8 or MemoryRef
   inline void RR(T &RR) {
     u8 v = RR;
-    u8 v2 = (RR >> 1) | (cpu.flags.C << 7);
+    u8 v2 = (v >> 1) | (cpu.flags.C << 7);
     cpu.registers.F = 0;
     cpu.flags.C = v & 1;
     cpu.flags.Z = v2 == 0;
@@ -83,7 +122,7 @@ struct Executor {
   template<class T> // T is either Reg8 or MemoryRef
   inline void RL(T &RR) {
     u8 v = RR;
-    u8 v2 = (RR << 1) | cpu.flags.C;
+    u8 v2 = (v << 1) | cpu.flags.C;
     cpu.registers.F = 0;
     cpu.flags.C = v & 0x80;
     cpu.flags.Z = v2 == 0;
@@ -151,8 +190,6 @@ struct Executor {
     if (opcode == 0xCB) opcode = 0x100 + _read_u8();
 
     #define LD16_XXXX(RR) RR.l = _read_u8(); RR.h = _read_u8()
-    #define INC(R) {R++; cpu.flags.Z = R == 0; cpu.flags.N = 0; cpu.flags.H = (R & 0xF) == 0;}
-    #define DEC(R) {R--; cpu.flags.Z = R == 0; cpu.flags.N = 1; cpu.flags.H = (R & 0xF) == 0xF;}
     #define ADD(R) {u8 a = A, b = R; \
       A = a + b; \
       cpu.flags.Z = (u8)(a + b) == 0; \
@@ -185,7 +222,7 @@ struct Executor {
       cpu.flags.C = a < b;                      \
       cpu.flags.H = (a & 0xF) < (b & 0xF);      \
       cpu.flags.N = 1;}
-    
+
     CPU::Reg8 &A = cpu.registers.A,
       &B = cpu.registers.B,
       &C = cpu.registers.C,
@@ -227,7 +264,7 @@ struct Executor {
     case 0x0F: RRC(A); cpu.flags.Z = 0; break;
     case 0x17: RL(A); cpu.flags.Z = 0; break;
     case 0x1F: RR(A); cpu.flags.Z = 0; break;
-      
+
     case 0x08: // LD (xxxx), SP
       {
         u16 addr = _read_u16();
@@ -237,17 +274,17 @@ struct Executor {
       break;
     case 0x0A: A = mmu_get(BC); break;
     case 0x12: mmu_set(DE, A); break;
-      
+
     case 0x03: BC++; cycles += 4; break;
     case 0x13: DE++; cycles += 4; break;
     case 0x23: HL++; cycles += 4; break;
     case 0x33: SP++; cycles += 4; break;
-      
+
     case 0x0B: BC--; cycles += 4; break;
     case 0x1B: DE--; cycles += 4; break;
     case 0x2B: HL--; cycles += 4; break;
     case 0x3B: SP--; cycles += 4; break;
-      
+
     case 0x1A: A = mmu_get(DE); break;
     case 0x22: mmu_set(HL++, A); break;
     case 0x2A: A = mmu_get(HL++); break;
@@ -257,7 +294,7 @@ struct Executor {
     case 0xF3: cpu.IME = 0; break;
     case 0xFB: cpu.IME = 1; break;
     case 0x27: /* DAA */ {
-      if (cpu.flags.N) { 
+      if (cpu.flags.N) {
         if (cpu.flags.C) { A -= 0x60; } // N+C: borrow a 10 digit
         if (cpu.flags.H) { A -= 0x06; } // N+H: borrow a 01 digit
       } else {
@@ -290,7 +327,7 @@ struct Executor {
       case 0x60 + OP: H = REG; break; \
       case 0x68 + OP: L = REG; break; \
       case 0x70 + OP + 0x300 * (OP == 6): LoadHL = REG; break;    \
-      case 0x78 + OP: A = REG; break; 
+      case 0x78 + OP: A = REG; break;
     LOOP(X)
     #undef X
     case 0x76: cpu.halted = true; if (cpu.IME == 0) { PC++; } break;
@@ -312,7 +349,7 @@ struct Executor {
       case 0xA0 + OP: AND(REG); break; \
       case 0xA8 + OP: XOR(REG); break; \
       case 0xB0 + OP:  OR(REG); break; \
-      case 0xB8 + OP:  CP(REG); break;         
+      case 0xB8 + OP:  CP(REG); break;
     LOOP(X)
     #undef X
 

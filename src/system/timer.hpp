@@ -20,7 +20,9 @@ struct Timer {
 
   void clear() { DIV = 0; TIMA = 0; TMA = 0; Control = 0; }
   bool enabled() { return Control & 4; }
-  u16 speed_modifier() { return 1 << (2 * ((Control - 1) & 3) + 4); }
+  u16 speed_modifier() {
+    return 1 << (2 * ((Control & 3 - 1) & 3) + 4);
+  }
   
   u64 monotonic_t = 0; // increases at 4MHz
   u64 counter_t = 0;   // increases at 4MHz, wraps after TIMA updates
@@ -33,7 +35,7 @@ struct Timer {
 
     if (enabled()) {
       counter_t += ticks;
-      if (counter_t >= speed_modifier()) {
+      while (counter_t >= speed_modifier()) {
         if (TIMA == 0xFF) { TIMA = TMA; InterruptV |= 4; }
         else { TIMA++; }
         monoTIMA++;

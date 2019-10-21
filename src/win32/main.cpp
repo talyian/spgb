@@ -14,7 +14,7 @@
 #include "opengl_utils.hpp"
 #include "audio.hpp"
 
-// #define NOSWAP
+#define NOSWAP
 
 extern "C" size_t sslen(const char* s) { return strlen(s); }
 
@@ -273,8 +273,9 @@ int main(int argc, char** argv) {
   char line[64] {0};
   // emu.debug.name_function("main", 0xC300, 0xc315);
   // emu.debug.name_function("test_timer", 0xC318, 0xc345);
-  if (argc > 1 && strstr(argv[1], "instr_timing"))
-    emu.debug.set_breakpoint(0xC300);
+  if (argc > 1 && strstr(argv[1], "instr_timing")) {
+    // emu.debug.set_breakpoint(0xC300);
+  }
   if (argc > 1 && strstr(argv[1], "bgbtest")) {
     // emu.debug.set_breakpoint(0x40); // vblank
     // emu.debug.set_breakpoint(0x40); // vblank
