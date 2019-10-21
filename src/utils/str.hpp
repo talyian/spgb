@@ -7,7 +7,7 @@ struct str {
   u32 size = 0;
   str() : data(0), size(0) { }
   str(u8 * data, u32 size) : data(data), size(size) { }
-  template<size_t N> str(const char (&s)[N]) : data((u8*)s), size(N) { }
+  template<size_t N> str(const char (&s)[N]) : data((u8*)s), size(N - 1) { }
 };
 
 namespace logs {
