@@ -4,26 +4,25 @@
 #include "timer.hpp"
 #include "cart.hpp"
 #include "audio.hpp"
+#include "graphics.hpp"
 
 struct MemoryMapper {
-  MemoryMapper(Cart &cart, Audio &audio, IoPorts &io) :
-    cart(cart), audio(audio), io(io), BiosLock(io.data[0x50]) {
+  MemoryMapper(Cart &cart, PPU &ppu, Audio &audio, IoPorts &io) :
+    cart(cart), ppu(ppu), audio(audio), io(io), BiosLock(io.data[0x50]) {
     set(0xFF42, 0);
     set(0xFF43, 0);
     set(0xFF44, 0);
   }
   Cart &cart;
+  PPU &ppu;
   Audio &audio;
   u8 *bios_rom = 0;
   
-  // TODO put VRAM and OAM in the PPU
-  u8 VRAM[0x2000];    // at 0x8000
-  u8 WRAM[8][0x1000]; // work ram at 0xC000 / banks at 0xD000
-  // u8 OAM[0x100];      // OAM at 0xFE00
-  u8 * OAM = new u8[0x100];
-  IoPorts &io;        // IO registers at 0xFF00
-  // u8 HRAM[0x80];      // HRAM at 0xFF80
-  u8 * HRAM = new u8[0x80];
+  u8 * VRAM = ppu.VRAM; // at 0x8000
+  u8 WRAM[8][0x1000];   // work ram at 0xC000 / banks at 0xD000
+  u8 * OAM = ppu.OAM;   // OAM at 0xFE00
+  IoPorts &io;          // IO registers at 0xFF00
+  u8 HRAM[0x80];     // HRAM at 0xFF80
   u8 error;
 
   u8 &BiosLock;
@@ -55,6 +54,7 @@ struct MemoryMapper {
         addr < 0xFF00 ? OAM[addr & 0xFF] :
         addr < 0xFF10 ? io.data[addr & 0xFF] :
         addr < 0xFF40 ? audio.read(addr - 0xFF10) :
+        addr < 0xFF4C ? ppu.read(addr - 0xFF40) :
         addr < 0xFF80 ? io.data[addr & 0xFF] :
         HRAM[addr - 0xFF80];
     }
@@ -80,6 +80,7 @@ struct MemoryMapper {
     }
     else if (addr < 0xFF10) { io.data[addr - 0xFF00] = val; }
     else if (addr < 0xFF40) { audio.write(addr - 0xFF10, val); }
+    else if (addr < 0xFF4C) { ppu.write(addr - 0xFF40, val); }
     else if (addr == 0xFF50) { BiosLock = 1; }
     else if (addr < 0xFF80) { io.data[addr - 0xFF00] = val; }
     else HRAM[addr - 0xFF80] = val;

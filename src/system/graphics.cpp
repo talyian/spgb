@@ -62,17 +62,17 @@ START:
 void PPU::push_frame() {
   frame++;
   _push_frame(0x300, display, DISPLAY_W * DISPLAY_H);
-  _push_frame(0x100, mmu->VRAM, 0x800);
-  _push_frame(0x101, mmu->VRAM + 0x800, 0x800);
-  _push_frame(0x102, mmu->VRAM + 0x1000, 0x800);
-  _push_frame(0x200, mmu->VRAM + 0x1800, 32 * 32);
+  _push_frame(0x100, VRAM, 0x800);
+  _push_frame(0x101, VRAM + 0x800, 0x800);
+  _push_frame(0x102, VRAM + 0x1000, 0x800);
+  _push_frame(0x200, VRAM + 0x1800, 32 * 32);
   InterruptV |= 0x01; // HBLANK
 }
 
 // Given a bg coordinate between 0,0 and 32,32, return the tile specifier
 u8 PPU::select_background_tile(u8 x, u8 y, u8 source) {
   source = source != 0;
-  return mmu->VRAM[0x400 * source + 0x1800 + y * 32 + x];
+  return VRAM[0x400 * source + 0x1800 + y * 32 + x];
 };
 
 u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8) {
@@ -95,9 +95,9 @@ void PPU::scan_line() {
     u8 tile_index = select_background_tile(tile_x, tile_y, bg_tile_source);
     u8 * tile_data = 0, tx = bx % 8, ty = by % 8;
     if ((tile_index & 0x80) | (LcdControl & 0x10)) {
-      tile_data = mmu->VRAM + tile_index * 16 + ty * 2;
+      tile_data = VRAM + tile_index * 16 + ty * 2;
     } else {
-      tile_data = mmu->VRAM + 0x1000 + tile_index * 16 + ty * 2;
+      tile_data = VRAM + 0x1000 + tile_index * 16 + ty * 2;
     }
     u8 pixel = load_tile_pixel(tile_data, tx, ty);
     pixel = (BgPalette >> (2 * pixel)) & 0x03;
@@ -117,9 +117,9 @@ void PPU::scan_line() {
 
       u8 * tile_data = 0, tx = wx % 8, ty = wy % 8;
       if ((tile_index & 0x80) | (LcdControl & 0x10)) {
-        tile_data = mmu->VRAM + tile_index * 16 + ty * 2;
+        tile_data = VRAM + tile_index * 16 + ty * 2;
       } else {
-        tile_data = mmu->VRAM + 0x1000 + tile_index * 16 + ty * 2;
+        tile_data = VRAM + 0x1000 + tile_index * 16 + ty * 2;
       }
       u8 pixel = load_tile_pixel(tile_data, tx, ty);
       pixel = (BgPalette >> (2 * pixel)) & 3;
@@ -136,7 +136,7 @@ void PPU::scan_line() {
       u8 sx = _tx + sprite.x - 8;
       u8 tx = sprite.flags.flip_x() ? 7 - _tx : _tx;
       if (sx < DISPLAY_W) {
-        u8 * tile_data = mmu->VRAM + sprite.tile * 16 + ty * 2;
+        u8 * tile_data = VRAM + sprite.tile * 16 + ty * 2;
         u8 raw_pixel = load_tile_pixel(tile_data, tx, ty);
         if (!raw_pixel) continue;
         u8 pixel = sprite.flags.dmg_pal() ?
@@ -149,7 +149,7 @@ void PPU::scan_line() {
 
   if (LcdControl & 4) { // double-height sprite
     for (u8 i = 0; i < 0xA0; i += 4) {
-       OamEntry sprite1 = *(OamEntry *)(mmu->OAM + i);
+       OamEntry sprite1 = *(OamEntry *)(OAM + i);
        OamEntry sprite2 = sprite1;
        if (sprite1.flags.flip_y()) {
          sprite1.tile &= ~1;
@@ -166,7 +166,7 @@ void PPU::scan_line() {
   }
   else {
     for (u8 i = 0; i < 0xA0; i += 4) {
-      render_sprite(*(OamEntry *)(mmu->OAM + i));
+      render_sprite(*(OamEntry *)(OAM + i));
     }
   }
 }

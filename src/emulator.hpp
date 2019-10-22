@@ -18,10 +18,11 @@ struct emulator_t {
   IoPorts io;
   Timer timer{io};
   Audio audio;
-  MemoryMapper mmu{cart, audio, io};
+  PPU ppu{io};
+  MemoryMapper mmu{cart, ppu, audio, io};
   Joypad joypad{io};
   CPU cpu;
-  PPU ppu{io, mmu};
+
   
   Executor _executor{cpu, mmu};
   Printer _printer{mmu};
