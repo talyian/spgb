@@ -36,7 +36,7 @@ struct PPU {
     bool IrqHBlank() { return (v >> 3) & 1; }
     bool LYMatch() { return (v >> 2) & 1; }
     void LYMatch(bool m) {
-      v &= ~(1 << 4);
+      v &= ~(1 << 2);
       v |= m << 2;
     }
   } LcdStatus { io.data[0x41] };
