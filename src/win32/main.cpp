@@ -14,8 +14,6 @@
 #include "opengl_utils.hpp"
 #include "audio.hpp"
 
-#define NOSWAP
-
 extern "C" size_t sslen(const char* s) { return strlen(s); }
 
 // Platform API: these functions are declared in platform.hpp and must
@@ -270,9 +268,7 @@ int main(int argc, char** argv) {
     win32_emulator.vbo_array[sprite_bank+1].init(vertices, 6);
     win32_emulator.vbo_count++;
   }
-  #ifdef NOSWAP
-  glDrawBuffer(GL_FRONT);
-  #endif
+  if (emu.noswap) glDrawBuffer(GL_FRONT);
   
   char line[64] {0};
   // emu.debug.name_function("main", 0xC300, 0xc315);
@@ -425,10 +421,9 @@ void _push_frame(u32 category, u8* memory, u32 len) {
       }
     }
 
-    #ifdef NOSWAP
-    glFinish();
-    #else
-    SwapBuffers(win32_emulator.hdc);
-    #endif
+    if (win32_emulator.emu.noswap) 
+      glFinish();
+    else
+      SwapBuffers(win32_emulator.hdc);
   }
 }
