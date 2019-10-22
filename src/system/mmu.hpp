@@ -33,7 +33,8 @@ struct MemoryMapper {
 
   u8 get(u16 addr) {
     switch(addr >> 12) {
-    case 0x0: return !BiosLock && addr < 0x100 ? bios_rom[addr] : cart.read(addr);
+    case 0x0:
+      return BiosLock && addr >= 0x100 && addr < 0x200 ? cart.read(addr) : bios_rom[addr];
     case 0x1:
     case 0x2:
     case 0x3:

@@ -1,8 +1,10 @@
 #include "emulator.hpp"
 #include "data/dmg_boot.hpp"
+#include "data/cgb_boot.hpp"
 
 emulator_t::emulator_t(u8 *cart_data, u32 cart_len) {
   mmu.bios_rom = DMG_ROM_bin;
+  mmu.bios_rom = cgb_bios_bin;
   load_cart(cart_data, cart_len);
 }
 
