@@ -7,7 +7,7 @@
 #include "system/io_ports.hpp"
 #include "system/joypad.hpp"
 #include "system/mmu.hpp"
-#include "system/ppu.hpp"
+#include "system/graphics.hpp"
 #include "system/audio.hpp"
 #include "system/timer.hpp"
 #include "debug/printer.hpp"

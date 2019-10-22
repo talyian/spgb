@@ -1,4 +1,4 @@
-#include "ppu.hpp"
+#include "graphics.hpp"
 #include "mmu.hpp"
 
 u8 rgb(u8 r, u8 g, u8 b) {

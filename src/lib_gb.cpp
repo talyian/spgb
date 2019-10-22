@@ -1,6 +1,6 @@
 // main compilation unit
 #include "platform.hpp"
-#include "system/ppu.cpp"
+#include "system/graphics.cpp"
 #include "emulator.cpp"
 #include "platform_base.cpp"
 
