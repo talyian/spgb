@@ -10,8 +10,8 @@ struct AudioFrame {
   f32 volume = 0;
 };
 
-void write_audio_frame_out(f32 freq, f32 volume);
-void write_1024_frame(u8 channel, f32 (&buffer)[1024]);
+extern "C" void write_audio_frame_out(f32 freq, f32 volume);
+extern "C" void write_1024_frame(u8 channel, f32 (&buffer)[1024]);
 struct Square {
   u8 data[5];
   #define FIELD(f, index, len, offset)                                 \

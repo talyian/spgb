@@ -49,12 +49,12 @@ struct AudioPlayer {
 
 AudioPlayer * g_audio = 0;
 
-void write_audio_frame_out(f32 freq, f32 volume) {
+extern "C" void write_audio_frame_out(f32 freq, f32 volume) {
   if (g_audio) { g_audio->set_frequency(freq, volume); }
 }
 
 // writes 1024 frames (at 48khz, so about 2ms);
-void write_1024_frame(u8 channel, f32 (&buffer)[1024]) {
+extern "C" void write_1024_frame(u8 channel, f32 (&buffer)[1024]) {
   if (g_audio) { g_audio->enqueue_data(channel, buffer); }
 }
 

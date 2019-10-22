@@ -117,6 +117,9 @@ function push_frame(category, data, len) {
     // ctx.putImageData(image_buffer, 0, 0);
   }
 }
+function write_1024_frame(channel, data) {
+  // console.log(channel, data);
+}
 var error = 0;
 var env = {
   _test: function(foobar) { console.log(foobar); },
@@ -136,6 +139,7 @@ var env = {
       'byte size', memory.buffer.byteLength,
       'page size', memory.buffer.byteLength / 64 / 1024);
   },
+  write_1024_frame: write_1024_frame,
   _serial_putc: function(c) { console.log("Serial", String.fromCharCode(c)); },
   memory:memory,
 };
