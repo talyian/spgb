@@ -6,7 +6,12 @@
 #include "audio.hpp"
 
 struct MemoryMapper {
-  MemoryMapper(Cart &cart, Audio &audio, IoPorts &io);
+  MemoryMapper(Cart &cart, Audio &audio, IoPorts &io) :
+    cart(cart), audio(audio), io(io), BiosLock(io.data[0x50]) {
+    set(0xFF42, 0);
+    set(0xFF43, 0);
+    set(0xFF44, 0);
+  }
   Cart &cart;
   Audio &audio;
   u8 *bios_rom = 0;
@@ -14,14 +19,18 @@ struct MemoryMapper {
   // TODO put VRAM and OAM in the PPU
   u8 VRAM[0x2000];    // at 0x8000
   u8 WRAM[8][0x1000]; // work ram at 0xC000 / banks at 0xD000
-  u8 OAM[0x100];      // OAM at 0xFE00
+  // u8 OAM[0x100];      // OAM at 0xFE00
+  u8 * OAM = new u8[0x100];
   IoPorts &io;        // IO registers at 0xFF00
-  u8 HRAM[0x80];      // HRAM at 0xFF80
+  // u8 HRAM[0x80];      // HRAM at 0xFF80
+  u8 * HRAM = new u8[0x80];
   u8 error;
 
   u8 &BiosLock;
   
-  void load_cart(const Cart &cart);
+  void load_cart(const Cart &cart)  {
+    this->cart = cart;
+  }
 
   u8 get(u16 addr) {
     switch(addr >> 12) {

@@ -1,12 +1,11 @@
 lib_gb.o: ../lib_gb.cpp ../platform.hpp ../base.hpp ../utils/str.hpp \
-  ../utils/../base.hpp ../system/mmu.cpp ../system/mmu.hpp \
+  ../utils/../base.hpp ../system/ppu.cpp ../system/ppu.hpp \
   ../system/../base.hpp ../system/io_ports.hpp ../system/../platform.hpp \
-  ../system/timer.hpp ../system/cart.hpp ../system/../utils/str.hpp \
-  ../system/audio.hpp ../system/ppu.hpp ../system/ppu.cpp \
-  ../emulator.cpp ../emulator.hpp ../debugger.hpp ../system/cpu.hpp \
-  ../executor.hpp ../system/joypad.hpp ../debug/printer.hpp \
-  ../debug/../base.hpp ../debug/../system/mmu.hpp ../data/dmg_boot.hpp \
-  ../platform_base.cpp
+  ../system/mmu.hpp ../system/timer.hpp ../system/cart.hpp \
+  ../system/../utils/str.hpp ../system/audio.hpp ../emulator.cpp \
+  ../emulator.hpp ../debugger.hpp ../system/cpu.hpp ../executor.hpp \
+  ../system/joypad.hpp ../debug/printer.hpp ../debug/../base.hpp \
+  ../debug/../system/mmu.hpp ../data/dmg_boot.hpp ../platform_base.cpp
 main_limited.o: ../win32/main_limited.cpp ../win32/../base.hpp \
   ../win32/../platform.hpp ../win32/../utils/str.hpp \
   ../win32/../utils/../base.hpp ../win32/opengl_utils.hpp
