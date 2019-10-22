@@ -18,7 +18,10 @@ struct OamEntry {
   } flags;
 };
 
+// TODO: this MemoryMapper reference is backwards. PPU should own its registers.
+// and MemoryMapper should map into the PPU's memory space.
 struct MemoryMapper;
+
 struct PPU {
   PPU(IoPorts &io, MemoryMapper &mmu) : io(io), mmu(&mmu) {}
   IoPorts &io;
