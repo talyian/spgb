@@ -149,7 +149,7 @@ void PPU::scan_line() {
 
   if (LcdControl & 4) { // double-height sprite
     for (u8 i = 0; i < 0xA0; i += 4) {
-       OamEntry &sprite1 = *(OamEntry *)(mmu->OAM + i);
+       OamEntry sprite1 = *(OamEntry *)(mmu->OAM + i);
        OamEntry sprite2 = sprite1;
        if (sprite1.flags.flip_y()) {
          sprite1.tile &= ~1;
