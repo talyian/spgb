@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
     r.bottom - r.top, NULL, NULL, NULL, NULL);
   ShowWindow(hwnd, SW_RESTORE);
 
-  // audio_init();
+  audio_init();
 
   MSG msg;
 
@@ -402,7 +402,7 @@ void show_tile_map(u32 category, u8* memory, u32 len) {
 }
 
 void _push_frame(u32 category, u8* memory, u32 len) {
-  // audio_loop(1000.0 / 60);
+  audio_loop(1000.0 / 60);
   if (category - 0x100 < 3) {
     show_tile_map(category, memory, len); 
   }

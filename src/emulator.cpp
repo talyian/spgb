@@ -86,7 +86,7 @@ u32 emulator_t::single_step() {
     dma_transfer(&mmu, mmu.get(IoPorts::DMA));
     mmu.set(IoPorts::DMA, 0);
   }
-  // audio.tick(dt);
+  audio.tick(dt);
   ppu.tick(dt);
   timer.tick(dt);
 
