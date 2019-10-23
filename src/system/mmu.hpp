@@ -69,7 +69,10 @@ struct MemoryMapper {
   u16 get16(u16 addr) { return get(addr) * 0x100 + get(addr + 1); }
   
   void set(u16 addr, u8 val) {
-    if (addr < 0x100 && !BiosLock) bios_rom[addr] = val;
+    if (addr < 0x100 && !BiosLock) {
+      // bios_rom[addr] = val;
+      log("writing to bios");
+    }
     else if (addr < 0x8000) cart.write(addr, val);
     else if (addr < 0xA000)
       if (ppu.vram_bank)
@@ -100,12 +103,16 @@ struct MemoryMapper {
     else if (addr == 0xFF4F) { ppu.vram_bank = val & 1; }
     else if (addr == 0xFF50) { BiosLock = 1; }
     else if (addr == 0xFF55) {
-      u16 source = get(0xFF51) * 0x100 + get(0xFF52);
-      u16 dest = get(0xFF53) * 0x100 + get(0xFF54);
+      u16 source = get(0xFF51) * 0x100 + (get(0xFF52) & 0xF0);
+      u16 dest = (get(0xFF53) & 0x1F) * 0x100;
+      dest += get(0xFF54) & 0xF0;
+      dest |= 0x8000;
       u16 length = (val & 0x7F) * 0x10 + 0x10;
       u8 transfer_mode = val & 0x80;
       if (transfer_mode) { log("Error: unsupported Hblank DMA"); }
       for(u16 i = 0; i < length; i++) { set(dest + i, get(source + i)); }
+      // done - set 7 bit
+      io.data[0x55] = val & 0x80;
     }
     else if (addr == 0xFF56) { /* TODO: CGB IR port */ }
     else if (addr == 0xFF68) { ppu.Cgb.bg_palette.addr = val; }

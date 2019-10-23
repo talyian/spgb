@@ -9,8 +9,12 @@ struct Printer {
   u16 PC = 0, PC_start = 0;
   u16 _read_u16() { return _read_u8() + 0x100 * _read_u8(); }
   u8 _read_u8() { return mmu.get(PC++); }
-  template<class T> void mlog(T x) { log(PC_start, x); }
-  template<class T, class ... TS> void mlog(T x, TS ... xs) { log(PC_start, x, xs ...); }
+  template<class T> void mlog(T x) {
+    log(mmu.cart.mbc5.rom_bank, PC_start, x);
+  }
+  template<class T, class ... TS> void mlog(T x, TS ... xs) {
+    log(mmu.cart.mbc5.rom_bank, PC_start, x, xs ...);
+  }
   
   void decode(u16 pc) {
     PC_start = PC = pc;
@@ -116,12 +120,12 @@ struct Printer {
     case 0xD4: mlog("CALL NC,", _read_u16()); break;
     case 0xDC: mlog("CALL C,", _read_u16()); break;
       // RET - 20/8/16 cycles
-    case 0xC0: mlog("RET NZ,", _read_u16()); break;
-    case 0xC8: mlog("RET Z,", _read_u16()); break;
-    case 0xC9: mlog("RET ", _read_u16()); break;
-    case 0xD0: mlog("RET NC,", _read_u16()); break;
-    case 0xD8: mlog("RET C,", _read_u16()); break;
-    case 0xD9: mlog("RETI", _read_u16()); break;
+    case 0xC0: mlog("RET NZ"); break;
+    case 0xC8: mlog("RET Z"); break;
+    case 0xC9: mlog("RET "); break;
+    case 0xD0: mlog("RET NC"); break;
+    case 0xD8: mlog("RET C"); break;
+    case 0xD9: mlog("RETI"); break;
       
     case 0xE0: mlog("LD FF00+", _read_u8(), ", A"); break;
     case 0xE2: mlog("LD FF00+", "C, A"); break;

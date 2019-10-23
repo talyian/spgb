@@ -5,7 +5,7 @@
 #include "../platform.hpp"
 
 enum ConsoleType : u8 { CGB, CGB_Only, DMG, SGB };
-enum MapperType : u8 { ROMMapper = 0, MBC1 = 1, MBC3 = 2, ERROR };
+enum MapperType : u8 { ROMMapper = 0, MBC1 = 1, MBC3 = 2, MBC5, ERROR };
 enum class BankMode : u8 { ROM, RAM };
 
 struct Cart {
@@ -48,6 +48,8 @@ struct Cart {
       mapper = MBC1;
     else if (0x11 <= data[0x147] && data[0x147] <= 0x13)
       mapper = MBC3;
+    else if (0x19 <= data[0x147] && data[0x147] <= 0x1E)
+      mapper = MBC5;
     else
       mapper = ERROR;
 
@@ -77,6 +79,12 @@ struct Cart {
     BankMode bank_mode;
   } mbc3;
 
+  struct MBC5Data {
+    u8 enable_ram = 0;
+    u16 rom_bank = 1; // 0 - 0x1FF;
+    u8 ram_bank = 0;  // 0 - 0xF
+  } mbc5;
+  
   void write(u16 addr, u8 val) {
     if (mapper == ROMMapper) {
       if (addr >= 0xA000)
@@ -139,7 +147,25 @@ struct Cart {
           return;
         }
       }
-
+    }
+    if (mapper == MBC5) {
+      if (addr < 0x2000) { mbc5.enable_ram = val == 0xA; return; }
+      else if (addr < 0x3000) {
+        mbc5.rom_bank = (mbc5.rom_bank & 0x100) | val;
+        return; }
+      else if (addr < 0x4000) {
+        mbc5.rom_bank = (mbc5.rom_bank & 0x0FF) | (val ? 0x100 : 0);
+        return;
+      }
+      else if (addr < 0x6000) {
+        mbc5.ram_bank = val & 0xF;
+        return;
+      }
+      else if (addr < 0xA000) { }
+      else if (addr < 0xC000) {
+        ram[addr - 0xA000 + 0x2000 * mbc5.ram_bank] = val;
+        return;
+      }
     }
     log("unsupported mapper write", addr, val);
     _stop();
@@ -175,6 +201,14 @@ struct Cart {
           return ram[addr - 0xA000 + 0x2000 * mbc3.ram_bank];
         }
       }
+    }
+    if (mapper == MBC5) {
+      if (addr < 0x4000) // ROM 0
+        return data[addr];
+      if (addr < 0x8000) // ROM Bank
+        return data[(addr - 0x4000) + mbc5.rom_bank * 0x4000];
+      if (addr < 0xC000)
+        return ram[addr - 0xA000 + 0x2000 * mbc5.ram_bank];
     }
     log("unsupported mapper read", addr);
     _stop();

@@ -79,6 +79,8 @@ Pixel16 PPU::get_tile_pixel(const Tile &tile, u8 tx, u8 ty) {
   if (tile.flags.tile_bank()) vram_base_ptr = VRAM2;
   bool map1 = !((tile.index & 0x80) | (LcdControl & 0x10));
   u16 tile_offset = 0x1000 * map1 + tile.index * 16 + ty * 2;
+  if (tile.flags.flip_x()) tx = 7 - tx;
+  if (tile.flags.flip_y()) ty = 7 - ty;
   u8 pal_entry = load_tile_pixel(vram_base_ptr + tile_offset, tx, ty);
 
   if (!Cgb.enabled) 
