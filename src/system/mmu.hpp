@@ -107,12 +107,22 @@ struct MemoryMapper {
       u16 dest = (get(0xFF53) & 0x1F) * 0x100;
       dest += get(0xFF54) & 0xF0;
       dest |= 0x8000;
-      u16 length = (val & 0x7F) * 0x10 + 0x10;
+      i16 length = (val & 0x7F);
       u8 transfer_mode = val & 0x80;
       if (transfer_mode) { log("Error: unsupported Hblank DMA"); }
-      for(u16 i = 0; i < length; i++) { set(dest + i, get(source + i)); }
-      // done - set 7 bit
-      io.data[0x55] = val & 0x80;
+      while(length >=0) {
+        for(u16 j = 0; j < 0x10; j++) {
+          set(dest++, get(source++));
+        }
+        io.data[0x51] = source >> 8;
+        io.data[0x52] = source;
+        io.data[0x53] = dest >> 8;
+        io.data[0x54] = dest;
+        io.data[0x55] = length;
+        length--;
+      }
+      // done
+      io.data[0x55] = 0xFF;
     }
     else if (addr == 0xFF56) { /* TODO: CGB IR port */ }
     else if (addr == 0xFF68) { ppu.Cgb.bg_palette.addr = val; }
