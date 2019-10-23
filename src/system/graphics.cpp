@@ -1,21 +1,6 @@
 #include "graphics.hpp"
 #include "mmu.hpp"
 
-u8 rgb(u8 r, u8 g, u8 b) {
-  return r * 36 + g * 6 + b;
-}
-
-u8 rgb2(u16 rgb555) {
-  return rgb((rgb555 & 0x1F) / 6, ((rgb555 >> 5) & 0x1F) / 6, (rgb555 >> 10) / 6);
-}
-
-u8 absolute_palette[4] = {
-  rgb(5, 5, 4),
-  rgb(3, 5, 2),
-  rgb(1, 2, 2),
-  rgb(0, 0, 0)
-};
-
 void PPU::set_display(u8 x, u8 y, Pixel16 pixel) {
   display[y * DISPLAY_W + x] = pixel;
 }
@@ -67,7 +52,6 @@ START:
 
 void PPU::push_frame() {
   frame++;
-
   _push_frame(0x300, 0, DISPLAY_W * DISPLAY_H);
   _push_frame(0x100, VRAM, 0x800);
   _push_frame(0x101, VRAM + 0x800, 0x800);

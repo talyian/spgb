@@ -9,7 +9,9 @@ lib_gb.o: ../lib_gb.cpp ../platform.hpp ../base.hpp ../utils/str.hpp \
   ../platform_base.cpp
 main_limited.o: ../win32/main_limited.cpp ../win32/../base.hpp \
   ../win32/../platform.hpp ../win32/../utils/str.hpp \
-  ../win32/../utils/../base.hpp ../win32/opengl_utils.hpp
+  ../win32/../utils/../base.hpp ../win32/opengl_utils.hpp \
+  ../win32/../system/graphics.hpp ../win32/../system/../base.hpp \
+  ../win32/../system/io_ports.hpp ../win32/../system/../platform.hpp
 main.o: ../win32/main.cpp ../win32/../base.hpp ../win32/../emulator.hpp \
   ../win32/../system/cart.hpp ../win32/../system/../base.hpp \
   ../win32/../system/../utils/str.hpp \

@@ -1,4 +1,5 @@
 #include "../base.hpp"
+#include "../system/graphics.hpp"
 
 #pragma once
 
@@ -26,7 +27,7 @@ namespace glf {
   enum DrawType : GLenum { STREAM_DRAW = 0x88E0, STATIC_DRAW = 0x88E4 };
   enum ShaderIV : GLenum { COMPILE_STATUS = 0x8B81, VALIDATE_STATUS= 0x8B83, INFO_LOG_LENGTH = 0x8B84 };
   enum DebugType : GLenum { ERR = 0x824C, DEPRECATED = 0x824D, UNDEFINED_BEHAVIOR = 0x824E, PERFORMANCE = 0x8250 };
-  enum PixelType : GLenum { UnsignedShort5551 = 0x8366 };
+  enum PixelType : GLenum { UnsignedShort5551 = 0x8034, UnsignedShort1555R = 0x8366 };
   enum DebugSeverity : GLenum { HIGH = 0x9146, MEDIUM, LOW, NOTIFICATION=0x826B };
   struct glShader { GLuint id; };
 
@@ -90,7 +91,7 @@ struct Texture216 {
     glBindTexture(GL_TEXTURE_2D, id);
     glTexImage2D(
         GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0,
-        GL_RGBA, glf::PixelType::UnsignedShort5551,
+        GL_RGBA, glf::PixelType::UnsignedShort1555R,
       data);
   }
   void setData(u8 * data, u32 w, u32 h) {
@@ -144,12 +145,6 @@ varying vec2 uv;
 uniform sampler2D tx_screen;
 // Translate 8-bit 216-color-cube to RGB
 void main() { 
-  float vv = texture2D(tx_screen, uv).r;
-  float vf = vv * 255.0 / 216.0;
-  float r = floor(vf * 6.0);
-  float g = floor(vf * 36.0 - (r) * 6.0);
-  float b = vf * 216.0 - (r) * 36.0 - (g) * 6.0;
-  gl_FragColor = vec4(r / 5.0, g / 5.0, b / 5.0, 1.0);
   gl_FragColor = vec4(texture2D(tx_screen, uv).rgb, 1);
 }
 )STR";

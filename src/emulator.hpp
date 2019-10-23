@@ -32,8 +32,8 @@ struct emulator_t {
   emulator_t();
   void load_cart(u8 *data, u32 len);
 
-  bool skip_bootrom = true;
-  bool noswap = false;
+  bool skip_bootrom = false;
+  bool noswap = true;
 
   u32 ff = 0; 
   u32 single_step();
