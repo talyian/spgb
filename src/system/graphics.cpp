@@ -16,12 +16,8 @@ u8 absolute_palette[4] = {
   rgb(0, 0, 0)
 };
 
-void PPU::set_display(u8 x, u8 y, u8 pixel) {
+void PPU::set_display(u8 x, u8 y, Pixel16 pixel) {
   display[y * DISPLAY_W + x] = pixel;
-}
-
-void PPU::set_display2(u8 x, u8 y, u16 pixel) {
-  display2[y * DISPLAY_W + x] = pixel;
 }
 
 void PPU::tick(u16 delta) {
@@ -71,7 +67,8 @@ START:
 
 void PPU::push_frame() {
   frame++;
-  _push_frame(0x300, display, DISPLAY_W * DISPLAY_H);
+
+  _push_frame(0x300, 0, DISPLAY_W * DISPLAY_H);
   _push_frame(0x100, VRAM, 0x800);
   _push_frame(0x101, VRAM + 0x800, 0x800);
   _push_frame(0x102, VRAM + 0x1000, 0x800);
@@ -93,15 +90,15 @@ u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8) {
   return t | (t >> 7);
 }
 
-u16 PPU::get_tile_pixel(const Tile &tile, u8 tx, u8 ty) {
+Pixel16 PPU::get_tile_pixel(const Tile &tile, u8 tx, u8 ty) {
   u8 * vram_base_ptr = VRAM;
   if (tile.flags.tile_bank()) vram_base_ptr = VRAM2;
   bool map1 = !((tile.index & 0x80) | (LcdControl & 0x10));
   u16 tile_offset = 0x1000 * map1 + tile.index * 16 + ty * 2;
   u8 pixel = load_tile_pixel(vram_base_ptr + tile_offset, tx, ty);
 
-  if (!Cgb.enabled) 
-    return (BgPalette >> (2 * pixel)) & 0x03;
+  //if (!Cgb.enabled) 
+  //  return (BgPalette >> (2 * pixel)) & 0x03;
 
   return Cgb.bg_palette.get_color(tile.flags.cbg_pal(), pixel);
 }
@@ -116,9 +113,8 @@ void PPU::scan_line() {
     u8 tile_x = bx / 8;
     u8 tile_y = by / 8;
     Tile tile = select_background_tile(tile_x, tile_y, LcdControl & 0x8);
-    u16 pixel = get_tile_pixel(tile, bx % 8, by % 8);
-    set_display(sx, LineY, rgb2(pixel));
-    set_display2(sx, LineY, pixel);
+    Pixel16 pixel = get_tile_pixel(tile, bx % 8, by % 8);
+    set_display(sx, LineY, pixel);
   }
 
   // TODO : render Window
@@ -131,9 +127,8 @@ void PPU::scan_line() {
         u8 tile_x = wx / 8;
         u8 tile_y = wy / 8;
         Tile tile = select_background_tile(tile_x, tile_y, LcdControl & 0x40);
-        u16 pixel = get_tile_pixel(tile, wx % 8, wy % 8);
-        set_display(sx, LineY, rgb2(pixel));
-        set_display2(sx, LineY, pixel);
+        Pixel16 pixel = get_tile_pixel(tile, wx % 8, wy % 8);
+        set_display(sx, LineY, pixel);
       }
     }
   
@@ -150,14 +145,15 @@ void PPU::scan_line() {
         if (!raw_pixel) continue;
 
         if (Cgb.enabled) {
-          u16 pixel = (Cgb.spr_palette.get_color(sprite.flags.cbg_pal(), raw_pixel));
-          set_display(sx, LineY, rgb2(pixel));
-          set_display2(sx, LineY, pixel);
-        } else {
-          u8 pixel = sprite.flags.dmg_pal() ?
-            (OamPalette2 >> (2 * raw_pixel)) :
-            (OamPalette1 >> (2 * raw_pixel));
+          Pixel16 pixel = (Cgb.spr_palette.get_color(sprite.flags.cbg_pal(), raw_pixel));
           set_display(sx, LineY, pixel);
+          // set_display(sx, LineY, rgb2(pixel));
+          // set_display2(sx, LineY, pixel);
+        } else {
+          //u8 pixel = sprite.flags.dmg_pal() ?
+          //  (OamPalette2 >> (2 * raw_pixel)) :
+          //  (OamPalette1 >> (2 * raw_pixel));
+          //set_display(sx, LineY, pixel);
         }
       }
     }

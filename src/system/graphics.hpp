@@ -25,6 +25,14 @@ struct Tile {
   OamFlags flags;
 };
 
+struct Pixel16 { 
+  u8 b0, b1;
+  u8 r() { return b0 & 0x1F;  }
+  u8 g() { return b0 >> 5 | ((b1 & 3) << 3); }
+  u8 b() { return (b1 >> 2) & 0x1F; }
+  u8 a() { return b1 >> 7; }
+};
+
 struct PPU {
   PPU(IoPorts &io) : io(io) {}
   IoPorts &io;
@@ -68,15 +76,11 @@ struct PPU {
   void scan_line();
 
   Tile select_background_tile(u8 x, u8 y, u8 tile_map);
-  u8 select_tile_pixel(Tile tile_index, u8 x, u8 y);
-  u16 get_tile_pixel(const Tile &tile, u8 tx, u8 ty);
+  Pixel16 get_tile_pixel(const Tile &tile, u8 tx, u8 ty);
 
   static const int DISPLAY_W = 160, DISPLAY_H = 144;
-  u8 display[DISPLAY_W * DISPLAY_H];
-  void set_display(u8 x, u8 y, u8 pixel);
-  u8 display2[DISPLAY_W * DISPLAY_H];
-  void set_display2(u8 x, u8 y, u16 pixel);
-
+  Pixel16 display[DISPLAY_W * DISPLAY_H];
+  void set_display(u8 x, u8 y, Pixel16 p);
 
   u8 read(u16 addr) { return (&LcdControl)[addr]; }
   void write(u16 addr, u8 val) { (&LcdControl)[addr] = val; }
@@ -102,9 +106,9 @@ struct PPU {
         addr += addr >> 7;
         addr &= ~0x40;
       }
-      u16 get_color(u8 pal, u8 pixel) {
+      Pixel16 get_color(u8 pal, u8 pixel) {
         u8 addr = pal * 8 + pixel * 2;
-        return data[addr] + 0x100 * data[addr + 1];
+        return { data[addr], data[addr + 1] };
       }
     };
     PaletteArray bg_palette, spr_palette;

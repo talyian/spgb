@@ -26,13 +26,14 @@ namespace glf {
   enum DrawType : GLenum { STREAM_DRAW = 0x88E0, STATIC_DRAW = 0x88E4 };
   enum ShaderIV : GLenum { COMPILE_STATUS = 0x8B81, VALIDATE_STATUS= 0x8B83, INFO_LOG_LENGTH = 0x8B84 };
   enum DebugType : GLenum { ERR = 0x824C, DEPRECATED = 0x824D, UNDEFINED_BEHAVIOR = 0x824E, PERFORMANCE = 0x8250 };
+  enum PixelType : GLenum { UnsignedShort5551 = 0x8366 };
   enum DebugSeverity : GLenum { HIGH = 0x9146, MEDIUM, LOW, NOTIFICATION=0x826B };
   struct glShader { GLuint id; };
 
 void MessageCallback(
   GLenum source, GLenum type, GLuint id, GLenum severity,
   GLsizei length, const char* message, const void*) {
-  if (severity == DebugSeverity::NOTIFICATION) return;
+  // if (severity == DebugSeverity::NOTIFICATION) return;
   printf(
     "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %.*s\n",
     ( type == DebugType::ERR ? "** GL ERROR **" : "" ), type, severity, length, message);
@@ -85,12 +86,19 @@ struct Texture216 {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   }
-  void setData(u8 *data, u32 w, u32 h) {
+  void setData(Pixel16 *data, u32 w, u32 h) {
     glBindTexture(GL_TEXTURE_2D, id);
     glTexImage2D(
-        GL_TEXTURE_2D, 0, GL_RED, w, h, 0,
-        // format/type is GL_RED/GL_UNSIGNED_BYTE to load single channel
-        GL_RED, GL_UNSIGNED_BYTE, data);
+        GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0,
+        GL_RGBA, glf::PixelType::UnsignedShort5551,
+      data);
+  }
+  void setData(u8 * data, u32 w, u32 h) {
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTexImage2D(
+      GL_TEXTURE_2D, 0, GL_RED, w, h, 0,
+      // format/type is GL_RED/GL_UNSIGNED_BYTE to load single channel
+      GL_RED, GL_UNSIGNED_BYTE, data);
   }
 };
 
@@ -142,6 +150,7 @@ void main() {
   float g = floor(vf * 36.0 - (r) * 6.0);
   float b = vf * 216.0 - (r) * 36.0 - (g) * 6.0;
   gl_FragColor = vec4(r / 5.0, g / 5.0, b / 5.0, 1.0);
+  gl_FragColor = vec4(texture2D(tx_screen, uv).rgb, 1);
 }
 )STR";
   Shader() {
