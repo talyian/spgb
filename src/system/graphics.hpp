@@ -9,7 +9,7 @@ struct OamFlags {
   bool flip_y() const { return value & 0x40; }
   bool flip_x() const { return value & 0x20; }
   bool dmg_pal() const { return value & 0x10; }
-  bool tile_bank() const { return value & 0xF; }
+  bool tile_bank() const { return value & 0x8; }
   u8 cbg_pal() const { return value & 0x7; }
 };
 
@@ -74,6 +74,9 @@ struct PPU {
   static const int DISPLAY_W = 160, DISPLAY_H = 144;
   u8 display[DISPLAY_W * DISPLAY_H];
   void set_display(u8 x, u8 y, u8 pixel);
+  u8 display2[DISPLAY_W * DISPLAY_H];
+  void set_display2(u8 x, u8 y, u16 pixel);
+
 
   u8 read(u16 addr) { return (&LcdControl)[addr]; }
   void write(u16 addr, u8 val) { (&LcdControl)[addr] = val; }
@@ -90,6 +93,7 @@ struct PPU {
   struct CGB {
     bool enabled = true;
     struct PaletteArray {
+      PaletteArray() { memset(data, 0xFF, 64); }
       u8 data[64]; // 8 palettes, 4 colors per palette, 2 bytes (rgb555) per color
       u8 addr = 0;
       u8 read() { return data[addr & 0x3F]; }
@@ -100,7 +104,7 @@ struct PPU {
       }
       u16 get_color(u8 pal, u8 pixel) {
         u8 addr = pal * 8 + pixel * 2;
-        return data[addr] * 0x100 + data[addr + 1];
+        return data[addr] + 0x100 * data[addr + 1];
       }
     };
     PaletteArray bg_palette, spr_palette;

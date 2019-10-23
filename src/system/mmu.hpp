@@ -110,8 +110,8 @@ struct MemoryMapper {
     else if (addr == 0xFF56) { /* TODO: CGB IR port */ }
     else if (addr == 0xFF68) { ppu.Cgb.bg_palette.addr = val; }
     else if (addr == 0xFF69) { ppu.Cgb.bg_palette.write(val); }
-    else if (addr == 0xFF68) { ppu.Cgb.spr_palette.addr = val; }
-    else if (addr == 0xFF69) { ppu.Cgb.spr_palette.write(val); }
+    else if (addr == 0xFF6A) { ppu.Cgb.spr_palette.addr = val; }
+    else if (addr == 0xFF6B) { ppu.Cgb.spr_palette.write(val); }
     else if (addr == 0xFF70) {
       u8 v = val & 0x7; v += !v;
       wram_bank = io.data[0x70] = v;

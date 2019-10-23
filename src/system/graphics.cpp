@@ -6,7 +6,7 @@ u8 rgb(u8 r, u8 g, u8 b) {
 }
 
 u8 rgb2(u16 rgb555) {
-  return rgb(rgb555 >> 10, (rgb555 >> 5) & 0x1F, rgb555 & 0x1F);
+  return rgb((rgb555 & 0x1F) / 6, ((rgb555 >> 5) & 0x1F) / 6, (rgb555 >> 10) / 6);
 }
 
 u8 absolute_palette[4] = {
@@ -18,6 +18,10 @@ u8 absolute_palette[4] = {
 
 void PPU::set_display(u8 x, u8 y, u8 pixel) {
   display[y * DISPLAY_W + x] = pixel;
+}
+
+void PPU::set_display2(u8 x, u8 y, u16 pixel) {
+  display2[y * DISPLAY_W + x] = pixel;
 }
 
 void PPU::tick(u16 delta) {
@@ -92,18 +96,14 @@ u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8) {
 u16 PPU::get_tile_pixel(const Tile &tile, u8 tx, u8 ty) {
   u8 * vram_base_ptr = VRAM;
   if (tile.flags.tile_bank()) vram_base_ptr = VRAM2;
-  u8 * tile_data = 0;
-  if ((tile.index & 0x80) | (LcdControl & 0x10)) {
-    tile_data = vram_base_ptr + tile.index * 16 + ty * 2;
-  } else {
-    tile_data = vram_base_ptr + 0x1000 + tile.index * 16 + ty * 2;
-  }
-  u8 pixel = load_tile_pixel(tile_data, tx, ty);
+  bool map1 = !((tile.index & 0x80) | (LcdControl & 0x10));
+  u16 tile_offset = 0x1000 * map1 + tile.index * 16 + ty * 2;
+  u8 pixel = load_tile_pixel(vram_base_ptr + tile_offset, tx, ty);
 
   if (!Cgb.enabled) 
     return (BgPalette >> (2 * pixel)) & 0x03;
 
-  return rgb2(Cgb.bg_palette.get_color(tile.flags.cbg_pal(), pixel));
+  return Cgb.bg_palette.get_color(tile.flags.cbg_pal(), pixel);
 }
 
 // TODO: this is currently a pretty naive implementation and turns up hot in profiler.
@@ -116,8 +116,9 @@ void PPU::scan_line() {
     u8 tile_x = bx / 8;
     u8 tile_y = by / 8;
     Tile tile = select_background_tile(tile_x, tile_y, LcdControl & 0x8);
-    u8 pixel = get_tile_pixel(tile, bx % 8, by % 8);
-    set_display(sx, LineY, pixel);
+    u16 pixel = get_tile_pixel(tile, bx % 8, by % 8);
+    set_display(sx, LineY, rgb2(pixel));
+    set_display2(sx, LineY, pixel);
   }
 
   // TODO : render Window
@@ -130,8 +131,9 @@ void PPU::scan_line() {
         u8 tile_x = wx / 8;
         u8 tile_y = wy / 8;
         Tile tile = select_background_tile(tile_x, tile_y, LcdControl & 0x40);
-        u8 pixel = get_tile_pixel(tile, wx % 8, wy % 8);
-        set_display(sx, LineY, pixel);
+        u16 pixel = get_tile_pixel(tile, wx % 8, wy % 8);
+        set_display(sx, LineY, rgb2(pixel));
+        set_display2(sx, LineY, pixel);
       }
     }
   
@@ -148,8 +150,9 @@ void PPU::scan_line() {
         if (!raw_pixel) continue;
 
         if (Cgb.enabled) {
-          u8 pixel = rgb2(Cgb.spr_palette.get_color(sprite.flags.cbg_pal(), raw_pixel));
-          set_display(sx, LineY, pixel);
+          u16 pixel = (Cgb.spr_palette.get_color(sprite.flags.cbg_pal(), raw_pixel));
+          set_display(sx, LineY, rgb2(pixel));
+          set_display2(sx, LineY, pixel);
         } else {
           u8 pixel = sprite.flags.dmg_pal() ?
             (OamPalette2 >> (2 * raw_pixel)) :

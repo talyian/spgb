@@ -125,7 +125,7 @@ struct Square {
     u16 f = freq;
     // the period for f=0x783 is about 125 * 4;
     // we want it to be about 440 = 44k / 440 = 100 cycles
-    u16 frequency_timer_period = (2048 - f) / 10;
+    u16 frequency_timer_period = (2048 - f) / 4;
 
     // f32 out =  (float)v / 15 * (incrementor++ % frequency_timer_period) / frequency_timer_period;
     // TODO: read duty value
