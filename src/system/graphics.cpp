@@ -5,14 +5,19 @@ u8 rgb(u8 r, u8 g, u8 b) {
   return r * 36 + g * 6 + b;
 }
 
+u8 rgb2(u16 rgb555) {
+  return rgb(rgb555 >> 10, (rgb555 >> 5) & 0x1F, rgb555 & 0x1F);
+}
+
 u8 absolute_palette[4] = {
   rgb(5, 5, 4),
   rgb(3, 5, 2),
   rgb(1, 2, 2),
   rgb(0, 0, 0)
 };
+
 void PPU::set_display(u8 x, u8 y, u8 pixel) {
-  display[y * DISPLAY_W + x] = absolute_palette[pixel % 4];
+  display[y * DISPLAY_W + x] = pixel;
 }
 
 void PPU::tick(u16 delta) {
@@ -94,7 +99,11 @@ u16 PPU::get_tile_pixel(const Tile &tile, u8 tx, u8 ty) {
     tile_data = vram_base_ptr + 0x1000 + tile.index * 16 + ty * 2;
   }
   u8 pixel = load_tile_pixel(tile_data, tx, ty);
-  return (BgPalette >> (2 * pixel)) & 0x03;
+
+  if (!Cgb.enabled) 
+    return (BgPalette >> (2 * pixel)) & 0x03;
+
+  return rgb2(Cgb.bg_palette.get_color(tile.flags.cbg_pal(), pixel));
 }
 
 // TODO: this is currently a pretty naive implementation and turns up hot in profiler.
@@ -137,10 +146,16 @@ void PPU::scan_line() {
         u8 * tile_data = VRAM + sprite.tile * 16 + ty * 2;
         u8 raw_pixel = load_tile_pixel(tile_data, tx, ty);
         if (!raw_pixel) continue;
-        u8 pixel = sprite.flags.dmg_pal() ?
-          (OamPalette2 >> (2 * raw_pixel)) :
-          (OamPalette1 >> (2 * raw_pixel));
-        set_display(sx, LineY, pixel);
+
+        if (Cgb.enabled) {
+          u8 pixel = rgb2(Cgb.spr_palette.get_color(sprite.flags.cbg_pal(), raw_pixel));
+          set_display(sx, LineY, pixel);
+        } else {
+          u8 pixel = sprite.flags.dmg_pal() ?
+            (OamPalette2 >> (2 * raw_pixel)) :
+            (OamPalette1 >> (2 * raw_pixel));
+          set_display(sx, LineY, pixel);
+        }
       }
     }
   };

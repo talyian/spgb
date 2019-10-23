@@ -88,6 +88,7 @@ struct PPU {
   }
 
   struct CGB {
+    bool enabled = true;
     struct PaletteArray {
       u8 data[64]; // 8 palettes, 4 colors per palette, 2 bytes (rgb555) per color
       u8 addr = 0;
@@ -96,6 +97,10 @@ struct PPU {
         data[addr & 0x3F] = value;
         addr += addr >> 7;
         addr &= ~0x40;
+      }
+      u16 get_color(u8 pal, u8 pixel) {
+        u8 addr = pal * 8 + pixel * 2;
+        return data[addr] * 0x100 + data[addr + 1];
       }
     };
     PaletteArray bg_palette, spr_palette;
