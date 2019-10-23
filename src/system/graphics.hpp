@@ -27,6 +27,13 @@ struct Tile {
 
 struct Pixel16 { 
   u8 b0, b1;
+  Pixel16() = default;
+  Pixel16(u8 b0, u8 b1) : b0(b0), b1(b1) { }
+  Pixel16(u8 r, u8 g, u8 b) {
+    u16 v = (b << 10) + (g << 5) + r;
+    b0 = v;
+    b1 = v >> 8;
+  }
   u8 r() { return b0 & 0x1F;  }
   u8 g() { return b0 >> 5 | ((b1 & 3) << 3); }
   u8 b() { return (b1 >> 2) & 0x1F; }
@@ -99,6 +106,7 @@ struct PPU {
     struct PaletteArray {
       PaletteArray() { memset(data, 0xFF, 64); }
       u8 data[64]; // 8 palettes, 4 colors per palette, 2 bytes (rgb555) per color
+      Pixel16 * pixels = (Pixel16 *)data;
       u8 addr = 0;
       u8 read() { return data[addr & 0x3F]; }
       void write(u8 value) {

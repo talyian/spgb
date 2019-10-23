@@ -83,8 +83,10 @@ Pixel16 PPU::get_tile_pixel(const Tile &tile, u8 tx, u8 ty) {
   if (tile.flags.flip_y()) ty = 7 - ty;
   u8 pal_entry = load_tile_pixel(vram_base_ptr + tile_offset, tx, ty);
 
-  if (!Cgb.enabled) 
-    return {pal_entry, pal_entry}; // TODO
+  if (!Cgb.enabled) {
+    pal_entry = (BgPalette >> (2 * pal_entry)) & 0x03;    
+    return Cgb.bg_palette.get_color(0, pal_entry);
+  }
   Pixel16 pixel = Cgb.bg_palette.get_color(tile.flags.cbg_pal(), pal_entry);
 
   // use the alpha channel to handle sprite transparency/priority
@@ -139,19 +141,19 @@ void PPU::scan_line() {
         u8 raw_pixel = load_tile_pixel(tile_data, tx, ty);
         if (!raw_pixel) continue;
 
-        if (Cgb.enabled) {
-          Pixel16 pixel = (Cgb.spr_palette.get_color(sprite.flags.cbg_pal(), raw_pixel));
-          // sprite priority means it appears behind background
-          if (sprite.flags.priority() && display[LineY * DISPLAY_W + sx].a())
-            continue;
-          set_display(sx, LineY, pixel);
-        } else {
-          set_display(sx, LineY, {raw_pixel, raw_pixel}); // TODO
-          //u8 pixel = sprite.flags.dmg_pal() ?
-          //  (OamPalette2 >> (2 * raw_pixel)) :
-          //  (OamPalette1 >> (2 * raw_pixel));
-          //set_display(sx, LineY, pixel);
+        Pixel16 pixel;
+        if (Cgb.enabled) 
+          pixel = Cgb.spr_palette.get_color(sprite.flags.cbg_pal(), raw_pixel);
+        else {
+          raw_pixel = sprite.flags.dmg_pal() ?
+            (OamPalette2 >> (2 * raw_pixel)) & 0x03:
+            (OamPalette1 >> (2 * raw_pixel)) & 0x03;    
+          pixel = Cgb.spr_palette.get_color(0, raw_pixel);
         }
+        // sprite priority means it appears behind background
+        if (sprite.flags.priority() && display[LineY * DISPLAY_W + sx].a())
+          continue;
+        set_display(sx, LineY, pixel);
       }
     }
   };

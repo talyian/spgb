@@ -28,7 +28,23 @@ struct MemoryMapper {
   u8 &BiosLock;
   u8 cgb_mode = true;
   void load_cart(const Cart &cart)  {
+    // Code smell: does this code belong in MemoryManager?
     this->cart = cart;
+    if (cart.console_type == CGB) {
+      ppu.Cgb.enabled = true;
+    } else {
+      ppu.Cgb.enabled = false;
+      ppu.Cgb.bg_palette.pixels[3] = {0,0,0};
+      ppu.Cgb.bg_palette.pixels[2] = {10,11,16};
+      ppu.Cgb.bg_palette.pixels[1] = {20,22,18};
+      ppu.Cgb.bg_palette.pixels[0] = {31,30,28};
+      ppu.Cgb.spr_palette.pixels[3] = {0,0,0};
+      ppu.Cgb.spr_palette.pixels[2] = {10,11,16};
+      ppu.Cgb.spr_palette.pixels[1] = {20,22,18};
+      ppu.Cgb.spr_palette.pixels[0] = {31,30,28};
+      memset(ppu.VRAM2, 0, 0x2000);
+    }
+    log("cgb", (u8)cart.console_type, (u8)ppu.Cgb.enabled);
   }
 
   u8 get(u16 addr) {
@@ -94,46 +110,54 @@ struct MemoryMapper {
     else if (addr < 0xFF10) { io.data[addr - 0xFF00] = val; }
     else if (addr < 0xFF40) { audio.write(addr - 0xFF10, val); }
     else if (addr < 0xFF4C) { ppu.write(addr - 0xFF40, val); }
-    else if (addr == 0xFF4D) {
-      if (val & 1) {
-        log("unimplemented: speed switch", addr, val);
-        _stop();
-      }
-    }
-    else if (addr == 0xFF4F) { ppu.vram_bank = val & 1; }
-    else if (addr == 0xFF50) { BiosLock = 1; }
-    else if (addr == 0xFF55) {
-      u16 source = get(0xFF51) * 0x100 + (get(0xFF52) & 0xF0);
-      u16 dest = (get(0xFF53) & 0x1F) * 0x100;
-      dest += get(0xFF54) & 0xF0;
-      dest |= 0x8000;
-      i16 length = (val & 0x7F);
-      u8 transfer_mode = val & 0x80;
-      if (transfer_mode) { log("Error: unsupported Hblank DMA"); }
-      while(length >=0) {
-        for(u16 j = 0; j < 0x10; j++) {
-          set(dest++, get(source++));
+    else if (addr < 0xFF80) {
+      if (addr == 0xFF50) { BiosLock = 1; }
+      else if (ppu.Cgb.enabled) {
+        if (addr == 0xFF4D) {
+          if (val & 1) {
+            log("WARNING: Unimplemented speed switch", addr, val);
+          }
+          io.data[0x4D] = val;
         }
-        io.data[0x51] = source >> 8;
-        io.data[0x52] = source;
-        io.data[0x53] = dest >> 8;
-        io.data[0x54] = dest;
-        io.data[0x55] = length;
-        length--;
+        else if (addr == 0xFF4F) { ppu.vram_bank = val & 1; }
+        else if (addr == 0xFF55) {
+          // HDMA
+          u16 source = get(0xFF51) * 0x100 + (get(0xFF52) & 0xF0);
+          u16 dest = (get(0xFF53) & 0x1F) * 0x100;
+          dest += get(0xFF54) & 0xF0;
+          dest |= 0x8000;
+          i16 length = (val & 0x7F);
+          u8 transfer_mode = val & 0x80;
+          if (transfer_mode) { log("Error: unsupported Hblank DMA"); }
+          while(length >=0) {
+            for(u16 j = 0; j < 0x10; j++) {
+              set(dest++, get(source++));
+            }
+            io.data[0x51] = source >> 8;
+            io.data[0x52] = source;
+            io.data[0x53] = dest >> 8;
+            io.data[0x54] = dest;
+            io.data[0x55] = length;
+            length--;
+          }
+          // done
+          io.data[0x55] = 0xFF;
+        }
+        else if (addr == 0xFF56) { /* TODO: CGB IR port */ }
+        else if (addr == 0xFF68) { ppu.Cgb.bg_palette.addr = val; }
+        else if (addr == 0xFF69) { ppu.Cgb.bg_palette.write(val); }
+        else if (addr == 0xFF6A) { ppu.Cgb.spr_palette.addr = val; }
+        else if (addr == 0xFF6B) { ppu.Cgb.spr_palette.write(val); }
+        else if (addr == 0xFF70) {
+          u8 v = val & 0x7; v += !v;
+          wram_bank = io.data[0x70] = v;
+        }
+        // CGB: unknown IO port
+        else { io.data[addr - 0xFF00] = val; }
       }
-      // done
-      io.data[0x55] = 0xFF;
+      // DMG: unknown IP port
+      else { io.data[addr - 0xFF00] = val; }
     }
-    else if (addr == 0xFF56) { /* TODO: CGB IR port */ }
-    else if (addr == 0xFF68) { ppu.Cgb.bg_palette.addr = val; }
-    else if (addr == 0xFF69) { ppu.Cgb.bg_palette.write(val); }
-    else if (addr == 0xFF6A) { ppu.Cgb.spr_palette.addr = val; }
-    else if (addr == 0xFF6B) { ppu.Cgb.spr_palette.write(val); }
-    else if (addr == 0xFF70) {
-      u8 v = val & 0x7; v += !v;
-      wram_bank = io.data[0x70] = v;
-    }
-    else if (addr < 0xFF80) { io.data[addr - 0xFF00] = val; }
     else HRAM[addr - 0xFF80] = val;
   }
 

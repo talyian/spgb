@@ -25,12 +25,8 @@ struct Cart {
 
     name = {data + 0x134, 0xB};
 
-    if (data[0x143] == 0x80)
+    if (data[0x143] >= 0x80)
       console_type = CGB;
-    else if (data[0x143] == 0xC0)
-      console_type = CGB_Only;
-    else if (data[0x146] == 0x3)
-      console_type = SGB;
     else
       console_type = DMG;
 
