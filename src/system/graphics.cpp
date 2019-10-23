@@ -4,6 +4,7 @@
 u8 rgb(u8 r, u8 g, u8 b) {
   return r * 36 + g * 6 + b;
 }
+
 u8 absolute_palette[4] = {
   rgb(5, 5, 4),
   rgb(3, 5, 2),
@@ -72,7 +73,8 @@ void PPU::push_frame() {
 // Given a bg coordinate between 0,0 and 32,32, return the tile specifier
 Tile PPU::select_background_tile(u8 x, u8 y, u8 source) {
   source = source != 0;
-  return {VRAM[0x400 * source + 0x1800 + y * 32 + x]};
+  u16 addr = 0x400 * source + 0x1800 + y * 32 + x;
+  return Tile {VRAM[addr], {VRAM2[addr]}};
 };
 
 u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8) {
@@ -80,6 +82,19 @@ u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8) {
   t = t >> (7 - x);
   t = t & 0x0101;
   return t | (t >> 7);
+}
+
+u16 PPU::get_tile_pixel(const Tile &tile, u8 tx, u8 ty) {
+  u8 * vram_base_ptr = VRAM;
+  if (tile.flags.tile_bank()) vram_base_ptr = VRAM2;
+  u8 * tile_data = 0;
+  if ((tile.index & 0x80) | (LcdControl & 0x10)) {
+    tile_data = vram_base_ptr + tile.index * 16 + ty * 2;
+  } else {
+    tile_data = vram_base_ptr + 0x1000 + tile.index * 16 + ty * 2;
+  }
+  u8 pixel = load_tile_pixel(tile_data, tx, ty);
+  return (BgPalette >> (2 * pixel)) & 0x03;
 }
 
 // TODO: this is currently a pretty naive implementation and turns up hot in profiler.
@@ -91,42 +106,25 @@ void PPU::scan_line() {
     u8 by = LineY + ScrollY;
     u8 tile_x = bx / 8;
     u8 tile_y = by / 8;
-    u8 bg_tile_source = LcdControl & 0x8;
-    Tile tile = select_background_tile(tile_x, tile_y, bg_tile_source);
-    u8 * tile_data = 0, tx = bx % 8, ty = by % 8;
-    if ((tile.index & 0x80) | (LcdControl & 0x10)) {
-      tile_data = VRAM + tile.index * 16 + ty * 2;
-    } else {
-      tile_data = VRAM + 0x1000 + tile.index * 16 + ty * 2;
-    }
-    u8 pixel = load_tile_pixel(tile_data, tx, ty);
-    pixel = (BgPalette >> (2 * pixel)) & 0x03;
+    Tile tile = select_background_tile(tile_x, tile_y, LcdControl & 0x8);
+    u8 pixel = get_tile_pixel(tile, bx % 8, by % 8);
     set_display(sx, LineY, pixel);
   }
 
   // TODO : render Window
   if (LcdControl & 0x20)
-  if (LineY >= this->WindowY) {
-    u8 wy = LineY - this->WindowY;
-    for(u8 sx = 0; sx < DISPLAY_W; sx++) {
-      u8 wx = sx - WindowX + 7;
-      if (wx >= DISPLAY_W) continue;
-      u8 tile_x = wx / 8;
-      u8 tile_y = wy / 8;
-      Tile tile = select_background_tile(tile_x, tile_y, LcdControl & 0x40);
-
-      u8 * tile_data = 0, tx = wx % 8, ty = wy % 8;
-      if ((tile.index & 0x80) | (LcdControl & 0x10)) {
-        tile_data = VRAM + tile.index * 16 + ty * 2;
-      } else {
-        tile_data = VRAM + 0x1000 + tile.index * 16 + ty * 2;
+    if (LineY >= this->WindowY) {
+      u8 wy = LineY - this->WindowY;
+      for(u8 sx = 0; sx < DISPLAY_W; sx++) {
+        u8 wx = sx - WindowX + 7;
+        if (wx >= DISPLAY_W) continue;
+        u8 tile_x = wx / 8;
+        u8 tile_y = wy / 8;
+        Tile tile = select_background_tile(tile_x, tile_y, LcdControl & 0x40);
+        u8 pixel = get_tile_pixel(tile, wx % 8, wy % 8);
+        set_display(sx, LineY, pixel);
       }
-      u8 pixel = load_tile_pixel(tile_data, tx, ty);
-      pixel = (BgPalette >> (2 * pixel)) & 3;
-      set_display(sx, LineY, pixel);
-      // set_display(sx, LineY, (tile_y ^ tile_x) & 3);
     }
-  }
   
   auto render_sprite = [this](OamEntry &sprite) {
     u8 _ty = LineY - (sprite.y - 16);

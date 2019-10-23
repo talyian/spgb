@@ -18,7 +18,6 @@ struct MemoryMapper {
   Audio &audio;
   u8 *bios_rom = 0;
   
-  u8 * VRAM = ppu.VRAM; // at 0x8000
   u8 wram_bank = 1;
   u8 WRAM[8][0x1000];   // work ram at 0xC000 / banks at 0xD000
   u8 * OAM = ppu.OAM;   // OAM at 0xFE00
@@ -44,7 +43,7 @@ struct MemoryMapper {
     case 0x6:
     case 0x7: return cart.read(addr);
     case 0x8:
-    case 0x9: return VRAM[addr & 0x1FFF];
+    case 0x9: return ppu.vram_bank ? ppu.VRAM2[addr & 0x1FFF] : ppu.VRAM[addr & 0x1FFF];
     case 0xA:
     case 0xB: return cart.read(addr);
     case 0xC: return WRAM[0][addr & 0xFFF];
@@ -57,17 +56,26 @@ struct MemoryMapper {
         addr < 0xFF10 ? io.data[addr & 0xFF] :
         addr < 0xFF40 ? audio.read(addr - 0xFF10) :
         addr < 0xFF4C ? ppu.read(addr - 0xFF40) :
+        addr == 0xFF4F ? ppu.vram_bank :
+        addr == 0xFF68 ? ppu.Cgb.bg_palette.addr :
+        addr == 0xFF69 ? ppu.Cgb.bg_palette.read() :
+        addr == 0xFF6A ? ppu.Cgb.spr_palette.addr :
+        addr == 0xFF6B ? ppu.Cgb.spr_palette.read() :
         addr < 0xFF80 ? io.data[addr & 0xFF] :
         HRAM[addr - 0xFF80];
     }
   }
 
-  u16 get16(u16 addr) { return get(addr) + 0x100 * get(addr + 1); }
+  u16 get16(u16 addr) { return get(addr) * 0x100 + get(addr + 1); }
   
   void set(u16 addr, u8 val) {
     if (addr < 0x100 && !BiosLock) bios_rom[addr] = val;
     else if (addr < 0x8000) cart.write(addr, val);
-    else if (addr < 0xA000) VRAM[addr - 0x8000] = val;
+    else if (addr < 0xA000)
+      if (ppu.vram_bank)
+        ppu.VRAM2[addr & 0x1FFF] = val;
+      else
+        ppu.VRAM[addr &0x1FFF] = val;
     else if (addr < 0xC000) cart.write(addr, val);
     else if (addr < 0xD000) WRAM[0][addr - 0xC000] = val;
     else if (addr < 0xE000) WRAM[wram_bank][addr - 0xD000] = val;
@@ -89,8 +97,21 @@ struct MemoryMapper {
         _stop();
       }
     }
+    else if (addr == 0xFF4F) { ppu.vram_bank = val & 1; }
     else if (addr == 0xFF50) { BiosLock = 1; }
-    else if (addr == 0xFF56) { /* TODO: IR port */ }
+    else if (addr == 0xFF55) {
+      u16 source = get(0xFF51) * 0x100 + get(0xFF52);
+      u16 dest = get(0xFF53) * 0x100 + get(0xFF54);
+      u16 length = (val & 0x7F) * 0x10 + 0x10;
+      u8 transfer_mode = val & 0x80;
+      if (transfer_mode) { log("Error: unsupported Hblank DMA"); }
+      for(u16 i = 0; i < length; i++) { set(dest + i, get(source + i)); }
+    }
+    else if (addr == 0xFF56) { /* TODO: CGB IR port */ }
+    else if (addr == 0xFF68) { ppu.Cgb.bg_palette.addr = val; }
+    else if (addr == 0xFF69) { ppu.Cgb.bg_palette.write(val); }
+    else if (addr == 0xFF68) { ppu.Cgb.spr_palette.addr = val; }
+    else if (addr == 0xFF69) { ppu.Cgb.spr_palette.write(val); }
     else if (addr == 0xFF70) {
       u8 v = val & 0x7; v += !v;
       wram_bank = io.data[0x70] = v;

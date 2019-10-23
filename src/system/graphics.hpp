@@ -3,22 +3,27 @@
 #include "io_ports.hpp"
 #include "../platform.hpp"
 
+struct OamFlags {
+  u8 value;
+  bool priority() const { return value & 0x80; }
+  bool flip_y() const { return value & 0x40; }
+  bool flip_x() const { return value & 0x20; }
+  bool dmg_pal() const { return value & 0x10; }
+  bool tile_bank() const { return value & 0xF; }
+  u8 cbg_pal() const { return value & 0x7; }
+};
+
 struct OamEntry {
   u8 y;
   u8 x;
   u8 tile;
-  struct OamFlags {
-    u8 value;
-    bool priority() const { return value & 0x80; }
-    bool flip_y() const { return value & 0x40; }
-    bool flip_x() const { return value & 0x20; }
-    bool dmg_pal() const { return value & 0x10; }
-    bool tile_bank() const { return value & 0xF; }
-    u8 cbg_pal() const { return value & 0x7; }
-  } flags;
+  OamFlags flags;
 };
 
-struct Tile { u8 index; };
+struct Tile {
+  u8 index;
+  OamFlags flags;
+};
 
 struct PPU {
   PPU(IoPorts &io) : io(io) {}
@@ -51,8 +56,9 @@ struct PPU {
   u8 WindowX;
   u8 &InterruptV = io.data[0x0F];
 
-    
+  u8 vram_bank = 0;
   u8 VRAM[0x2000];
+  u8 VRAM2[0x2000];
   u8 OAM[0x100];
   // The PPU state machine - drawing is timing sensitive so we need
   // to carefully control the clocks
@@ -63,6 +69,7 @@ struct PPU {
 
   Tile select_background_tile(u8 x, u8 y, u8 tile_map);
   u8 select_tile_pixel(Tile tile_index, u8 x, u8 y);
+  u16 get_tile_pixel(const Tile &tile, u8 tx, u8 ty);
 
   static const int DISPLAY_W = 160, DISPLAY_H = 144;
   u8 display[DISPLAY_W * DISPLAY_H];
@@ -76,6 +83,21 @@ struct PPU {
     WindowX = WindowY = 0;
     LcdStatusMatch = 0;
     line_timer = frame = 0;
+    vram_bank = 0;
     state = OAM_SCAN;
   }
+
+  struct CGB {
+    struct PaletteArray {
+      u8 data[64]; // 8 palettes, 4 colors per palette, 2 bytes (rgb555) per color
+      u8 addr = 0;
+      u8 read() { return data[addr & 0x3F]; }
+      void write(u8 value) {
+        data[addr & 0x3F] = value;
+        addr += addr >> 7;
+        addr &= ~0x40;
+      }
+    };
+    PaletteArray bg_palette, spr_palette;
+  } Cgb;
 };
