@@ -24,14 +24,14 @@ struct CPU {
     struct { Reg16 BC, DE, AF, HL, SP; };
   } registers;
 
-  struct { 
-    bit<7> Z;
-    bit<6> N;
-    bit<5> H;
-    bit<4> C;
-  } flags { {registers.F}, {registers.F}, {registers.F}, {registers.F} };
-
-  
+#define FLAG(X, bit)                                \
+  bool flags_##X() { return (registers.F >> bit) & 1; } \
+  void flags_##X(bool v) { registers.F = (registers.F & ~(1 << bit)) | (v << bit); }
+  FLAG(Z, 7)
+  FLAG(N, 6)
+  FLAG(H, 5)
+  FLAG(C, 4)
+#undef FLAG
   // Interrupt Master Enable
   bool IME = 0;
 

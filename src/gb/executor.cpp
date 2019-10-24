@@ -33,36 +33,36 @@ bool Executor::decode() {
   #define LD16_XXXX(RR) RR.l = _read_u8(); RR.h = _read_u8()
   #define ADD(R) {u8 a = A, b = R; \
     A = a + b; \
-    cpu.flags.Z = (u8)(a + b) == 0; \
-    cpu.flags.C = (u16)a + (u16)b > 0xFF; \
-    cpu.flags.H = (a & 0xF) + (b & 0xF) > 0xF; \
-    cpu.flags.N = 0;}
-  #define ADC(R) {u8 a = A, b = R, c = cpu.flags.C; \
-    A = a + b + c; \
-    cpu.flags.Z = (u8)(a + b + c) == 0; \
-    cpu.flags.C = (a + b + c) > 0xFF; \
-    cpu.flags.H = (a & 0xF) + (b & 0xF) + c > 0xF; \
-    cpu.flags.N = 0;}
+    cpu.flags_Z((u8)(a + b) == 0);             \
+    cpu.flags_C((u16)a + (u16)b > 0xFF);       \
+    cpu.flags_H((a & 0xF) + (b & 0xF) > 0xF);  \
+    cpu.flags_N(0); }
+  #define ADC(R) {u8 a = A, b = R, c = cpu.flags_C(); \
+    A = a + b + c;                                    \
+    cpu.flags_Z((u8)(a + b + c) == 0);                \
+    cpu.flags_C((a + b + c) > 0xFF);                  \
+    cpu.flags_H((a & 0xF) + (b & 0xF) + c > 0xF);     \
+    cpu.flags_N(0);}
   #define SUB(R) {u8 a = A, b = R;            \
     A = a - b;                                \
-    cpu.flags.Z = a == b;                     \
-    cpu.flags.C = a < b;                      \
-    cpu.flags.H = (a & 0xF) < (b & 0xF);      \
-    cpu.flags.N = 1;}
-  #define SBC(R) {u8 a = A, b = R, c = cpu.flags.C; \
+    cpu.flags_Z(a == b);                      \
+    cpu.flags_C(a < b);                       \
+    cpu.flags_H((a & 0xF) < (b & 0xF));       \
+    cpu.flags_N(1);}
+  #define SBC(R) {u8 a = A, b = R, c = cpu.flags_C(); \
     A = a - b - c; \
-    cpu.flags.Z = a == (u8)(b + c); \
-    cpu.flags.N = 1; \
-    cpu.flags.C = (u16) a < (u16) b + c; \
-    cpu.flags.H = (a & 0xF) < (b & 0xF) + c; }
+    cpu.flags_Z(a == (u8)(b + c));              \
+    cpu.flags_N(1);                             \
+    cpu.flags_C((u16) a < (u16) b + c);         \
+    cpu.flags_H((a & 0xF) < (b & 0xF) + c); }
   #define AND(R) {A = A & R; cpu.registers.F = 0x20 | ((A == 0) << 7); }
   #define XOR(R) {A = A ^ R; cpu.registers.F = ((A == 0) << 7); }
   #define  OR(R) {A = A | R; cpu.registers.F = ((A == 0) << 7); }
-  #define  CP(R) {u8 a = A, b = R;            \
-    cpu.flags.Z = a == b;                     \
-    cpu.flags.C = a < b;                      \
-    cpu.flags.H = (a & 0xF) < (b & 0xF);      \
-    cpu.flags.N = 1;}
+  #define  CP(R) {u8 a = A, b = R;              \
+    cpu.flags_Z(a == b);                        \
+    cpu.flags_C(a < b);                         \
+    cpu.flags_H((a & 0xF) < (b & 0xF));         \
+    cpu.flags_N(1);}
 
   CPU::Reg8 &A = cpu.registers.A,
     &B = cpu.registers.B,
@@ -109,10 +109,10 @@ bool Executor::decode() {
   LOOP(X)
   #undef X
 
-  case 0x07: RLC(A); cpu.flags.Z = 0; break;
-  case 0x0F: RRC(A); cpu.flags.Z = 0; break;
-  case 0x17: RL(A); cpu.flags.Z = 0; break;
-  case 0x1F: RR(A); cpu.flags.Z = 0; break;
+  case 0x07: RLC(A); cpu.flags_Z(0); break;
+  case 0x0F: RRC(A); cpu.flags_Z(0); break;
+  case 0x17: RL(A); cpu.flags_Z(0); break;
+  case 0x1F: RR(A); cpu.flags_Z(0); break;
 
   case 0x08: // LD (xxxx), SP
     {
@@ -143,15 +143,15 @@ bool Executor::decode() {
   case 0xF3: cpu.IME = 0; break;
   case 0xFB: cpu.IME = 1; break;
   case 0x27: /* DAA */ {
-    if (cpu.flags.N) {
-      if (cpu.flags.C) { A -= 0x60; } // N+C: borrow a 10 digit
-      if (cpu.flags.H) { A -= 0x06; } // N+H: borrow a 01 digit
+    if (cpu.flags_N()) {
+      if (cpu.flags_C()) { A -= 0x60; } // N+C: borrow a 10 digit
+      if (cpu.flags_H()) { A -= 0x06; } // N+H: borrow a 01 digit
     } else {
-      if (cpu.flags.C || A > 0x99) { A += 0x60; cpu.flags.C = 1; } // C: carry a 10 digit
-      if (cpu.flags.H || (A & 0xF) > 0x09) { A += 0x06; } // H: carry a 01 digit
+      if (cpu.flags_C() || A > 0x99) { A += 0x60; cpu.flags_C(1); } // C: carry a 10 digit
+      if (cpu.flags_H() || (A & 0xF) > 0x09) { A += 0x06; } // H: carry a 01 digit
     }
-    cpu.flags.Z = A == 0;
-    cpu.flags.H = 0;
+    cpu.flags_Z(A == 0);
+    cpu.flags_H(0);
     break;
   }
   case 0x2F: A = ~A; F |= 0x60; break;             // Complement A
@@ -182,12 +182,12 @@ bool Executor::decode() {
   LOOP0(X)
   #undef X
   case 0x76: cpu.halted = true; if (cpu.IME == 0) { PC++; } break;
-  #define ADD_HL(RR) {u16 a = HL, b = RR; \
-    cycles += 4; \
-    HL = a + b; \
-    cpu.flags.N = 0; \
-    cpu.flags.C = a > (u16)~b; \
-    cpu.flags.H = (a & 0xFFF) + (b & 0xFFF) > 0xFFF;}
+  #define ADD_HL(RR) {u16 a = HL, b = RR;               \
+    cycles += 4;                                        \
+    HL = a + b;                                         \
+    cpu.flags_N(0);                                     \
+    cpu.flags_C(a > (u16)~b);                           \
+    cpu.flags_H((a & 0xFFF) + (b & 0xFFF) > 0xFFF); }
   case 0x09: ADD_HL(BC); break;
   case 0x19: ADD_HL(DE); break;
   case 0x29: ADD_HL(HL); break;
@@ -214,34 +214,36 @@ bool Executor::decode() {
   case 0xFE:  CP(_read_u8()); break;
 
 #define CALL(OP, COND) case OP: { u16 target = _read_u16(); if (COND) { _push(PC); PC_next = PC; PC = target;} break; }
-  CALL(0xC4, !cpu.flags.Z)
-  CALL(0xCC, cpu.flags.Z)
+  CALL(0xC4, !cpu.flags_Z())
+  CALL(0xCC, cpu.flags_Z())
   CALL(0xCD, true)
-  CALL(0xD4, !cpu.flags.C)
-  CALL(0xDC, cpu.flags.C)
+  CALL(0xD4, !cpu.flags_C())
+  CALL(0xDC, cpu.flags_C())
     // RET - 20/8/16 cycles
-  case 0xC0: { cycles += 4; if (!cpu.flags.Z) { PC = _pop(); cycles += 4; } break; }
-  case 0xC8: { cycles += 4; if (cpu.flags.Z) { PC = _pop(); cycles += 4; } break; }
+  case 0xC0: { cycles += 4; if (!cpu.flags_Z()) { PC = _pop(); cycles += 4; } break; }
+  case 0xC8: { cycles += 4; if (cpu.flags_Z()) { PC = _pop(); cycles += 4; } break; }
   case 0xC9: { cycles += 4; if (true)         { PC = _pop(); } break; }
-  case 0xD0: { cycles += 4; if (!cpu.flags.C) { PC = _pop(); cycles += 4; } break; }
-  case 0xD8: { cycles += 4; if (cpu.flags.C) { PC = _pop(); cycles += 4; } break; }
+  case 0xD0: { cycles += 4; if (!cpu.flags_C()) { PC = _pop(); cycles += 4; } break; }
+  case 0xD8: { cycles += 4; if (cpu.flags_C()) { PC = _pop(); cycles += 4; } break; }
   case 0xD9: { cycles += 4; if (true)         { cpu.IME = 1; PC = _pop(); } break; }
     // JP
   #define JP(OP, COND) case OP: { u16 target = _read_u16(); if (COND) { PC_next = PC; PC = target; cycles += 4; } break; }
-  JP(0xC2, !cpu.flags.Z);
+  JP(0xC2, !cpu.flags_Z());
   JP(0xC3, true);
-  JP(0xCA, cpu.flags.Z);
-  JP(0xD2, !cpu.flags.C);
-  JP(0xDA, cpu.flags.C);
+  JP(0xCA, cpu.flags_Z());
+  JP(0xD2, !cpu.flags_C());
+  JP(0xDA, cpu.flags_C());
   #undef JP
   #undef CALL
   case 0xE9: { PC = HL; break; }
     // JR
-  case 0x20: {i8 o = _read_u8(); if (!cpu.flags.Z) { PC += o; cycles += 4; }} break;
-  case 0x30: {i8 o = _read_u8(); if (!cpu.flags.C) { PC += o; cycles += 4; }} break;
+  case 0x20: {i8 o = _read_u8(); if (!cpu.flags_Z()) {
+    PC += o; 
+    cycles += 4; }} break;
+  case 0x30: {i8 o = _read_u8(); if (!cpu.flags_C()) { PC += o; cycles += 4; }} break;
   case 0x18: {i8 o = _read_u8(); if (true)         { PC += o; cycles += 4; }} break;
-  case 0x28: {i8 o = _read_u8(); if (cpu.flags.Z)  { PC += o; cycles += 4; }} break;
-  case 0x38: {i8 o = _read_u8(); if (cpu.flags.C)  { PC += o; cycles += 4; }} break;
+  case 0x28: {i8 o = _read_u8(); if (cpu.flags_Z())  { PC += o; cycles += 4; }} break;
+  case 0x38: {i8 o = _read_u8(); if (cpu.flags_C())  { PC += o; cycles += 4; }} break;
 
   case 0xC1: BC = _pop(); break;
   case 0xD1: DE = _pop(); break;
@@ -260,8 +262,8 @@ bool Executor::decode() {
       u16 sp = SP;
       i8 offset = _read_u8();
       cpu.registers.F = 0;
-      cpu.flags.H = (sp & 0xF) + (offset & 0xF) > 0xF;
-      cpu.flags.C = (sp & 0xFF) + (offset & 0xFF) > 0xFF;
+      cpu.flags_H((sp & 0xF) + (offset & 0xF) > 0xF);
+      cpu.flags_C((sp & 0xFF) + (offset & 0xFF) > 0xFF);
       SP = sp + offset;
     }
     cycles += 8; // total 16 cycles
@@ -273,8 +275,8 @@ bool Executor::decode() {
       u16 sp = SP;
       i8 offset = _read_u8();
       cpu.registers.F = 0;
-      cpu.flags.H = (sp & 0xF) + (offset & 0xF) > 0xF;
-      cpu.flags.C = (sp & 0xFF) + (offset & 0xFF) > 0xFF;
+      cpu.flags_H((sp & 0xF) + (offset & 0xF) > 0xF);
+      cpu.flags_C((sp & 0xFF) + (offset & 0xFF) > 0xFF);
       cpu.registers.HL = sp + offset;
     }
     cycles += 4; // total 12 cycles

@@ -38,17 +38,17 @@ struct Executor {
   template<class T> inline void INC(T &RR) {
     u8 v = RR + 1;
     RR = v;
-    cpu.flags.Z = v == 0;
-    cpu.flags.N = 0;
-    cpu.flags.H = (v & 0xF) == 0;
+    cpu.flags_Z(v == 0);
+    cpu.flags_N(0);
+    cpu.flags_H((v & 0xF) == 0);
   }
 
   template<class T> inline void DEC(T &RR) {
     u8 v = RR - 1;
     RR = v;
-    cpu.flags.Z = v == 0;
-    cpu.flags.N = 1;
-    cpu.flags.H = (v & 0xF) == 0xF;
+    cpu.flags_Z(v == 0);
+    cpu.flags_N(1);
+    cpu.flags_H((v & 0xF) == 0xF);
   }
 
   // 8 bit Rotate Right (i.e. x86 ROR)
@@ -64,28 +64,28 @@ struct Executor {
     u8 v = RR;
     u8 v2 = (v << 1) | (v >> 7);
     cpu.registers.F = 0;
-    cpu.flags.C = v & 0x80;
-    cpu.flags.Z = v2 == 0;
+    cpu.flags_C(v & 0x80);
+    cpu.flags_Z(v2 == 0);
     RR = v2;
   }
 
   // 9-bit Rotate Right (i.e. x86 RCR)
   template<class T> inline void RR(T &RR) {
     u8 v = RR;
-    u8 v2 = (v >> 1) | (cpu.flags.C << 7);
+    u8 v2 = (v >> 1) | (cpu.flags_C() << 7);
     cpu.registers.F = 0;
-    cpu.flags.C = v & 1;
-    cpu.flags.Z = v2 == 0;
+    cpu.flags_C(v & 1);
+    cpu.flags_Z(v2 == 0);
     RR = v2;
   }
 
   // 9-bit Rotate Left
   template<class T> inline void RL(T &RR) {
     u8 v = RR;
-    u8 v2 = (v << 1) | cpu.flags.C;
+    u8 v2 = (v << 1) | cpu.flags_C();
     cpu.registers.F = 0;
-    cpu.flags.C = v & 0x80;
-    cpu.flags.Z = v2 == 0;
+    cpu.flags_C(v & 0x80);
+    cpu.flags_Z(v2 == 0);
     RR = v2;
   }
 
@@ -94,8 +94,8 @@ struct Executor {
     u8 v = RR;
     u8 v2 = v << 1;
     cpu.registers.F = 0;
-    cpu.flags.C = v & 0x80;
-    cpu.flags.Z = v2 == 0;
+    cpu.flags_C(v & 0x80);
+    cpu.flags_Z(v2 == 0);
     RR = v2;
   }
 
@@ -104,8 +104,8 @@ struct Executor {
     i8 v = RR;
     u8 v2 = v >> 1;
     cpu.registers.F = 0;
-    cpu.flags.C = v & 1;
-    cpu.flags.Z = v2 == 0;
+    cpu.flags_C(v & 1);
+    cpu.flags_Z(v2 == 0);
     RR = v2;
   }
 
@@ -114,8 +114,8 @@ struct Executor {
     u8 v = RR;
     u8 v2 = v >> 1;
     cpu.registers.F = 0;
-    cpu.flags.C = v & 1;
-    cpu.flags.Z = v2 == 0;
+    cpu.flags_C(v & 1);
+    cpu.flags_Z(v2 == 0);
     RR = v2;
   }
 
@@ -128,9 +128,9 @@ struct Executor {
 
   void BIT(u8 bit, u8 v) {
     v &= (1 << bit);
-    cpu.flags.N = 0;
-    cpu.flags.H = 1;
-    cpu.flags.Z = v == 0;
+    cpu.flags_N(0);
+    cpu.flags_H(1);
+    cpu.flags_Z(v == 0);
   }
 
   template<class T> void RES(u8 bit, T &RR) { RR = RR & ~(1 << bit); }
