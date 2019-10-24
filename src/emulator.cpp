@@ -81,17 +81,18 @@ u32 emulator_t::single_step() {
     dt = _executor.cycles;
   }
 
-  joypad.tick();
   if (mmu.get(IoPorts::DMA)) {
     // technically this won't work if we transfer from 0
     // but that seems highly unlikely
     dma_transfer(&mmu, mmu.get(IoPorts::DMA));
     mmu.set(IoPorts::DMA, 0);
   }
+  timer.tick(dt);
+  if (mmu.io.data[0x4D] & 0x80) // double speed
+    dt /= 2;
+  joypad.tick();
   audio.tick(dt);
   ppu.tick(dt);
-  timer.tick(dt);
-
   return dt;
 }
 

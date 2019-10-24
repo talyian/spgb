@@ -113,12 +113,7 @@ struct MemoryMapper {
     else if (addr < 0xFF80) {
       if (addr == 0xFF50) { BiosLock = 1; }
       else if (ppu.Cgb.enabled) {
-        if (addr == 0xFF4D) {
-          if (val & 1) {
-            log("WARNING: Unimplemented speed switch", addr, val);
-          }
-          io.data[0x4D] = val;
-        }
+        if (addr == 0xFF4D) { io.data[0x4D] |= (2  | (val & 1)); }
         else if (addr == 0xFF4F) { ppu.vram_bank = val & 1; }
         else if (addr == 0xFF55) {
           // HDMA

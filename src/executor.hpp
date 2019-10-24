@@ -234,7 +234,15 @@ struct Executor {
 #define LOOP(X) LOOP0(X) X(0x6, LoadHL);
     switch(opcode) {
     case 0x00: /* NOP */; break;
-    case 0x10: cpu.stopped = cpu.halted = 1; break;
+    case 0x10: /* Stop */
+      // Stop might trigger turbo instead of stop
+      if (mmu.io.data[0x4D] & 2) {
+        mmu.io.data[0x4D] ^= 0x80;
+        mmu.io.data[0x4D] &= ~3;
+      } else {
+        cpu.stopped = cpu.halted = 1;
+      }
+      break;
     case 0x01: LD16_XXXX(BC); break;
     case 0x11: LD16_XXXX(DE); break;
     case 0x21: LD16_XXXX(HL); break;
