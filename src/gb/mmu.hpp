@@ -1,6 +1,7 @@
 #pragma once
 #include "../base.hpp"
 #include "../utils/log.hpp"
+#include "lib_gb.hpp"
 #include "io_ports.hpp"
 #include "timer.hpp"
 #include "cart.hpp"

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../base.hpp"
+#include "../gb/lib_gb.hpp"
 #include "str.hpp"
 
 namespace logs {
