@@ -45,18 +45,18 @@ else()
     -Wno-unused-variable
     -g
     -O1
-    #    -fsanitize=undefined
+    -fsanitize=undefined
     -I ${CMAKE_SOURCE_DIR}
     -I ${CMAKE_SOURCE_DIR}/utils
   )
 
   add_link_options(
-    #    -fsanitize=undefined
+    -fsanitize=undefined
     -flto
     -O1
   )
 
-  add_executable(gb_emulator_console lib_gb.cpp main.cpp)
+  add_executable(gb_emulator_console gb/lib_gb.cpp host.cpp)
   add_custom_target(run
     COMMAND ./gb_emulator_console
     DEPENDS gb_emulator_console)

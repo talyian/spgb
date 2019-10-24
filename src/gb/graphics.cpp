@@ -69,7 +69,8 @@ Tile PPU::select_background_tile(u8 x, u8 y, u8 source) {
 };
 
 u8 load_tile_pixel(u8 * tile_ptr, u8 x, u8) {
-  u16 t = *(u16 *)tile_ptr;
+  u16 t = *tile_ptr++;
+  t |= 0x100 * *tile_ptr;
   t = t >> (7 - x);
   t = t & 0x0101;
   return t | (t >> 7);
