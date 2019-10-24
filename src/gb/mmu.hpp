@@ -1,5 +1,6 @@
 #pragma once
 #include "../base.hpp"
+#include "../utils/log.hpp"
 #include "io_ports.hpp"
 #include "timer.hpp"
 #include "cart.hpp"
@@ -103,7 +104,7 @@ struct MemoryMapper {
     else if (addr < 0xFF00) OAM[addr - 0xFE00] = val;
     else if (addr == 0xFF02)  {
       if (val & 0x80) {
-        _serial_putc(io.data[0x01]);
+        spgb_serial_putc(io.data[0x01]);
         io.data[0x02] = val & ~0x80;
       }
     }

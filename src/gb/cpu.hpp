@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../base.hpp"
-#include "../platform.hpp"
+#include "../utils/log.hpp"
 
 struct CPU {
   CPU() {
@@ -42,7 +42,7 @@ struct CPU {
   u8 stopped = 0;
 
   void clear() {
-    memset(&registers, 0, sizeof(registers));
+    // memset(&registers, 0, sizeof(registers));
     IME = halted = stopped = 0;
   }
 };

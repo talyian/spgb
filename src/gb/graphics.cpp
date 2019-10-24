@@ -1,5 +1,6 @@
 #include "graphics.hpp"
 #include "mmu.hpp"
+#include "../utils/log.hpp"
 
 void PPU::set_display(u8 x, u8 y, Pixel16 pixel) {
   display[y * DISPLAY_W + x] = pixel;
@@ -42,7 +43,7 @@ START:
     state = OAM_SCAN;
     goto START;
   default:
-    log("invalid PPU state", state);
+    log("invalid PPU state", (u8)state);
     state = OAM_SCAN;
   };
 
@@ -52,11 +53,11 @@ START:
 
 void PPU::push_frame() {
   frame++;
-  _push_frame(0x300, 0, DISPLAY_W * DISPLAY_H);
-  _push_frame(0x100, VRAM, 0x800);
-  _push_frame(0x101, VRAM + 0x800, 0x800);
-  _push_frame(0x102, VRAM + 0x1000, 0x800);
-  _push_frame(0x200, VRAM + 0x1800, 32 * 32);
+  spgb_push_frame(0x300, 0, DISPLAY_W * DISPLAY_H);
+  spgb_push_frame(0x100, VRAM, 0x800);
+  spgb_push_frame(0x101, VRAM + 0x800, 0x800);
+  spgb_push_frame(0x102, VRAM + 0x1000, 0x800);
+  spgb_push_frame(0x200, VRAM + 0x1800, 32 * 32);
   InterruptV |= 0x01; // HBLANK
 }
 

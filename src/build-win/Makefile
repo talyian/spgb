@@ -27,8 +27,8 @@ CLANG_OPTS:=-D_CRT_SECURE_NO_WARNINGS -Wall -pedantic -O2 -Wno-language-extensio
 CLANG_LINK_OPTS:=-flto -O2
 
 ./gb-emu.exe: deps.Makefile
-./gb-emu.exe: lib_gb.o main.o 
-	clang++.exe ${CLANG_LINK_OPTS} -o $@ lib_gb.o main.o \
+./gb-emu.exe: gb\lib_gb.o main.o 
+	clang++.exe ${CLANG_LINK_OPTS} -o $@ gb\lib_gb.o main.o \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/User32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/OpenGL32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Gdi32.Lib \
@@ -44,7 +44,7 @@ clean:
 	git clean -xf .
 
 # clang -MM generates backslash-delimited paths, but Make wants forward-delipu.mited paths
-deps.Makefile: ../lib_gb.cpp ../win32/main_limited.cpp ../win32/main.cpp ../platform_wasm.cpp ../platform_linux/main.cpp
+deps.Makefile: ../gb/lib_gb.cpp ../win32/main.cpp ../host_wasm.cpp ../linux/main.cpp
 	clang++.exe -E -MM $^ | sed 's/\\\([^\x0d]\)/\/\1/g' > deps.Makefile
 
 include deps.Makefile

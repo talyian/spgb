@@ -1,6 +1,5 @@
 #include "../base.hpp"
-#include "../emulator.hpp"
-#include "../platform.hpp"
+#include "../gb/lib_gb.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,20 +13,18 @@
 #include "opengl_utils.hpp"
 #include "audio.hpp"
 
-extern "C" size_t sslen(const char* s) { return strlen(s); }
-
 // Platform API: these functions are declared in platform.hpp and must
 // be provided by the platform.
 extern "C" {
-  void _logf(double v) { printf("%f ", v); }
-  void _logx8(u8 v) { printf("%02x ", v); }
-  void _logx16(u16 v) { printf("%04x ", v); }
-  void _logx32(u32 v) { printf("%04x ", v); }
-  void _logs(const char* s, u32 len) { printf("%.*s ", len, s); }
-  void _showlog() { printf("\n"); }
-  void _stop() { exit(1); }
-  void _logp(void* v) { printf("%p ", v); }
-  void _serial_putc(u8 v) {
+  void spgb_logf(double v) { printf("%f ", v); }
+  void spgb_logx8(u8 v) { printf("%02x ", v); }
+  void spgb_logx16(u16 v) { printf("%04x ", v); }
+  void spgb_logx32(u32 v) { printf("%04x ", v); }
+  void spgb_logs(const char* s, u32 len) { printf("%.*s ", len, s); }
+  void spgb_showlog() { printf("\n"); }
+  void spgb_stop() { exit(1); }
+  void spgb_logp(void* v) { printf("%p ", v); }
+  void spgb_serial_putc(u8 v) {
     static u64 sequence = 0;
     static char line[20];
     static u32 p = 0;
@@ -59,7 +56,7 @@ struct Win32Emulator {
   HWND hwnd = 0;
   HGLRC gl = 0;
   HDC hdc = 0;
-  emulator_t emu;
+  Emulator emu;
   glom::Shader * shader;
   int vbo_count = 0;
 
@@ -74,18 +71,9 @@ struct Win32Emulator {
   glom::VBO *vbo_array = 0;
 } win32_emulator;
 
-u16 get_pc() {
-  return win32_emulator.emu._executor.PC_start;
-}
-u64 get_monotonic_timer() {
-  return win32_emulator.emu.timer.monotonic_t;
-}
-str get_symbol_name() {
-  return "??";
-}
-
 // Main Window event handler.
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+  auto emu = win32_emulator.emu;
   switch (message) {
   case WM_QUIT:
     return 0;
@@ -120,73 +108,73 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     break;
   }
   case WM_KEYUP: {
-    auto* jp = &win32_emulator.emu.joypad;
     switch (wParam) {
-    case VK_RETURN: jp->button_up(Buttons::START); return 0;
+    case VK_RETURN: spgb_button_up(emu, Buttons::START); return 0;
     case VK_SHIFT:
-    case VK_RSHIFT: jp->button_up(Buttons::SELECT); return 0;
-    case 'J': jp->button_up(Buttons::B); return 0;
-    case 'K': jp->button_up(Buttons::A); return 0;
-    case 'W': jp->button_up(Buttons::UP); return 0;
-    case 'S': jp->button_up(Buttons::DOWN); return 0;
-    case 'A': jp->button_up(Buttons::LEFT); return 0;
-    case 'D': jp->button_up(Buttons::RIGHT); return 0;
+    case VK_RSHIFT: spgb_button_up(emu,Buttons::SELECT); return 0;
+    case 'J': spgb_button_up(emu, Buttons::B); return 0;
+    case 'K': spgb_button_up(emu, Buttons::A); return 0;
+    case 'W': spgb_button_up(emu, Buttons::UP); return 0;
+    case 'S': spgb_button_up(emu, Buttons::DOWN); return 0;
+    case 'A': spgb_button_up(emu, Buttons::LEFT); return 0;
+    case 'D': spgb_button_up(emu, Buttons::RIGHT); return 0;
 
     }
   }
   case WM_KEYDOWN: {
-    auto* jp = &win32_emulator.emu.joypad;
     switch (wParam) {
     case '1': win32_emulator.screen_state = Win32Emulator::MAIN; return 0;
     case '2': win32_emulator.screen_state = Win32Emulator::TILES; return 0;
     case '3': win32_emulator.screen_state = Win32Emulator::BACKGROUND; return 0;
-    case '4': {
-      // dump CGB palettes
-      auto ppu = win32_emulator.emu.ppu;
-      for (u32 i = 0; i < 8; i++) {
-        printf("BG %d :", i);
-        for (u32 p = 0; p < 4; p++) {
-          auto bgpixel = ppu.Cgb.bg_palette.get_color(i, p);
-          printf(" %04x", bgpixel);
-        }
-        printf("\n");
-      }
-      for (u32 i = 0; i < 8; i++) {
-        printf("SP %d :", i);
-        for (u32 p = 0; p < 4; p++) {
-          auto bgpixel = ppu.Cgb.spr_palette.get_color(i, p);
-          printf(" %04x", bgpixel);
-        }
-        printf("\n");
-      }
-      return 0;
-    }
-    case '5': {
-      auto ppu = win32_emulator.emu.ppu;
-      printf("BG tiles\n");
-      // dump visible bg tiles
-      for(int j = 0; j < 18; j++) {
-        printf("# ");
-        for(int i = 0; i < 20; i++) {
-          printf("%02x ", ppu.VRAM[0x1800 + 32 * j + i]);
-        }
-        printf("\n| ");
-        for(int i = 0; i < 20; i++) {
-          printf("%02x ", ppu.VRAM2[0x1800 + 32 * j + i]);
-        }
-        printf("\n");
-      }
-      return 0;
-    }
-    case VK_RETURN: jp->button_down(Buttons::START); return 0;
+    case '4':
+//   {
+//       // dump CGB palettes
+//       for (u32 i = 0; i < 8; i++) {
+//         printf("BG %d :", i);
+//         for (u32 p = 0; p < 4; p++) {
+//           auto bgpixel = ppu.Cgb.bg_palette.get_color(i, p);
+//           printf(" %04x", bgpixel);
+//         }
+//         printf("\n");
+//       }
+//       for (u32 i = 0; i < 8; i++) {
+//         printf("SP %d :", i);
+//         for (u32 p = 0; p < 4; p++) {
+//           auto bgpixel = ppu.Cgb.spr_palette.get_color(i, p);
+//           printf(" %04x", bgpixel);
+//         }
+//         printf("\n");
+//       }
+//       return 0;
+//     }
+    case '5':
+    //   {
+    //   auto ppu = win32_emulator.emu.ppu;
+    //   printf("BG tiles\n");
+    //   // dump visible bg tiles
+    //   for(int j = 0; j < 18; j++) {
+    //     printf("# ");
+    //     for(int i = 0; i < 20; i++) {
+    //       printf("%02x ", ppu.VRAM[0x1800 + 32 * j + i]);
+    //     }
+    //     printf("\n| ");
+    //     for(int i = 0; i < 20; i++) {
+    //       printf("%02x ", ppu.VRAM2[0x1800 + 32 * j + i]);
+    //     }
+    //     printf("\n");
+    //   }
+    //   return 0;
+    // }
+      break;
+    case VK_RETURN: spgb_button_down(emu, Buttons::START); return 0;
     case VK_SHIFT:
-    case VK_RSHIFT: jp->button_down(Buttons::SELECT); return 0;
-    case 'J': jp->button_down(Buttons::B); return 0;
-    case 'K': jp->button_down(Buttons::A); return 0;
-    case 'W': jp->button_down(Buttons::UP); return 0;
-    case 'S': jp->button_down(Buttons::DOWN); return 0;
-    case 'A': jp->button_down(Buttons::LEFT); return 0;
-    case 'D': jp->button_down(Buttons::RIGHT); return 0;
+    case VK_RSHIFT: spgb_button_down(emu, Buttons::SELECT); return 0;
+    case 'J': spgb_button_down(emu, Buttons::B); return 0;
+    case 'K': spgb_button_down(emu, Buttons::A); return 0;
+    case 'W': spgb_button_down(emu, Buttons::UP); return 0;
+    case 'S': spgb_button_down(emu, Buttons::DOWN); return 0;
+    case 'A': spgb_button_down(emu, Buttons::LEFT); return 0;
+    case 'D': spgb_button_down(emu, Buttons::RIGHT); return 0;
     case VK_SPACE:
       // win32_emulator.emu.debug.state.type = Debugger::State::PAUSE;
       return 0;
@@ -199,10 +187,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 }
 
 int main(int argc, char** argv) {
-  emulator_t& emu = win32_emulator.emu;
+  Emulator emu = win32_emulator.emu = spgb_create_emulator();
 
   // Select Cart from argv or open file Dialog box
-  auto load_cart_file = [] (char* path, emulator_t* emu) -> void {
+  auto load_cart_file = [] (char* path, Emulator emu) -> void {
     FILE* f = fopen(path, "rb");
     if (!f) { fprintf(stderr, "%s: file not found\n", path); exit(19); }
     fseek(f, 0, SEEK_END);
@@ -211,7 +199,7 @@ int main(int argc, char** argv) {
     u8* buf = new u8[len];
     fread(buf, 1, len, f);
     fclose(f);
-    emu->load_cart(buf, len);
+    spgb_load_cart(emu, buf, len);
   };
   if (argc > 1) {
     load_cart_file(argv[1], &emu);
@@ -319,7 +307,7 @@ int main(int argc, char** argv) {
   audio_init();
   ShowWindow(hwnd, SW_RESTORE);
 
-  if (emu.noswap) glDrawBuffer(GL_FRONT);
+  // if (emu.noswap) glDrawBuffer(GL_FRONT);
   
   char line[64] {0};
   if (argc > 1 && strstr(argv[1], "instr_timing")) {
@@ -394,7 +382,7 @@ int main(int argc, char** argv) {
     // 456 * 154 ticks is one emulator frame 
     // emu.step(456 * 154);
     // we need to singlestep here for debugging to work correctly
-    emu.single_step();
+    spgb_step_instruction(emu);
   }
 }
 
@@ -415,8 +403,8 @@ u8 pal[4] = { 0, 36 + 12 + 2, 3 * 36  + 4 * 6 + 3, 215 };
 u8 rgb2(u16 rgb);
 
 void update_screen() {
-  auto display = win32_emulator.emu.ppu.display;
-  win32_emulator.screen_tex->setData(display, 160, 144);
+  // auto display = win32_emulator.emu.ppu.display;
+  // win32_emulator.screen_tex->setData(display, 160, 144);
 }
 //void update_tile_maps() {
 //  auto &ppu = win32_emulator.emu.ppu;
@@ -478,7 +466,7 @@ void update_screen() {
 //  win32_emulator.texture_array[1].setData(texture, TEXTURE_W, TEXTURE_H);
 //}
 
-void _push_frame(u32 category, u8* memory, u32 len) {
+void spgb_push_frame(u32 category, u8*, u32) {
   audio_loop(1000.0 / 60);
   if (category - 0x100 < 3) {
     // show_tile_map(category, memory, len); 
@@ -505,9 +493,9 @@ void _push_frame(u32 category, u8* memory, u32 len) {
         win32_emulator.texture_array[1]);
     }
 
-    if (win32_emulator.emu.noswap) 
-      glFinish();
-    else
-      SwapBuffers(win32_emulator.hdc);
+    // if (win32_emulator.emu.noswap) 
+    //   glFinish();
+    // else
+    SwapBuffers(win32_emulator.hdc);
   }
 }

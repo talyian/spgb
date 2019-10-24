@@ -13,3 +13,5 @@ typedef float f32;
 typedef double f64;
 
 using size_t = decltype(sizeof(char));
+
+extern "C" void *memset(void *dest, int c, size_t n) throw ();

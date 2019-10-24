@@ -82,7 +82,7 @@ struct Executor {
   // 9-bit Rotate Left
   template<class T> inline void RL(T &RR) {
     u8 v = RR;
-    u8 v2 = (v << 1) | cpu.flags_C();
+    u8 v2 = (v << 1) | (u8)cpu.flags_C();
     cpu.registers.F = 0;
     cpu.flags_C(v & 0x80);
     cpu.flags_Z(v2 == 0);

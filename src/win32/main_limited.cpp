@@ -14,8 +14,6 @@
 
 #define NOSWAP
 
-extern "C" size_t sslen(const char* s) { return strlen(s); }
-
 // Platform API: these functions are declared in platform.hpp and must
 // be provided by the platform.
 extern "C" {

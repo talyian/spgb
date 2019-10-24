@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../base.hpp"
+#include "../utils/log.hpp"
 #include "../utils/str.hpp"
-#include "../platform.hpp"
+#include "lib_gb.hpp"
 
 enum ConsoleType : u8 { CGB, CGB_Only, DMG, SGB };
 enum MapperType : u8 { ROMMapper = 0, MBC1 = 1, MBC3 = 2, MBC5, ERROR };
@@ -53,10 +54,10 @@ struct Cart {
         "mapper-type", data[0x147],
         "rom-size", data[0x148], rom_size,
         "ram-size", data[0x149], ram_size);
-    if (len < rom_size) { _stop(); }
+    if (len < rom_size) { spgb_stop(); }
     if (mapper == ERROR) {
       log("Unsupported Mapper", data[0x147]);
-      _stop();
+      spgb_stop();
     }
   }
 
@@ -164,7 +165,7 @@ struct Cart {
       }
     }
     log("unsupported mapper write", addr, val);
-    _stop();
+    spgb_stop();
   }
 
   u8 read(u16 addr) {
@@ -207,7 +208,7 @@ struct Cart {
         return ram[addr - 0xA000 + 0x2000 * mbc5.ram_bank];
     }
     log("unsupported mapper read", addr);
-    _stop();
+    spgb_stop();
     return 0;
   }
 };

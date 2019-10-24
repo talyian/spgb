@@ -35,7 +35,7 @@ add_custom_target(copy_wasm
   DEPENDS gb_emulator.wasm)
 
 elseif (WINDOWS)
-  add_executable(gb_emulator lib_gb.cpp main.cpp)
+  add_executable(gb_emulator gb/lib_gb.cpp host.cpp)
   target_link_libraries(gb_emulator OpenGL32)
 else()
   add_compile_options(

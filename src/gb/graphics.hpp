@@ -1,7 +1,6 @@
 #pragma once
 #include "../base.hpp"
 #include "io_ports.hpp"
-#include "../platform.hpp"
 
 struct OamFlags {
   u8 value;

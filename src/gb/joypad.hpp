@@ -1,16 +1,6 @@
 #include "../base.hpp"
 #include "io_ports.hpp"
-
-enum Buttons {
-  RIGHT = 0,
-  LEFT,
-  UP,
-  DOWN,
-  A,
-  B,
-  SELECT,
-  START,
-};
+#include "lib_gb.hpp"
 
 struct Joypad {
   Joypad(IoPorts &io) : io(io), JOYP(io.data[0x00]) {}

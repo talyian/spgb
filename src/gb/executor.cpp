@@ -1,3 +1,4 @@
+#include "../utils/log.hpp"
 #include "executor.hpp"
 
 u8 Executor::mmu_get(u16 addr) { cycles += 4; return mmu.get(addr); }
@@ -335,3 +336,28 @@ bool Executor::decode() {
   }
   return true;
 }
+
+// gb/cpu.hpp :: CPU::Reg16
+CPU::Reg16 CPU::Reg16::operator-- () {
+  u16 v = (u16) *this;
+  CPU::Reg16 r = v - (u16)1;
+  h = r.h;
+  l = r.l;
+  return *this;
+}
+CPU::Reg16 CPU::Reg16::operator++ (int) {
+  u16 u = (u16) *this;
+  CPU::Reg16 r = u + (u16)1;
+  h = r.h;
+  l = r.l;
+  return u;
+}
+
+CPU::Reg16 CPU::Reg16::operator-- (int) {
+  u16 u = (u16) *this;
+  CPU::Reg16 r = u - (u16)1;
+  h = r.h;
+  l = r.l;
+  return u;
+}
+

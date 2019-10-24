@@ -1,14 +1,14 @@
 #pragma once
 
-#include "base.hpp"
-#include "gb/cart.hpp"
-#include "gb/executor.hpp"
-#include "gb/io_ports.hpp"
-#include "gb/joypad.hpp"
-#include "gb/mmu.hpp"
-#include "gb/graphics.hpp"
-#include "gb/audio.hpp"
-#include "gb/timer.hpp"
+#include "../base.hpp"
+#include "cart.hpp"
+#include "executor.hpp"
+#include "io_ports.hpp"
+#include "joypad.hpp"
+#include "mmu.hpp"
+#include "graphics.hpp"
+#include "audio.hpp"
+#include "timer.hpp"
 
 struct emulator_t {
   // Hardware resources

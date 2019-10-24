@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../base.hpp"
-#include "../platform.hpp"
 
 struct IoPorts {
   const static u16 JOYP = 0xFF00;
