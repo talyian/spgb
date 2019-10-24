@@ -21,9 +21,10 @@ function draw_display(canvas, data) {
   for(var y = 0; y < H; y++) {
     for(var x = 0; x < W; x++) {
       p = data[i++];
-      idata[j++] = (p / 36 | 0) * 51;
-      idata[j++] = (((p / 6) | 0) % 6) * 51;
-      idata[j++] = (p % 6) * 51;
+      p += 0x100 * data[i++];
+      idata[j++] = 8 * (p & 0x1F);
+      idata[j++] = 8 * ((p >>= 5) & 0x1F);
+      idata[j++] = 8 * ((p >>= 5) & 0x1F);
       idata[j++] = 255;
     }
   }
@@ -122,25 +123,24 @@ function write_1024_frame(channel, data) {
 }
 var error = 0;
 var env = {
-  _test: function(foobar) { console.log(foobar); },
-  _logf: function(f) { line.push(f); },
-  _logx8: function(f) { line.push(('00' + f.toString(16)).substr(-2)); },
-  _logx16: function(f) { line.push(('0000' + f.toString(16)).substr(-4)); },
-  _logx32: function(f) { line.push(f.toString(16)); },
-  _logs: function(i, len) {
+  spgb_logf: function(f) { line.push(f); },
+  spgb_logx8: function(f) { line.push(('00' + f.toString(16)).substr(-2)); },
+  spgb_logx16: function(f) { line.push(('0000' + f.toString(16)).substr(-4)); },
+  spgb_logx32: function(f) { line.push(f.toString(16)); },
+  spgb_logs: function(i, len) {
     if (!len) { line.push(i.toString(16)); return; }
     line.push(dec.decode(memory.buffer.slice(i, i + len)));
   },
-  _showlog: function() { console.log.apply(console, line); line = []; },
-  _push_frame: push_frame,
-  _stop: function() { chkPaused.checked = true; },
-  _check_memory_size: function () { 
+  spgb_showlog: function() { console.log.apply(console, line); line = []; },
+  spgb_push_frame: push_frame,
+  spgb_stop: function() { chkPaused.checked = true; },
+  spgb_check_memory_size: function () { 
     console.log(
       'byte size', memory.buffer.byteLength,
       'page size', memory.buffer.byteLength / 64 / 1024);
   },
   write_1024_frame: write_1024_frame,
-  _serial_putc: function(c) { console.log("Serial", String.fromCharCode(c)); },
+  spgb_serial_putc: function(c) { console.log("Serial", String.fromCharCode(c)); },
   memory:memory,
 };
 fetch("build/gb_emulator.wasm")
@@ -149,13 +149,13 @@ fetch("build/gb_emulator.wasm")
   .then((module) => {
     instance = module.instance;
 
-    emulator = instance.exports.get_emulator();
+    emulator = instance.exports.spgb_create_emulator();
     let DRAW = 1;
     let DEBUG = 2;
     let ERROR = 3;
     function loop() {
       if (chkPaused.checked) return;
-      instance.exports.step_frame(emulator);
+      instance.exports.spgb_step_frame(emulator);
       requestAnimationFrame(loop);
     }
     requestAnimationFrame(loop);
@@ -183,7 +183,7 @@ fetch("build/gb_emulator.wasm")
         chkPaused.click();
       }
       else if (e.keyCode in key_map) {
-        instance.exports.button_down(emulator, key_map[e.keyCode]);
+        instance.exports.spgb_button_down(emulator, key_map[e.keyCode]);
         e.preventDefault();
         return false;
       }
@@ -192,7 +192,7 @@ fetch("build/gb_emulator.wasm")
     });
     document.addEventListener("keyup", e => {
       if (e.keyCode in key_map)
-        instance.exports.button_up(emulator, key_map[e.keyCode]);
+        instance.exports.spgb_button_up(emulator, key_map[e.keyCode]);
     });
     
   });

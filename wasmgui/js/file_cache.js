@@ -36,12 +36,12 @@ class FileList {
   // Given an ArrayBuffer, copy it into a WASM-accessible buffer and run it
   load_cart(arrayBuffer) {
     let file_data = new Uint8Array(arrayBuffer);
-    let rom_ptr = instance.exports.get_rom_area(emulator, file_data.byteLength);
+    let offset = instance.exports.spgb_allocate(emulator, file_data.byteLength);
     let rom = new Uint8Array(memory.buffer);
     for(let i = 0; i < file_data.byteLength; i++) {
-      rom[rom_ptr + i] = file_data[i];
+      rom[offset + i] = file_data[i];
     }
-    instance.exports.reset(emulator, rom_ptr, file_data.byteLength);
+    instance.exports.spgb_load_cart(emulator, offset, file_data.byteLength);
   }
   
   redraw() {

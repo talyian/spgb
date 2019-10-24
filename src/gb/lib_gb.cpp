@@ -18,12 +18,18 @@ extern "C" {
   void EXPORT spgb_step_instruction(Emulator emu) {
     ((emulator_t*)emu)->single_step();
   }
+  void EXPORT spgb_step_frame(Emulator emu) {
+    ((emulator_t*)emu)->step(456 * 154);
+  }
   void EXPORT spgb_step_frame(Emulator emu);
   void EXPORT spgb_button_down(Emulator emu, Buttons button) {
     ((emulator_t*)emu)->joypad.button_down(button);
   }
   void EXPORT spgb_button_up(Emulator emu, Buttons button) {
     ((emulator_t*)emu)->joypad.button_up(button);
+  }
+  u8 * EXPORT spgb_allocate(Emulator, u32 size) {
+    return new u8[size];
   }
 }
 

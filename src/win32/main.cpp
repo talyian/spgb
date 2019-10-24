@@ -405,65 +405,6 @@ u8 rgb2(u16 rgb);
 void update_screen(Pixel16 * display, u32 len) {
   win32_emulator.screen_tex->setData(display, 160, 144);
 }
-//void update_tile_maps() {
-//  auto &ppu = win32_emulator.emu.ppu;
-//  auto TEXTURE_W = round_po2(16 * 9 * 2 + 1);
-//  auto TEXTURE_H = round_po2(8 * 9 * 3 + 1);
-//  static u8 * texture = new u8[TEXTURE_W * TEXTURE_H];
-//  memset(texture, 0, TEXTURE_W * TEXTURE_H);
-//
-//  int BUTTON_W = 5;
-//  for (u32 i = 0; i < 8; i++) {
-//    for (u32 p = 0; p < 4; p++) {
-//      auto bgpixel = ppu.Cgb.bg_palette.get_color(i, p);
-//      auto sppixel = ppu.Cgb.spr_palette.get_color(i, p);
-//
-//      bgpixel = rgb2(bgpixel);
-//      sppixel = rgb2(sppixel);
-//      for(u32 x = 0; x < BUTTON_W; x++) 
-//        for (u32 y = 0; y < BUTTON_W; y++) {
-//          auto ty = i * (BUTTON_W) + 10 + y;
-//          auto tx = p * (BUTTON_W) +(16 * 9 + 1) * 2 + 1 + x;
-//          auto bb = bgpixel;
-//          auto sp = sppixel;
-//          if (x == 0 || y == 0) {
-//            bb = 215;
-//            sp = 215;
-//          }
-//          
-//          texture[TEXTURE_W * ty + tx] = bb;
-//          texture[TEXTURE_W * (ty + 40) + tx] = sp;
-//        }
-//    }
-//  }
-//  
-//  for(u8 tile_bank = 0; tile_bank < 6; tile_bank++) {
-//    u8 * bank;
-//    if (tile_bank < 3) bank = &ppu.VRAM[0x800 * tile_bank];
-//    else bank = &ppu.VRAM2[0x800 * tile_bank - 0x1800];
-//    for(u8 tile = 0; tile < 16 * 8; tile++) {
-//      auto tile_pos_x = tile % 16;
-//      auto tile_pos_y = tile / 16;
-//      TileInfo t(&bank[tile * 16]);
-//      for(u8 ty = 0; ty < 8; ty++) {
-//        for(u8 tx = 0; tx < 8; tx++) { 
-//          u8 pixel = t.get_pixel(tx, ty);
-//          // tileset position
-//          u16 out_x = (tile_bank / 3) * (16 * 9 + 1);
-//          u16 out_y = (tile_bank % 3) * (8 * 9 + 1);
-//          // tile position
-//          out_x += tile_pos_x * 9;
-//          out_y += tile_pos_y * 9;
-//          // pixel position
-//          out_x += tx;
-//          out_y += ty;
-//          texture[TEXTURE_W * out_y + out_x] = pixel * 43;
-//        }
-//      }
-//    }
-//  }
-//  win32_emulator.texture_array[1].setData(texture, TEXTURE_W, TEXTURE_H);
-//}
 
 void spgb_push_frame(u32 category, u8 * display, u32 len) {
   audio_loop(1000.0 / 60);

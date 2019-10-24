@@ -11,13 +11,13 @@ run_blargg: gb-emu.exe
 	find ../../data/cpu_instrs/individual/*.gb | while read f; do ./gb-emu.exe "$$f"; echo; done
 
 lib_gb.wasm-o: lib_gb.o
-	$(WASM_CC_COMPILE) -o $@ ../lib_gb.cpp
+	$(WASM_CC_COMPILE) -o $@ ../gb/lib_gb.cpp
 
 platform_wasm.o:
 	@true
 
 platform.wasm-o: platform_wasm.o
-	$(WASM_CC_COMPILE) -o $@ ../platform_wasm.cpp
+	$(WASM_CC_COMPILE) -o $@ ../host_wasm.cpp
 
 ../../wasmgui/build/gb_emulator.wasm: lib_gb.wasm-o platform.wasm-o
 	mkdir -p ../../wasmgui/build

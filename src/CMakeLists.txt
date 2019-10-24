@@ -27,9 +27,9 @@ if (WASM)
     --gc-sections
     --allow-undefined
     --import-memory
-  )
+)
 
-add_executable(gb_emulator.wasm main.cpp platform_wasm.cpp)
+add_executable(gb_emulator.wasm gb/lib_gb.cpp host.cpp)
 add_custom_target(copy_wasm
   COMMAND cp gb_emulator.wasm ../../wasmgui/build/
   DEPENDS gb_emulator.wasm)

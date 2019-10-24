@@ -48,4 +48,5 @@ extern "C" {
   void EXPORT spgb_step_frame(Emulator emu);
   void EXPORT spgb_button_down(Emulator emu, Buttons button);
   void EXPORT spgb_button_up(Emulator emu, Buttons button);
+  u8 * EXPORT spgb_allocate(Emulator emu, u32 size);
 }
