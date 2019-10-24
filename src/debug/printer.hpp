@@ -1,5 +1,5 @@
 #include "../base.hpp"
-#include "../system/mmu.hpp"
+#include "../gbmmu.hpp"
 
 struct Printer {
   Printer(MemoryMapper &mmu) : mmu(mmu) {

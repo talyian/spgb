@@ -1,4 +1,4 @@
-* [22/28] GBE Tasks
+* [23/28] GBE Tasks
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :END:
@@ -51,14 +51,19 @@ As a side-effect, this improved the instruction timings enough that Kirby and Li
 done - Links Awakening Intro works now
 
 ** DONE Render Window
-** TODO Sprite Rendering Priority
+** DOING Sprite Rendering Priority
+   The priority on CGB sprites works; see Tetris DX title screen 
+   The priority on DMG sprites needs work; see Pokemon Red intro
 ** DONE Sprite Flip/Rotation bug
    CLOSED: [2019-10-18 Fri 23:50]
 It was an issue with 8x16 sprites; need to flip the entire 16-pixel
 sprite when flipY is on
 
-** TODO Sound
-** TODO CGB Features
+** DOING Sound
+** DONE CGB Features
+   CLOSED: [2019-10-23 Wed 20:58]
+   - State "DONE"       from "TODO"       [2019-10-23 Wed 20:58]
+   tested on beach.gbc, Super Mario DX, Tetris DX, Links Awakening DX
 ** DONE Handle DMA (FF46)
 ** DONE Skip Bootstrap
 ** TODO Test Harness

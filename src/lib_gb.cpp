@@ -1,6 +1,7 @@
 // main compilation unit
 #include "platform.hpp"
-#include "system/graphics.cpp"
+#include "gb/graphics.cpp"
+#include "gb/executor.cpp"
 #include "emulator.cpp"
 #include "platform_base.cpp"
 
@@ -16,7 +17,7 @@ namespace logs {
   void _log(void* s) { _logp(s); }
 }
 
-// system/cpu.hpp :: CPU::Reg16
+// gb/cpu.hpp :: CPU::Reg16
 CPU::Reg16 CPU::Reg16::operator-- () {
   u16 v = (u16) *this;
   CPU::Reg16 r = v - (u16)1;

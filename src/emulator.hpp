@@ -1,16 +1,14 @@
 #pragma once
 
 #include "base.hpp"
-#include "system/cart.hpp"
-#include "debugger.hpp"
-#include "executor.hpp"
-#include "system/io_ports.hpp"
-#include "system/joypad.hpp"
-#include "system/mmu.hpp"
-#include "system/graphics.hpp"
-#include "system/audio.hpp"
-#include "system/timer.hpp"
-#include "debug/printer.hpp"
+#include "gb/cart.hpp"
+#include "gb/executor.hpp"
+#include "gb/io_ports.hpp"
+#include "gb/joypad.hpp"
+#include "gb/mmu.hpp"
+#include "gb/graphics.hpp"
+#include "gb/audio.hpp"
+#include "gb/timer.hpp"
 
 struct emulator_t {
   // Hardware resources
@@ -22,11 +20,7 @@ struct emulator_t {
   MemoryMapper mmu{cart, ppu, audio, io};
   Joypad joypad{io};
   CPU cpu;
-
-  
   Executor _executor{cpu, mmu};
-  Printer _printer{mmu};
-  Debugger debug{&mmu,  &cpu, &_executor.PC};
 
   emulator_t(u8 *, u32);
   emulator_t();

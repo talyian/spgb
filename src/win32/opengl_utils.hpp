@@ -1,5 +1,5 @@
 #include "../base.hpp"
-#include "../system/graphics.hpp"
+#include "../gb/graphics.hpp"
 
 #pragma once
 
