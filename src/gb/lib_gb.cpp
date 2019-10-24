@@ -6,9 +6,8 @@
 #include "lib_gb.hpp"
 
 extern "C" {
-  typedef void * Emulator;
   Emulator EXPORT spgb_create_emulator() {
-    return new emulator_t();
+    return (Emulator)new emulator_t();
   }
   void EXPORT spgb_load_cart(Emulator emu, u8 * bytes, u32 len) {
     ((emulator_t*)emu)->load_cart(bytes, len);

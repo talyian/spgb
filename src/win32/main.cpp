@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
     spgb_load_cart(emu, buf, len);
   };
   if (argc > 1) {
-    load_cart_file(argv[1], &emu);
+    load_cart_file(argv[1], emu);
   }
   else {
     char filename[0x100] = { 0 };
@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
       printf("no file specified\n");
       return 18;
     }
-    load_cart_file(ofn.lpstrFile, &emu);
+    load_cart_file(ofn.lpstrFile, emu);
   }
 
   // init win32 window
@@ -402,9 +402,8 @@ u8 pal[4] = { 0, 36 + 12 + 2, 3 * 36  + 4 * 6 + 3, 215 };
 
 u8 rgb2(u16 rgb);
 
-void update_screen() {
-  // auto display = win32_emulator.emu.ppu.display;
-  // win32_emulator.screen_tex->setData(display, 160, 144);
+void update_screen(Pixel16 * display, u32 len) {
+  win32_emulator.screen_tex->setData(display, 160, 144);
 }
 //void update_tile_maps() {
 //  auto &ppu = win32_emulator.emu.ppu;
@@ -466,14 +465,14 @@ void update_screen() {
 //  win32_emulator.texture_array[1].setData(texture, TEXTURE_W, TEXTURE_H);
 //}
 
-void spgb_push_frame(u32 category, u8*, u32) {
+void spgb_push_frame(u32 category, u8 * display, u32 len) {
   audio_loop(1000.0 / 60);
   if (category - 0x100 < 3) {
     // show_tile_map(category, memory, len); 
   }
   else if (category == 0x300) {
     // update_tile_maps();
-    update_screen();
+    update_screen((Pixel16 *) display, len);
     glEnable(GL_DEPTH_TEST);
     glClear(GL_DEPTH_BUFFER_BIT);
 

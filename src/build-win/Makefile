@@ -27,8 +27,8 @@ CLANG_OPTS:=-D_CRT_SECURE_NO_WARNINGS -Wall -pedantic -O2 -Wno-language-extensio
 CLANG_LINK_OPTS:=-flto -O2
 
 ./gb-emu.exe: deps.Makefile
-./gb-emu.exe: gb\lib_gb.o main.o 
-	clang++.exe ${CLANG_LINK_OPTS} -o $@ gb\lib_gb.o main.o \
+./gb-emu.exe: gb__lib_gb.o host.o 
+	clang++.exe ${CLANG_LINK_OPTS} -o $@ gb__lib_gb.o host.o \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/User32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/OpenGL32.Lib \
 C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/Gdi32.Lib \
@@ -37,7 +37,7 @@ C:/Program\ Files\ \(x86\)/Windows\ Kits/10/Lib/10.0.17134.0/um/x64/OLE32.Lib \
 
 %.o: ../%.cpp Makefile
 	clang++.exe ${CLANG_OPTS} -o $@ -c $< -I .. -I ../utils
-%%/%.o: ../%%/%.cpp Makefile
+gb__%.o: ../gb/%.cpp Makefile
 	clang++.exe ${CLANG_OPTS} -o $@ -c $< -I .. -I ../utils
 
 clean:

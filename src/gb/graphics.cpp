@@ -53,7 +53,7 @@ START:
 
 void PPU::push_frame() {
   frame++;
-  spgb_push_frame(0x300, 0, DISPLAY_W * DISPLAY_H);
+  spgb_push_frame(0x300, (u8 *)display, 2 * DISPLAY_W * DISPLAY_H);
   spgb_push_frame(0x100, VRAM, 0x800);
   spgb_push_frame(0x101, VRAM + 0x800, 0x800);
   spgb_push_frame(0x102, VRAM + 0x1000, 0x800);

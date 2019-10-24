@@ -40,7 +40,7 @@ enum Buttons : u8 {
   START,
 };
 extern "C" {
-  typedef void * Emulator;
+  typedef struct Emulator_s * Emulator;
   Emulator EXPORT spgb_create_emulator();
   void EXPORT spgb_load_cart(Emulator emu, u8 * bytes, u32 len);
   void EXPORT spgb_step(Emulator emu, u32 ticks);
