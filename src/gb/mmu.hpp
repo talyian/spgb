@@ -40,10 +40,10 @@ struct MemoryMapper {
       ppu.Cgb.bg_palette.pixels[2] = {10,11,16};
       ppu.Cgb.bg_palette.pixels[1] = {20,22,18};
       ppu.Cgb.bg_palette.pixels[0] = {31,30,28};
-      ppu.Cgb.spr_palette.pixels[3] = {0,0,0};
-      ppu.Cgb.spr_palette.pixels[2] = {10,11,16};
-      ppu.Cgb.spr_palette.pixels[1] = {20,22,18};
-      ppu.Cgb.spr_palette.pixels[0] = {31,30,28};
+      ppu.Cgb.spr_palette.pixels[3] = {5,5,5};
+      ppu.Cgb.spr_palette.pixels[2] = {16,11,10};
+      ppu.Cgb.spr_palette.pixels[1] = {22, 20,18};
+      ppu.Cgb.spr_palette.pixels[0] = {31,31,31};
       memset(ppu.VRAM2, 0, 0x2000);
     }
     log("cgb", (u8)cart.console_type, (u8)ppu.Cgb.enabled);
@@ -68,18 +68,20 @@ struct MemoryMapper {
     case 0xD: return WRAM[wram_bank][addr & 0xFFF];
     case 0xE: return WRAM[0][addr & 0xFFF]; // echo0
     default:
+      if (ppu.Cgb.enabled) {
+        if (addr == 0xFF4F) return ppu.vram_bank;
+        if (addr == 0xFF68) return ppu.Cgb.bg_palette.addr;
+        if (addr == 0xFF69) return ppu.Cgb.bg_palette.read();
+        if (addr == 0xFF6A) return ppu.Cgb.spr_palette.addr;
+        if (addr == 0xFF6B) return ppu.Cgb.spr_palette.read();
+      }
       return 
         addr < 0xFE00 ? WRAM[wram_bank][addr & 0xFFF] : // echo
         addr < 0xFF00 ? OAM[addr & 0xFF] :
-        addr < 0xFF10 ? io.data[addr & 0xFF] :
+        addr < 0xFF10 ? io.data[addr & 0x7F] :
         addr < 0xFF40 ? audio.read(addr - 0xFF10) :
         addr < 0xFF4C ? ppu.read(addr - 0xFF40) :
-        addr == 0xFF4F ? ppu.vram_bank :
-        addr == 0xFF68 ? ppu.Cgb.bg_palette.addr :
-        addr == 0xFF69 ? ppu.Cgb.bg_palette.read() :
-        addr == 0xFF6A ? ppu.Cgb.spr_palette.addr :
-        addr == 0xFF6B ? ppu.Cgb.spr_palette.read() :
-        addr < 0xFF80 ? io.data[addr & 0xFF] :
+        addr < 0xFF80 ? io.data[addr & 0x7F] :
         HRAM[addr - 0xFF80];
     }
   }

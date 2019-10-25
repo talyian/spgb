@@ -12,7 +12,7 @@ struct Mapper {
   enum { NONE, MBC1, MBC3, MBC5, ERROR } type;
   Mapper() : mbc1({}) { }
   union {
-    struct {
+    struct MBC1Data {
       u8 enable_ram = 0; 
       u8 rom_bank = 1;
       u8 ram_bank = 0;
@@ -21,7 +21,7 @@ struct Mapper {
       // the rom bank, if it's in ROM banking mode.
       BankMode bank_mode = BankMode::ROM;
     } mbc1;
-    struct {
+    struct MBC3Data {
       u8 enable_ram = 0;
       u8 rom_bank = 1;
       u8 ram_bank = 0;
@@ -53,7 +53,7 @@ struct Mapper {
         // TODO enable/disable RTC
       }
     } mbc3;
-    struct {
+    struct MBC5Data {
       u8 enable_ram = 0;
       u8 rom_bank = 1;
       u8 ram_bank = 0;

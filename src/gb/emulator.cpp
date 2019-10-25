@@ -2,9 +2,21 @@
 #include "../data/dmg_boot.hpp"
 #include "../data/cgb_boot.hpp"
 
+emulator_t * instance = 0;
+u64 get_monotonic_timer() {
+  if (!instance) return 0;
+  return instance->timer.monotonic_t;
+}
+
+u16 get_pc() {
+  if (!instance) return 0;
+  return instance->_executor.PC_start;
+}
+
 emulator_t::emulator_t(u8 *cart_data, u32 cart_len) {
+  instance = this;
   mmu.bios_rom = DMG_ROM_bin;
-  mmu.bios_rom = cgb_bios_bin;
+  // mmu.bios_rom = cgb_bios_bin;
   load_cart(cart_data, cart_len);
 }
 

@@ -136,7 +136,7 @@ void PPU::scan_line() {
       u8 tx = sprite.flags.flip_x() ? 7 - _tx : _tx;
       if (sx < DISPLAY_W) {
         u8* tile_data = 0;
-        if (sprite.flags.tile_bank())
+        if (Cgb.enabled && sprite.flags.tile_bank())
           tile_data = VRAM2 + sprite.tile * 16 + ty * 2;
         else
           tile_data = VRAM + sprite.tile * 16 + ty * 2;

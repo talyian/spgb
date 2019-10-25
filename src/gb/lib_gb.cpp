@@ -2,7 +2,7 @@
 #include "graphics.cpp"
 #include "executor.cpp"
 #include "emulator.cpp"
-
+#include "audio.cpp"
 #include "lib_gb.hpp"
 
 extern "C" {
