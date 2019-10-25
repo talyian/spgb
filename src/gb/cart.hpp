@@ -285,7 +285,7 @@ struct Cart {
       if (addr < 0x8000) // ROM Bank
         return data[(addr - 0x4000) + mbc.rom_bank * 0x4000];
       if (addr < 0xC000) 
-        return ram[addr - 0xA000, + 0x2000 * mbc.ram_bank];
+        return ram[addr - 0xA000 + 0x2000 * mbc.ram_bank];
     }
     log("unsupported mapper read", addr);
     spgb_stop();
