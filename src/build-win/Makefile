@@ -10,6 +10,9 @@ run: gb-emu.exe
 run_blargg: gb-emu.exe
 	find ../../data/cpu_instrs/individual/*.gb | while read f; do ./gb-emu.exe "$$f"; echo; done
 
+wasm: ../../wasmgui/build/gb_emulator.wasm
+	@true
+
 lib_gb.wasm-o: lib_gb.o
 	$(WASM_CC_COMPILE) -o $@ ../gb/lib_gb.cpp
 

@@ -2,7 +2,7 @@ if (typeof TextDecoder == "undefined") {
   function TextDecoder() {  }
   TextDecoder.prototype.decode = function (arr) {
     return String.fromCharCode.apply(null, new Uint8Array(arr));
-  }
+  };
 }
 
 var emulator = 0, frames = 0;
@@ -141,6 +141,7 @@ var env = {
   },
   write_1024_frame: write_1024_frame,
   spgb_serial_putc: function(c) { console.log("Serial", String.fromCharCode(c)); },
+  spgb_get_timestamp: function() { return +new Date(); },
   memory:memory,
 };
 fetch("build/gb_emulator.wasm")
