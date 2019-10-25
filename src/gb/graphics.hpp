@@ -2,7 +2,8 @@
 #include "../base.hpp"
 #include "io_ports.hpp"
 
-struct OamFlags {
+// An 8-bit value used to modify the display of a tile
+struct SpriteFlags {
   u8 value;
   bool priority() const { return value & 0x80; }
   bool flip_y() const { return value & 0x40; }
@@ -16,12 +17,12 @@ struct OamEntry {
   u8 y;
   u8 x;
   u8 tile;
-  OamFlags flags;
+  SpriteFlags flags;
 };
 
 struct Tile {
   u8 index;
-  OamFlags flags;
+  SpriteFlags flags;
 };
 
 struct Pixel16 { 
@@ -100,7 +101,7 @@ struct PPU {
     state = OAM_SCAN;
   }
 
-  struct CGB {
+   struct CGB {
     bool enabled = true;
     struct PaletteArray {
       PaletteArray() { memset(data, 0xFF, 64); }

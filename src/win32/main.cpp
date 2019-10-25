@@ -40,6 +40,18 @@ extern "C" {
       exit(-1);
     }
   }
+  u32 spgb_get_timestamp() {
+    SYSTEMTIME sts;
+    FILETIME fts;
+    GetLocalTime(&sts);
+    SystemTimeToFileTime(&sts, &fts);
+    const u64 TICKS_PER_SEC = 10 * 1000* 1000; // 
+    const u64 UnixEpochOffsetSeconds = 11644473600LL;
+    u64 ticks = fts.dwHighDateTime;
+    ticks = (ticks << 32) | fts.dwLowDateTime;
+    ticks = ticks / TICKS_PER_SEC - UnixEpochOffsetSeconds;
+    return ticks;
+  }
 }
 
 u32 round_po2(u32 v) {
