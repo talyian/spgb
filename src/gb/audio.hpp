@@ -1,19 +1,24 @@
 #pragma once
 #include "../base.hpp"
 #include "io_ports.hpp"
+#include "../utils/audio_stream.hpp"
 
 u16 get_pc();
 u64 get_monotonic_timer();
 
-struct AudioFrame {
-  f32 freq = 0;
-  f32 volume = 0;
-};
+LongSample state[2];
+void push_audio_sample(LongSample s) {
+  LongSample last = state[s.channel];
+  if (last.frequency == s.frequency && last.volume == s.volume) return;
+  spgb_audio_sample(s.tick_time.value, s.frequency, s.volume, s.channel);
+}
 
-extern "C" void write_audio_frame_out(f32 freq, f32 volume);
-extern "C" void write_1024_frame(u8 channel, f32 (&buffer)[1024]);
 struct Square {
+  // These 5 bytes correspond to the 5 registers the CPU controls the square
+  // wave with. The FIELD macro will define getter/setters for logical fields
+  // based on the data in these bytes.
   u8 data[5];
+
   #define FIELD(f, index, len, offset)                                 \
     u8 f() { return (data[index] >> offset) & ((1 << len) - 1); }       \
     void f(u8 v) {                                                      \
@@ -25,7 +30,7 @@ struct Square {
   FIELD(sweep_shift, 0, 3, 0);
 
   FIELD(duty,    1, 2, 6);
-  FIELD(counter, 1, 6, 0);
+  FIELD(length_counter, 1, 6, 0);
 
   u8 volume = 0;
   u8 volume_add = 0;
@@ -49,28 +54,32 @@ struct Square {
   u8   get(u8 addr) { return ((u8*)this)[addr] | mask[addr]; }
   void set(u8 addr, u8 val) {
     ((u8*)this)[addr] = val;
-    // log((u32) get_monotonic_timer(), get_pc(), "AU", channel, addr, " <- ", val);
     if (addr == 1) {
-      // log("  - new duty/counter", duty(), counter());
     }
     if (addr == 2) {
+      u8 old_volume = volume;
       volume = vol_start();
       volume_add = 2 * vol_add() - 1;
       volume_period = vol_period();
-      // log("  - AU", channel, val, "v", vol_start(), "+", vol_add(), "p", vol_period());
+      volume_ticker = 0;
+      if (volume != old_volume)
+        spgb_audio_sample(monotonic_counter, freq, volume, channel);
     }
     if (addr == 3) {
+      u16 old_frequency = freq;
       freq = (freq_hi() << 8) | freq_lo();
       f32 period = (2048 - freq) * 8;
-      // log("  - AU", channel, "freq", freq, (i32)freq, period,
-      //     6 * 1000 * 1000 / period);
+      if (freq != old_frequency) {
+        spgb_audio_sample(monotonic_counter, freq, volume, channel);
+      }
     }
     if (addr == 4 && val & 0x80) {
-      status = 1;
+      status = 1; // writing to  byte 5 turns on the wave unit
+      u16 old_frequency = freq; 
       freq = (freq_hi() << 8) | freq_lo();
-      if (!counter()) counter(0x3F);
-      // log("  - AU", channel, "Trigger", val, enable_counter(), counter());
-      // log("  - AU", channel, "freq", (u16)((freq_hi() << 8) | freq_lo()));
+      if (freq != old_frequency)
+        spgb_audio_sample(monotonic_counter, freq, volume, channel);
+      if (!length_counter()) length_counter(0x3F);
       // TODO frequency counter is reloaded with period /??
       // TODO volume envelope timer is reloaded with period /??
       volume = vol_start();
@@ -78,41 +87,53 @@ struct Square {
     }
   }
 
+
   u32 volume_ticker = 0;
 
-  void tick_512hz() {
-    if (enable_counter()) {
-      // handle length counter
-      counter(counter() - 1);
-      if (counter() == 0) {
-        status = 0;
-      }
-    }
-
-    if (volume_period && volume < 0x10) {
-      if (++volume_ticker == 8 * volume_period) {
-        volume += volume_add;
-        // log("AU", channel, "volume", volume);
-        // if (volume < 0x10) write_audio_frame_out(freq, volume / 15.0);
-        volume_ticker = 0;
-      }
-    }
-  }
-
-  u32 chunk_counter = 0; // 4Mhz ticks up to 8192 = 512hz(2ms)
+  u32 ticks_4hz = 0; // 4Mhz ticks up to 8192 = 512hz(2ms)
+  u32 counter_512hz = 0;
   // each chunk is 1.953ms, which is 93.75 samples at 48k
   u32 sample_counter = 0;// 4Mhz ticks up to 80   = 50khz(20us)
-  u32 sample_position = 0;
+  u64 monotonic_counter = 0;
 
   void tick(u32 dt) {
     // dt is a 4Mhz clock tick.
     if (!status) { return; }
-    chunk_counter += dt;
+    ticks_4hz += dt;
     sample_counter += dt;
+    monotonic_counter += dt;
     // our internal cycle is 512HZ, so we scale 8000x from 4Mhz
-    while(chunk_counter >= 8192) {
-      chunk_counter -= 8192;
-      tick_512hz();
+    while(ticks_4hz >= 8192) {
+      ticks_4hz -= 8192;
+      counter_512hz++;
+
+      // decrement length at 256hz
+      if (counter_512hz % 2 == 0) {
+        if (enable_counter()) {
+          // handle length counter
+          length_counter(length_counter() - 1);
+          if (length_counter() == 0) {
+            status = 0;
+          }
+        }
+      }
+
+      // update volume envelope at 64hz
+      if (counter_512hz % 8 == 7) {
+        if (volume_period && volume < 0x10) {
+          if (++volume_ticker == 8 * volume_period) {
+            volume += volume_add;
+            // log("AU", channel, "volume", volume);
+            // if (volume < 0x10) write_audio_frame_out(freq, volume / 15.0);
+            if (volume >= 0x10) {
+              volume = 0;
+              volume_period = 0;
+            }
+            spgb_audio_sample(monotonic_counter, freq, volume, channel);
+            volume_ticker = 0;
+          }
+        } 
+      }
     }
   }
 

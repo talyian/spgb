@@ -1,4 +1,4 @@
-* [23/28] GBE Tasks
+* [24/30] GBE Tasks
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :END:
@@ -8,6 +8,8 @@
    - State "DONE"       from "TODO"       [2019-10-19 Sat 12:24]
    marking as "done" for now. Need to revisit for the RTC.
 ** TODO RTC - MBC3
+   Partially done. implemented spgb_get_timestamp() so that the game actually loads
+   and increment the timer registers.
 ** DONE Blargg instr_timing
    CLOSED: [2019-10-20 Sun 21:59]
    - State "DONE"       from              [2019-10-20 Sun 21:59]
@@ -51,7 +53,7 @@ As a side-effect, this improved the instruction timings enough that Kirby and Li
 done - Links Awakening Intro works now
 
 ** DONE Render Window
-** DOING Sprite Rendering Priority
+** TODO Sprite Rendering Priority
    The priority on CGB sprites works; see Tetris DX title screen 
    The priority on DMG sprites needs work; see Pokemon Red intro
 ** DONE Sprite Flip/Rotation bug

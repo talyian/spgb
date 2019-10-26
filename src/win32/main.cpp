@@ -419,7 +419,6 @@ void update_screen(Pixel16 * display, u32 len) {
 }
 
 void spgb_push_frame(u32 category, u8 * display, u32 len) {
-  audio_loop(1000.0 / 60);
   if (category - 0x100 < 3) {
     // show_tile_map(category, memory, len); 
   }

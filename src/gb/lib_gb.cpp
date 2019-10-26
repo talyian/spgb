@@ -3,6 +3,8 @@
 #include "executor.cpp"
 #include "emulator.cpp"
 #include "audio.cpp"
+#include "../utils/audio_stream.cpp"
+
 #include "lib_gb.hpp"
 
 extern "C" {

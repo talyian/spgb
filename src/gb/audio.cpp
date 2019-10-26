@@ -47,22 +47,20 @@ void Audio::tick(u32 dt) {
   if (power()) { 
     sq0.tick(dt);
     sq1.tick(dt);
-
     out_counter += dt;
-
-    // Once every (4M / 48000) ticks, we output one frame.
-    if (out_counter >= audio_position_left * 4 * 1024 * 1024 / OUTPUT_RESOLUTION_HZ) {
-      f32 sample = sq0.sample() + sq1.sample();
-      audio_out_left[audio_buffer][audio_position_left++] = sample;
-      audio_out_right[audio_buffer][audio_position_right++] = sample;
-      if (audio_position_left == BUFFER_LEN) {
-        out_counter = 0;
-        audio_position_left = 0;
-        audio_position_right = 0;
-        write_1024_frame(0, audio_out_left[audio_buffer]);
-        write_1024_frame(1, audio_out_right[audio_buffer]);
-        audio_buffer = !audio_buffer;
-      }
-    }
+    //// Once every (4M / 48000) ticks, we output one frame.
+    //if (out_counter >= audio_position_left * 4 * 1024 * 1024 / OUTPUT_RESOLUTION_HZ / 1.3) {
+    //  f32 sample = sq0.sample() + sq1.sample();
+    //  audio_out_left[audio_buffer][audio_position_left++] = sample;
+    //  audio_out_right[audio_buffer][audio_position_right++] = sample;
+    //  if (audio_position_left == BUFFER_LEN) {
+    //    out_counter = 0;
+    //    audio_position_left = 0;
+    //    audio_position_right = 0;
+    //    write_1024_frame(0, audio_out_left[audio_buffer]);
+    //    write_1024_frame(1, audio_out_right[audio_buffer]);
+    //    audio_buffer = !audio_buffer;
+    //  }
+    //}
   }
 }
