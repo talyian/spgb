@@ -11,7 +11,7 @@
 
 #include <gl/gl.h>
 #include "opengl_utils.hpp"
-#include "audio.hpp"
+#include "wasapi_audio.hpp"
 
 // Platform API: these functions are declared in platform.hpp and must
 // be provided by the platform.
@@ -213,6 +213,10 @@ int main(int argc, char** argv) {
     fclose(f);
     spgb_load_cart(emu, buf, len);
   };
+  argc = 2;
+  argv = new char* [2];
+  argv[1] = "C:\\Users\\Jimmy\\git\\springbox\\data\\Kirby's Dream Land.gb";
+
   if (argc > 1) {
     load_cart_file(argv[1], emu);
   }
@@ -341,60 +345,9 @@ int main(int argc, char** argv) {
       DispatchMessage(&msg);
       continue;
     }
-
-    // emu.debug.step();
-    // if (emu.debug.state.type == Debugger::State::PAUSE) {
-    //   log("\x1b[1;31mime\x1b[0m", (u8)emu.cpu.IME, "interrupt", emu.mmu.get(0xFFFF), emu.mmu.get(0xFF0F));
-    //   printf("Timer: CTL=%02x DIV=%02x TIMA=%02x, ticks=%d\n",
-    //          emu.timer.Control, emu.timer.DIV, emu.timer.TIMA, (u16)emu.timer.monotonic_t);
-    //   printf("PPU: STAT=%02x, LCDC=%02x LY=%02x LYC=%02x [%d%d%d]\n",
-    //          emu.ppu.LcdStatus.v, emu.ppu.LcdControl,
-    //          emu.ppu.LineY, emu.ppu.LineYMark,
-    //          emu.ppu.LcdStatusMatch, emu.ppu.LcdStatusLastMatch, 
-    //          emu.ppu.LcdStatusMatch - emu.ppu.LcdStatusLastMatch);
-    //   auto rr = emu.cpu.registers;
-    //   printf("AF   BC   DE   HL   SP   PC\n");
-    //   printf("%04x %04x %04x %04x %04x %04x\n",
-    //          (u16)rr.AF, (u16)rr.BC, (u16)rr.DE, (u16)rr.HL, (u16)rr.SP,
-    //          emu._executor.PC);
-    //   _log("\x1b[1;32m                  ");
-    //   emu._printer.decode(emu._executor.PC);
-    //   printf("\x1b[0m DEBUG %04x> ", emu._executor.PC);
-
-    //   fgets(line, 63, stdin);
-    //   for(int i = 0; i < 63; i++)
-    //     if (!line[i]) break;
-    //     else if (line[i] == '\n') { line[i] = 0; break; }
-      
-    //   if (!strcmp(line, "") || !strcmp(line, "s")) {
-    //     emu.debug.state.type = Debugger::State::STEP;
-    //     continue;
-    //   }
-    //   else if (!strcmp(line, "n")) {
-    //     log("scanning to", emu._printer.PC);
-    //     emu.debug.state.type = Debugger::State::RUN_TO;
-    //     emu.debug.state.addr = emu._printer.PC;
-    //     continue;
-    //   }
-    //   else if (!strcmp(line, "c")) {
-    //     emu.debug.state.type = Debugger::State::RUN;
-    //   }
-    //   else if (!strcmp(line, "r")) {
-    //     emu.debug.state.type = Debugger::State::RUN_TO_RET;
-    //     emu.debug.state.call_depth = 1;
-    //   }
-    //   else if (!strcmp(line, "q")) {
-    //     break;
-    //   }
-    //   else {
-    //     continue;
-    //   }
-    // }
-
-    // 456 * 154 ticks is one emulator frame 
-    // emu.step(456 * 154);
     // we need to singlestep here for debugging to work correctly
     spgb_step_instruction(emu);
+    audio_loop(emu, 0);
   }
 }
 

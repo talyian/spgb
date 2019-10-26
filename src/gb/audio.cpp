@@ -47,20 +47,89 @@ void Audio::tick(u32 dt) {
   if (power()) { 
     sq0.tick(dt);
     sq1.tick(dt);
-    out_counter += dt;
-    //// Once every (4M / 48000) ticks, we output one frame.
-    //if (out_counter >= audio_position_left * 4 * 1024 * 1024 / OUTPUT_RESOLUTION_HZ / 1.3) {
-    //  f32 sample = sq0.sample() + sq1.sample();
-    //  audio_out_left[audio_buffer][audio_position_left++] = sample;
-    //  audio_out_right[audio_buffer][audio_position_right++] = sample;
-    //  if (audio_position_left == BUFFER_LEN) {
-    //    out_counter = 0;
-    //    audio_position_left = 0;
-    //    audio_position_right = 0;
-    //    write_1024_frame(0, audio_out_left[audio_buffer]);
-    //    write_1024_frame(1, audio_out_right[audio_buffer]);
-    //    audio_buffer = !audio_buffer;
-    //  }
-    //}
   }
 }
+
+void Square::add_audio_sample() {
+  LongSample s = {
+    monotonic_counter, freq, volume, channel
+  };
+  parent->add_audio_sample(s);
+}
+void Square::set(u8 addr, u8 val) {
+  ((u8*)this)[addr] = val;
+  if (addr == 1) {
+  }
+  if (addr == 2) {
+    u8 old_volume = volume;
+    volume = vol_start();
+    volume_add = 2 * vol_add() - 1;
+    volume_period = vol_period();
+    volume_ticker = 0;
+    if (volume != old_volume)
+      add_audio_sample();
+  }
+  if (addr == 3) {
+    u16 old_frequency = freq;
+    freq = (freq_hi() << 8) | freq_lo();
+    f32 period = (2048 - freq) * 8;
+    if (freq != old_frequency) {
+      add_audio_sample();
+    }
+  }
+  if (addr == 4 && val & 0x80) {
+    status = 1; // writing to  byte 5 turns on the wave unit
+    u16 old_frequency = freq;
+    freq = (freq_hi() << 8) | freq_lo();
+    if (freq != old_frequency)
+      add_audio_sample();
+    if (!length_counter()) length_counter(0x3F);
+    // TODO frequency counter is reloaded with period /??
+    // TODO volume envelope timer is reloaded with period /??
+    volume = vol_start();
+    volume_ticker = 0;
+  }
+}
+
+void Square::tick(u32 dt) {
+    // dt is a 4Mhz clock tick.
+    if (!status) { return; }
+    ticks_4hz += dt;
+    sample_counter += dt;
+    monotonic_counter += dt;
+    // our internal cycle is 512HZ, so we scale 8000x from 4Mhz
+    while(ticks_4hz >= 8192) {
+      ticks_4hz -= 8192;
+      counter_512hz++;
+
+      // decrement length at 256hz
+      if (counter_512hz % 2 == 0) {
+        if (enable_counter()) {
+          // handle length counter
+          length_counter(length_counter() - 1);
+          if (length_counter() == 0) {
+            status = 0;
+            volume = 0;
+            freq = 0;
+            add_audio_sample();
+          }
+        }
+      }
+
+      // update volume envelope at 64hz
+      if (counter_512hz % 8 == 7) {
+        if (volume_period && volume < 0x10) {
+          if (++volume_ticker == 8 * volume_period) {
+            volume += volume_add;
+            // log("AU", channel, "volume", volume);
+            // if (volume < 0x10) write_audio_frame_out(freq, volume / 15.0);
+            if (volume >= 0x10) {
+              volume = 0;
+              volume_period = 0;
+            }
+            add_audio_sample();
+          }
+        } 
+      }
+    }
+  }

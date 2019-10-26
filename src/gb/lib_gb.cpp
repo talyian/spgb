@@ -33,6 +33,9 @@ extern "C" {
   u8 * EXPORT spgb_allocate(Emulator, u32 size) {
     return new u8[size];
   }
+  void EXPORT spgb_audio_sample(Emulator emu, u32 sample_rate, u32 channels, u32 frames, f32* data) {
+    ((emulator_t*)emu)->audio.render_out(sample_rate, channels, frames, data);
+  }
 }
 
 namespace logs {
