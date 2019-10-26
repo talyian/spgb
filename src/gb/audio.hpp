@@ -9,13 +9,12 @@ u64 get_monotonic_timer();
 struct Audio;
 
 struct Square {
-  Square(Audio *p) : parent(p) { }
-  Audio * parent = 0;
-
   // These 5 bytes correspond to the 5 registers the CPU controls the square
   // wave with. The FIELD macro will define getter/setters for logical fields
   // based on the data in these bytes.
   u8 data[5];
+
+  Audio* parent = 0;
 
   #define FIELD(f, index, len, offset)                                 \
     u8 f() { return (data[index] >> offset) & ((1 << len) - 1); }       \
@@ -91,12 +90,14 @@ struct Audio {
   Audio() {
     sq1.channel = 1;
     sq1.mask[0] = 0xFF;
+    sq0.parent = this;
+    sq1.parent = this;
   }
 
   LongSampleQueue channels[4];
   u8 data[0x30];
-  Square sq0 {this};  // FF10 - FF14
-  Square sq1 {this};  // FF15 - FF19
+  Square sq0;  // FF10 - FF14
+  Square sq1;  // FF15 - FF19
   Wave wave;   // FF1A - FF1E
   Noise noise; // FF1F - FF23
 

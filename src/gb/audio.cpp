@@ -52,7 +52,7 @@ void Audio::tick(u32 dt) {
 
 void Square::add_audio_sample() {
   LongSample s = {
-    monotonic_counter, freq, volume, channel
+    (u32)monotonic_counter, freq, volume, channel
   };
   parent->add_audio_sample(s);
 }

@@ -1,5 +1,5 @@
 .SUFFIXES:
-.PHONY: run clean run_blargg wasm
+.PHONY: run clean run_blargg wasm test
 
 WASM_CC_COMPILE=clang++.exe -c -DWASM=1 --target=wasm32 -fvisibility=hidden -std=c++14 -Wall -O2 -Wno-unused-variable -nostdlib -ffunction-sections -fdata-sections -I .. -I ../utils
 WASM_CC_LINK=wasm-ld.exe --export-dynamic --no-entry --strip-all --gc-sections --allow-undefined --import-memory
@@ -9,6 +9,9 @@ run: gb-emu.exe
 
 run_blargg: gb-emu.exe
 	find ../../data/cpu_instrs/individual/*.gb | while read f; do ./gb-emu.exe "$$f"; echo; done
+
+test: gb-test.exe
+	./gb-test.exe
 
 wasm: ../../wasmgui/build/gb_emulator.wasm
 	@true
@@ -29,6 +32,11 @@ platform.wasm-o: platform_wasm.o
 CLANG_OPTS:=-D_CRT_SECURE_NO_WARNINGS -Wall -pedantic -O2 -Wno-language-extension-token
 CLANG_LINK_OPTS:=-flto -O2
 
+./test_main.o: ../test/test.cpp
+	clang++.exe ${CLANG_OPTS} -c -o $@ $< 
+./gb-test.exe: deps.Makefile
+./gb-test.exe: lib_gb.o test_main.o
+	clang++.exe ${CLANK_LINK_OPTS} -o $@ lib_Gb.o test_main.o
 ./gb-emu.exe: deps.Makefile
 ./gb-emu.exe: lib_gb.o host.o 
 	clang++.exe ${CLANG_LINK_OPTS} -o $@ lib_gb.o host.o \

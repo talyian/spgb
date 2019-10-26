@@ -46,6 +46,12 @@ namespace logs {
   void _log(u32 v) { spgb_logx32(v); }
   void _log(i32 v) { spgb_logf(v); }
   void _log(double f) { spgb_logf(f); }
-  void _log(const char* s) { _log(str{s}); }
+  void _log(const char* s) { _log(make_str(s)); }
   void _log(void* s) { spgb_logp(s); }
+}
+
+str make_str(const char * data) {
+  u32 len = 0;
+  for(const char * d1 = data; *d1; d1++) len++;
+  return {(u8*)data, len};
 }
