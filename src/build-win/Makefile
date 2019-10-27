@@ -10,7 +10,7 @@ run: gb-emu.exe
 run_blargg: gb-emu.exe
 	find ../../data/cpu_instrs/individual/*.gb | while read f; do ./gb-emu.exe "$$f"; echo; done
 
-test: gb-test.exe
+test: ./gb-test.exe
 	./gb-test.exe
 
 wasm: ../../wasmgui/build/gb_emulator.wasm
@@ -36,7 +36,7 @@ CLANG_LINK_OPTS:=-flto -O2
 	clang++.exe ${CLANG_OPTS} -c -o $@ $< 
 ./gb-test.exe: deps.Makefile
 ./gb-test.exe: lib_gb.o test_main.o
-	clang++.exe ${CLANK_LINK_OPTS} -o $@ lib_Gb.o test_main.o
+	clang++.exe ${CLANK_LINK_OPTS} -o $@ lib_gb.o test_main.o
 ./gb-emu.exe: deps.Makefile
 ./gb-emu.exe: lib_gb.o host.o 
 	clang++.exe ${CLANG_LINK_OPTS} -o $@ lib_gb.o host.o \

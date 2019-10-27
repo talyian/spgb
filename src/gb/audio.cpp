@@ -54,7 +54,7 @@ void Square::add_audio_sample() {
   LongSample s = {
     (u32)monotonic_counter, freq, volume, channel
   };
-  parent->add_audio_sample(s);
+  qq.add(s);
 }
 void Square::set(u8 addr, u8 val) {
   ((u8*)this)[addr] = val;
@@ -118,8 +118,8 @@ void Square::tick(u32 dt) {
 
       // update volume envelope at 64hz
       if (counter_512hz % 8 == 7) {
-        if (volume_period && volume < 0x10) {
-          if (++volume_ticker == 8 * volume_period) {
+        if (volume_period) {
+          if (++volume_ticker == volume_period) {
             volume += volume_add;
             // log("AU", channel, "volume", volume);
             // if (volume < 0x10) write_audio_frame_out(freq, volume / 15.0);
@@ -128,6 +128,7 @@ void Square::tick(u32 dt) {
               volume_period = 0;
             }
             add_audio_sample();
+            volume_ticker = 0;
           }
         } 
       }

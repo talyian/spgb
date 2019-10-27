@@ -213,14 +213,15 @@ int main(int argc, char** argv) {
     fclose(f);
     spgb_load_cart(emu, buf, len);
   };
-  argc = 2;
-  argv = new char* [2];
-  argv[1] = "C:\\Users\\Jimmy\\git\\springbox\\data\\Kirby's Dream Land.gb";
 
   if (argc > 1) {
     load_cart_file(argv[1], emu);
   }
   else {
+    argc = 2;
+    argv = new char* [2];
+    argv[1] = "C:\\Users\\Jimmy\\git\\springbox\\data\\Kirby's Dream Land.gb";
+
     char filename[0x100] = { 0 };
     OPENFILENAME ofn;
     ZeroMemory(&ofn, sizeof(ofn));
@@ -320,8 +321,9 @@ int main(int argc, char** argv) {
   win32_emulator.screen_tex = &win32_emulator.texture_array[0];
   win32_emulator.vbo_count++; 
 
-  audio_init();
   ShowWindow(hwnd, SW_RESTORE);
+
+  audio_init();
 
   // if (emu.noswap) glDrawBuffer(GL_FRONT);
   

@@ -13,8 +13,7 @@ struct Square {
   // wave with. The FIELD macro will define getter/setters for logical fields
   // based on the data in these bytes.
   u8 data[5];
-
-  Audio* parent = 0;
+  LongSampleQueue qq;
 
   #define FIELD(f, index, len, offset)                                 \
     u8 f() { return (data[index] >> offset) & ((1 << len) - 1); }       \
@@ -90,11 +89,8 @@ struct Audio {
   Audio() {
     sq1.channel = 1;
     sq1.mask[0] = 0xFF;
-    sq0.parent = this;
-    sq1.parent = this;
   }
 
-  LongSampleQueue channels[4];
   u8 data[0x30];
   Square sq0;  // FF10 - FF14
   Square sq1;  // FF15 - FF19
@@ -122,23 +118,22 @@ struct Audio {
   void write(u16 addr, u8 val);
   void tick(u32 dt);
 
-  void add_audio_sample(LongSample s) {
-    auto& q = channels[s.channel];
-    q.add(s);
-  }
-
   void render_out(f32 sample_rate, u32 num_channels, i32 frames, f32 * data) {
+    // TODO: this is called at a certain point in time, at which we've maybe generated 
+    // 2ms worth of samples. 
+    f32 frame_count = frames;
+    f64 tick_count = 4 * 1024 * 1024 * frame_count / sample_rate;
+    f64 tick_increment = 4 * 1024 * 1024 / sample_rate;
     int j = 0;
     f32 out = 0;
     for (i32 i = 0; i < frames; i++) {
-      f32 sample = channels[0].sample();
-      data[j++] = sample;
-      data[j++] = sample;
-      out += sample;
-      channels[0].tick({ (i32)(4 * 1024 * 1024 / sample_rate) });
-    }
-    if (out > 0) {
-      log("oooh ", out);
+      sq0.qq.tick({ (i32)(i * tick_increment - (i - 1) * tick_increment) });
+      sq1.qq.tick({ (i32)(i * tick_increment - (i - 1) * tick_increment) });
+      f32 u = 0, v = 0;
+      u = sq0.qq.sample();
+      v = sq1.qq.sample();
+      data[j++] = u + v;
+      data[j++] = u + v;
     }
   }
 };

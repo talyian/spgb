@@ -125,6 +125,7 @@ struct Cart {
       if (addr < 0x2000) {
         // log("MBC1: enable ram", val);
         mbc.enable_ram = val == 0xA;
+        return;
       } else if (addr < 0x4000) {
         u8 bank = 0x1F & val;
         bank += !bank;

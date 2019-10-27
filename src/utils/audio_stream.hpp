@@ -1,6 +1,6 @@
 #pragma once
-
 #include "../base.hpp"
+#include "../utils/log.hpp"
 
 // We need to re-sample audio at a particular output frequency (48k by default).
 // Counter for 4Ghz clock cycle ticks.
@@ -35,6 +35,7 @@ struct LongSampleQueue {
       // Catch read pointer up, this will cause some audio skip
       current = data[read_pos];
       read_pos = (read_pos + 1) % QUEUESIZE;
+      // log("warning: audio buffer overrun");
     }
     data[write_pos] = s;
     write_pos = write_pos_next;
@@ -45,7 +46,8 @@ struct LongSampleQueue {
     monotonic_ticks += ticks.value;
     current.tick_time = current.tick_time + ticks;
     while (true) {
-      if (read_pos == write_pos) return; // queue is empty
+      if (read_pos == write_pos) 
+        return; // queue is empty
       const LongSample &head = data[read_pos];
       auto elapsed = head.tick_time - current.tick_time;
       if (elapsed.value <= 0) {
@@ -64,7 +66,7 @@ struct LongSampleQueue {
     u16 period = (2048 - current.frequency) * 2;
     u16 index = monotonic_ticks / period % 32;
     u8 wave = current.table[index];
-    wave = (index / 6) % 2 == 0;
+    wave = (index / 16) % 2 == 0;
     return 0.05f * current.volume * wave;
   }
 };
