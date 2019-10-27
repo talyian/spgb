@@ -17,6 +17,7 @@ u8 Audio::_read(u16 addr) {
   }
   if (addr < 5) { return sq0.get(addr); }
   if (addr < 10) { return sq1.get(addr - 5); }
+  if (addr < 15) return wave.get(addr - 10);
   return data[addr] | mask[addr];
 }
 
@@ -39,6 +40,7 @@ void Audio::write(u16 addr, u8 val) {
   else if (!power()) { }
   else if (addr < 5) { sq0.set(addr, val); }
   else if (addr < 10) { sq1.set(addr - 5, val); }
+  else if (addr < 15) wave.set(addr - 10, val);
   else if (addr < 0x20) data[addr] = val;
   else wave.table[addr - 0x20] = val;
 }
@@ -47,17 +49,19 @@ void Audio::tick(u32 dt) {
   if (power()) { 
     sq0.tick(dt);
     sq1.tick(dt);
+    wave.tick(dt);
   }
 }
 
 void Square::add_audio_sample() {
-  LongSample s = {
-    (u32)monotonic_counter, freq, volume, channel
-  };
+  LongSample s = {(u32)monotonic_counter, freq, (u8)(0xf * volume)};
+  for (int i = 0; i < 32; i++) {
+    s.table[i] = (i % 16) / 8;
+  }
   qq.add(s);
 }
 void Square::set(u8 addr, u8 val) {
-  ((u8*)this)[addr] = val;
+  data[addr] = val;
   if (addr == 1) {
   }
   if (addr == 2) {

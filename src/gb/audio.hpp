@@ -48,7 +48,7 @@ struct Square {
   // that the audio device maps to the addresss bit instead of vice versa
   u8 status = 0;
   u8 channel = 0; // just for debugging
-  u8   get(u8 addr) { return ((u8*)this)[addr] | mask[addr]; }
+  u8   get(u8 addr) { return data[addr] | mask[addr]; }
   void set(u8 addr, u8 val);
 
   u32 volume_ticker = 0;
@@ -64,22 +64,90 @@ struct Square {
 };
 
 struct Wave {
-  u8 dac_power:1;
-  u8 unused_0:7;
+  LongSampleQueue qq;
+  u8 data[5];
 
-  u8 counter;
+  FIELD(dac_power, 0, 1, 7);
+  FIELD(counter, 1, 8, 0);
+  FIELD(vol_bits, 2, 2, 5);
+  FIELD(freq_lo, 3, 8, 0);
+  FIELD(trigger, 4, 1, 7);
+  FIELD(enable_counter, 4, 1, 6);
+  FIELD(freq_hi, 4, 3, 0);
 
-  u8 unused_1:1;
-  u8 volume:2;
-  u8 unused_2:5;
-
-  u8 freq_lo;
-
-  u8 trigger:1;       // unreadable
-  u8 enable_timeout:1;
-  u8 unused_3:3;      // unreadable
-  u8 freq_hi:3;       // unreadable
+  u16 freq = 0;
+  
   u8 table[0x10];
+  u8 table_pos = 0;
+
+  u8 status = 0;
+  u8 channel = 2;
+  u8 mask[5] = { 0x7F, 0xFF, 0x9F, 0xFF, 0xBF };
+  u8   get(u8 addr) { return data[addr] | mask[addr]; }
+  void set(u8 addr, u8 value) {
+    data[addr] = value;
+    if (addr == 0) {
+      status = value;
+      return;
+    }
+    if (addr == 1) {
+      
+    }
+    if (addr == 3) {
+      freq = freq_lo() | 0x100 * freq_hi();
+      add_audio_sample();
+      return;
+    }
+    if (addr == 4) {
+      freq = freq_lo() | 0x100 * freq_hi();
+      if (trigger()) {
+        if (counter() == 0) { enable_counter(1); }
+        table_pos = 0;
+      }
+      add_audio_sample();
+      return;
+    }
+  }
+
+  u64 counter_4mhz = 0;
+  u64 monotonic_counter = 0;
+  void tick(u32 dt) {
+    counter_4mhz += dt;
+    monotonic_counter += dt;
+    while (counter_4mhz > 8192) {
+      counter_4mhz -= 8192;
+      tick_512();
+    }
+  }
+
+  u32 counter_512hz = 0;
+  void tick_512() {
+    if (!status) return;
+    if (counter_512hz++ % 2 == 0) {
+      if (enable_counter()) {
+        counter(counter() - 1);
+        if (counter() == 0) {
+          enable_counter(0);
+          status = 0;
+          vol_bits(0);
+          freq = 0;
+          add_audio_sample();
+        }
+      }
+    }
+  }
+
+  void add_audio_sample() {
+    log((u32)monotonic_counter, "Wave sample", freq, vol_bits());
+    u8 vol_map[4] = { 0, 0xF, 0x7, 0x3};
+    u8 volume = vol_map[vol_bits() & 3];
+    LongSample s {{(u32)monotonic_counter}, freq, volume};
+    for(u8 i = 0; i < 16; i++) {
+      s.table[2 * i] = table[i] >> 4;
+      s.table[2 * i + 1] = table[i] & 0xF;
+    }
+    qq.add(s);
+  }
 };
 
 struct Noise {
@@ -136,13 +204,20 @@ struct Audio {
     int j = 0;
     f32 out = 0;
     for (i32 i = 0; i < frames; i++) {
-      sq0.qq.tick({ (i32)(i * tick_increment - (i - 1) * tick_increment) });
-      sq1.qq.tick({ (i32)(i * tick_increment - (i - 1) * tick_increment) });
-      f32 u = 0, v = 0;
+      i32 tick_update = (i * tick_increment - (i - 1) * tick_increment);
+      sq0.qq.tick({tick_update});
+      sq1.qq.tick({tick_update});
+      wave.qq.tick({tick_update});
+      f32 u = 0, v = 0, w = 0;
       u = sq0.qq.sample();
       v = sq1.qq.sample();
-      data[j++] = u + v;
-      data[j++] = u + v;
+      w = wave.qq.sample();
+      // DEBUG: just testing wave out
+      // u = 0;
+      // v = 0;
+
+      data[j++] = u + v + w;
+      data[j++] = u + v + w;
     }
   }
 };
