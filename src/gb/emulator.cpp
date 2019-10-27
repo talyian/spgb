@@ -47,6 +47,10 @@ void emulator_t::load_cart(u8 *cart_data, u32 cart_len) {
     // debug.state.type = Debugger::State::PAUSE;
   }
   mmu.load_cart(cart);
+  if (cart.console_type == ConsoleType::DMG)
+    mmu.bios_rom = DMG_ROM_bin;
+  else
+    mmu.bios_rom = cgb_bios_bin;
 }
 
 u32 emulator_t::single_step() {
