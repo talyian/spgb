@@ -72,7 +72,6 @@ void Square::set(u8 addr, u8 val) {
   if (addr == 3) {
     u16 old_frequency = freq;
     freq = (freq_hi() << 8) | freq_lo();
-    f32 period = (2048 - freq) * 8;
     if (freq != old_frequency) {
       add_audio_sample();
     }
@@ -81,13 +80,14 @@ void Square::set(u8 addr, u8 val) {
     status = 1; // writing to  byte 5 turns on the wave unit
     u16 old_frequency = freq;
     freq = (freq_hi() << 8) | freq_lo();
-    if (freq != old_frequency)
-      add_audio_sample();
     if (!length_counter()) length_counter(0x3F);
     // TODO frequency counter is reloaded with period /??
     // TODO volume envelope timer is reloaded with period /??
     volume = vol_start();
     volume_ticker = 0;
+    volume_period = vol_period();
+
+    add_audio_sample();
   }
 }
 

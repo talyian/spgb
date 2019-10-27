@@ -3,6 +3,7 @@
 #include "io_ports.hpp"
 #include "../utils/audio_stream.hpp"
 
+extern "C" f64 ceil(f64);
 u16 get_pc();
 u64 get_monotonic_timer();
 
@@ -119,11 +120,19 @@ struct Audio {
   void tick(u32 dt);
 
   void render_out(f32 sample_rate, u32 num_channels, i32 frames, f32 * data) {
-    // TODO: this is called at a certain point in time, at which we've maybe generated 
-    // 2ms worth of samples. 
+    // TODO: This is called in a pretty tight loop but doesnt fire until the
+    // host audio api is ready to receive additional data. On my windows system
+    // this takes happens about once every 2ms of real time.
+
+    // However, the simulation has already run ahead of real-time, up to an entire frame, and is possibly just waiting on Vsync. This means we really only want to pull about 2ms of audio data out of the queue. The danger is that we pull less than 2ms out and the queue gets gradually longer and longer.
+
+    // One graphics is 456 * 154 cycles and lasts 59.7275 seconds.
+    // One audio frame at 48khz lasts 87.3813333 frames.
+    // 803.65 audio frames per graphics frame.
+
     f32 frame_count = frames;
     f64 tick_count = 4 * 1024 * 1024 * frame_count / sample_rate;
-    f64 tick_increment = 4 * 1024 * 1024 / sample_rate;
+    f64 tick_increment = ceil(4 * 1024 * 1024 / sample_rate);
     int j = 0;
     f32 out = 0;
     for (i32 i = 0; i < frames; i++) {

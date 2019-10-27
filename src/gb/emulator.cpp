@@ -15,9 +15,11 @@ u16 get_pc() {
 
 emulator_t::emulator_t(u8 *cart_data, u32 cart_len) {
   instance = this;
-  mmu.bios_rom = DMG_ROM_bin;
-  // mmu.bios_rom = cgb_bios_bin;
   load_cart(cart_data, cart_len);
+  if (this->cart.console_type == ConsoleType::DMG)
+    mmu.bios_rom = DMG_ROM_bin;
+  else
+    mmu.bios_rom = cgb_bios_bin;
 }
 
 emulator_t::emulator_t() : emulator_t(0, 0) {}

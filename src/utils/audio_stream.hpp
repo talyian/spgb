@@ -61,6 +61,7 @@ struct LongSampleQueue {
 
   u64 monotonic_ticks = 0;
   f32 sample() {
+    // return (monotonic_ticks / 10000 % 2 == 0);
     if (!current.frequency) return 0;
     if (!current.volume) return 0;
     u16 period = (2048 - current.frequency) * 2;

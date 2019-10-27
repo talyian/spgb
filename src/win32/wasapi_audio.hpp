@@ -25,12 +25,6 @@ struct AudioPlayer {
   WAVEFORMATEX mix_format;
   AudioPlayer();
   void loop(Emulator emu, double elapsed_ms);
-
-  u32 last_processed_dt = 0;
-  LongSampleQueue sample_queue[4];
-  void add_sample(u32 dt, u16 freq, u8 volume, u8 channel) { 
-    sample_queue[channel].add({ dt, freq, volume, channel });
-  }
 };
 
 AudioPlayer::AudioPlayer() {
@@ -92,9 +86,7 @@ AudioPlayer::AudioPlayer() {
 
 
 void AudioPlayer::loop(Emulator emu, double elapsed_ms) {
-  // printf("WASAPI: step: %d\n", 0);
   if (error) return;
-  // printf("WASAPI: step: %d\n", 1);
   // if (volume_target <= 0) return;
 
   this->elapsed_s += elapsed_ms / 1000;
@@ -108,7 +100,6 @@ void AudioPlayer::loop(Emulator emu, double elapsed_ms) {
   f32* data;
   hr = audio_renderer->GetBuffer(available_frames, (u8**)&data);
   CHECKFAIL;
-
   spgb_audio_sample(emu,
     mix_format.nSamplesPerSec,
     mix_format.nChannels,

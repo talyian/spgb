@@ -81,3 +81,7 @@ sprite when flipY is on
    - State "DONE"       from "DOING"      [2019-10-19 Sat 12:23]
    Turns out that localstorage encoding is broken. need to find some eficient way
    to do hex or base64 encoding.
+* DONE BUG: gbc display broken
+  CLOSED: [2019-10-27 Sun 01:47]
+  I was loading the wrong Bios: should I always the load the CGB bios, even for DMG roms?
+* TODO BUG: bgbtest audio notes play too long

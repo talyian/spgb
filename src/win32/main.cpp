@@ -29,13 +29,14 @@ extern "C" {
     static char line[20];
     static u32 p = 0;
     auto flush = [&]() { printf("<<< %.*s\n", p, line); p = 0; };
-    if (v == '\n' || p == 20) { flush(); } else { line[p++] = v; }
+    if (v == '\n' || p == 20) { flush(); }
+    else { line[p++] = v; }
     sequence = sequence * 0x100 + v;
-    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"dessaP\0") {
+    if ((sequence & 0xFFFFFFFFFFFF) == *(u64*)"dessaP\0") {
       flush();
       exit(0);
     }
-    if ((sequence & 0xFFFFFFFFFFFF) == *(u64 *)"deliaF\0") {
+    if ((sequence & 0xFFFFFFFFFFFF) == *(u64*)"deliaF\0") {
       flush();
       exit(-1);
     }
@@ -45,7 +46,7 @@ extern "C" {
     FILETIME fts;
     GetLocalTime(&sts);
     SystemTimeToFileTime(&sts, &fts);
-    const u64 TICKS_PER_SEC = 10 * 1000* 1000; // 
+    const u64 TICKS_PER_SEC = 10 * 1000 * 1000; // 
     const u64 UnixEpochOffsetSeconds = 11644473600LL;
     u64 ticks = fts.dwHighDateTime;
     ticks = (ticks << 32) | fts.dwLowDateTime;
@@ -69,18 +70,18 @@ struct Win32Emulator {
   HGLRC gl = 0;
   HDC hdc = 0;
   Emulator emu;
-  glom::Shader * shader;
+  glom::Shader* shader;
   int vbo_count = 0;
 
-  RECT window_size {0, 0, 160 * 4, 144 * 4};
+  RECT window_size{ 0, 0, 160 * 4, 144 * 4 };
   enum SCREEN_STATE {
     MAIN = 0,
     TILES,
     BACKGROUND,
   } screen_state = MAIN;
-  glom::Texture216 *texture_array;
-  glom::Texture216 *screen_tex;
-  glom::VBO *vbo_array = 0;
+  glom::Texture216* texture_array;
+  glom::Texture216* screen_tex;
+  glom::VBO* vbo_array = 0;
 } win32_emulator;
 
 // Main Window event handler.
@@ -123,7 +124,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     switch (wParam) {
     case VK_RETURN: spgb_button_up(emu, Buttons::START); return 0;
     case VK_SHIFT:
-    case VK_RSHIFT: spgb_button_up(emu,Buttons::SELECT); return 0;
+    case VK_RSHIFT: spgb_button_up(emu, Buttons::SELECT); return 0;
     case 'J': spgb_button_up(emu, Buttons::B); return 0;
     case 'K': spgb_button_up(emu, Buttons::A); return 0;
     case 'W': spgb_button_up(emu, Buttons::UP); return 0;
@@ -139,44 +140,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     case '2': win32_emulator.screen_state = Win32Emulator::TILES; return 0;
     case '3': win32_emulator.screen_state = Win32Emulator::BACKGROUND; return 0;
     case '4':
-//   {
-//       // dump CGB palettes
-//       for (u32 i = 0; i < 8; i++) {
-//         printf("BG %d :", i);
-//         for (u32 p = 0; p < 4; p++) {
-//           auto bgpixel = ppu.Cgb.bg_palette.get_color(i, p);
-//           printf(" %04x", bgpixel);
-//         }
-//         printf("\n");
-//       }
-//       for (u32 i = 0; i < 8; i++) {
-//         printf("SP %d :", i);
-//         for (u32 p = 0; p < 4; p++) {
-//           auto bgpixel = ppu.Cgb.spr_palette.get_color(i, p);
-//           printf(" %04x", bgpixel);
-//         }
-//         printf("\n");
-//       }
-//       return 0;
-//     }
     case '5':
-    //   {
-    //   auto ppu = win32_emulator.emu.ppu;
-    //   printf("BG tiles\n");
-    //   // dump visible bg tiles
-    //   for(int j = 0; j < 18; j++) {
-    //     printf("# ");
-    //     for(int i = 0; i < 20; i++) {
-    //       printf("%02x ", ppu.VRAM[0x1800 + 32 * j + i]);
-    //     }
-    //     printf("\n| ");
-    //     for(int i = 0; i < 20; i++) {
-    //       printf("%02x ", ppu.VRAM2[0x1800 + 32 * j + i]);
-    //     }
-    //     printf("\n");
-    //   }
-    //   return 0;
-    // }
       break;
     case VK_RETURN: spgb_button_down(emu, Buttons::START); return 0;
     case VK_SHIFT:
@@ -202,7 +166,7 @@ int main(int argc, char** argv) {
   Emulator emu = win32_emulator.emu = spgb_create_emulator();
 
   // Select Cart from argv or open file Dialog box
-  auto load_cart_file = [] (char* path, Emulator emu) -> void {
+  auto load_cart_file = [](char* path, Emulator emu) -> void {
     FILE* f = fopen(path, "rb");
     if (!f) { fprintf(stderr, "%s: file not found\n", path); exit(19); }
     fseek(f, 0, SEEK_END);
@@ -218,9 +182,6 @@ int main(int argc, char** argv) {
     load_cart_file(argv[1], emu);
   }
   else {
-    argc = 2;
-    argv = new char* [2];
-    argv[1] = "C:\\Users\\Jimmy\\git\\springbox\\data\\Kirby's Dream Land.gb";
 
     char filename[0x100] = { 0 };
     OPENFILENAME ofn;
@@ -299,7 +260,7 @@ int main(int argc, char** argv) {
   glEnable(glf::GL_DEBUG_OUTPUT);
   glf::DebugMessageCallback(glf::MessageCallback, nullptr);
 
-  glom::Shader shader {};
+  glom::Shader shader{};
   win32_emulator.shader = &shader;
   win32_emulator.vbo_array = new glom::VBO[16];
   win32_emulator.texture_array = new glom::Texture216[16];
@@ -315,19 +276,19 @@ int main(int argc, char** argv) {
       {w, h, 0,   1, 0},
       {0, h, 0,  0, 0}
     };
-    win32_emulator.vbo_array[0].init(vertices, sizeof(vertices)/sizeof(vertices[0]));
+    win32_emulator.vbo_array[0].init(vertices, sizeof(vertices) / sizeof(vertices[0]));
     win32_emulator.vbo_count++;
   }
   win32_emulator.screen_tex = &win32_emulator.texture_array[0];
-  win32_emulator.vbo_count++; 
+  win32_emulator.vbo_count++;
 
   ShowWindow(hwnd, SW_RESTORE);
 
   audio_init();
 
   // if (emu.noswap) glDrawBuffer(GL_FRONT);
-  
-  char line[64] {0};
+
+  char line[64]{ 0 };
   if (argc > 1 && strstr(argv[1], "instr_timing")) {
 
   }
@@ -347,15 +308,18 @@ int main(int argc, char** argv) {
       DispatchMessage(&msg);
       continue;
     }
+
+    for (int i = 0; i < 456; i++) // simulate one scanline
     // we need to singlestep here for debugging to work correctly
-    spgb_step_instruction(emu);
+      spgb_step_instruction(emu);
+
     audio_loop(emu, 0);
   }
 }
 
 struct TileInfo {
-  u8 * data = 0;
-  TileInfo(u8 * data) : data(data) { }
+  u8* data = 0;
+  TileInfo(u8* data) : data(data) { }
   u8 get_pixel(u8 x, u8 y) {
     u8 a = data[2 * y];
     u8 b = data[2 * y + 1];
@@ -365,21 +329,21 @@ struct TileInfo {
   }
 };
 
-u8 pal[4] = { 0, 36 + 12 + 2, 3 * 36  + 4 * 6 + 3, 215 };
+u8 pal[4] = { 0, 36 + 12 + 2, 3 * 36 + 4 * 6 + 3, 215 };
 
 u8 rgb2(u16 rgb);
 
-void update_screen(Pixel16 * display, u32 len) {
+void update_screen(Pixel16* display, u32 len) {
   win32_emulator.screen_tex->setData(display, 160, 144);
 }
 
-void spgb_push_frame(u32 category, u8 * display, u32 len) {
+void spgb_push_frame(u32 category, u8* display, u32 len) {
   if (category - 0x100 < 3) {
     // show_tile_map(category, memory, len); 
   }
   else if (category == 0x300) {
     // update_tile_maps();
-    update_screen((Pixel16 *) display, len);
+    update_screen((Pixel16*)display, len);
     glEnable(GL_DEPTH_TEST);
     glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -387,10 +351,11 @@ void spgb_push_frame(u32 category, u8 * display, u32 len) {
       win32_emulator.shader->draw(
         win32_emulator.vbo_array[0],
         win32_emulator.texture_array[0]);
-    } else if (win32_emulator.screen_state == Win32Emulator::TILES) {
-       win32_emulator.shader->draw(
-         win32_emulator.vbo_array[0],
-         win32_emulator.texture_array[0]);
+    }
+    else if (win32_emulator.screen_state == Win32Emulator::TILES) {
+      win32_emulator.shader->draw(
+        win32_emulator.vbo_array[0],
+        win32_emulator.texture_array[0]);
 
       glClear(GL_DEPTH_BUFFER_BIT);
 
