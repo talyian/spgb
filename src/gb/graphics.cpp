@@ -112,13 +112,13 @@ void PPU::scan_line() {
     set_display(sx, LineY, pixel);
   }
 
-  // TODO : render Window
   if (LcdControl & 0x20)
     if (LineY >= this->WindowY) {
       u8 wy = LineY - this->WindowY;
       for(u8 sx = 0; sx < DISPLAY_W; sx++) {
-        u8 wx = sx - WindowX + 7;
+        i16 wx = (i16)sx - WindowX + 7;
         if (wx >= DISPLAY_W) continue;
+        if (wx < 0) continue;
         u8 tile_x = wx / 8;
         u8 tile_y = wy / 8;
         Tile tile = select_background_tile(tile_x, tile_y, LcdControl & 0x40);
