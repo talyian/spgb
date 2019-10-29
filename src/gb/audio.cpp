@@ -1,6 +1,15 @@
 #include "audio.hpp"
 #include "../utils/log.hpp"
 
+u8 mask[0x30] = {
+  0x80, 0x3F, 0x00, 0xFF, 0xBF,
+  0xFF, 0x3F, 0x00, 0xFF, 0xBF,
+  0x7F, 0xFF, 0x9F, 0xFF, 0xBF,
+  0xFF, 0xFF, 0x00, 0x00, 0xBF,
+  0x00, 0x00, 0x70,
+  0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, // UNUSED
+};
+
 u8 Audio::_read(u16 addr) {
   // wave ram ignores power and mask
   if (addr >= 0x20) {
@@ -52,10 +61,13 @@ void tick_512hz_frame(Audio* audio) {
   if (audio->frame_counter % 2 == 1) {
     audio->sq0.tick_update_length();
     audio->sq1.tick_update_length();
+    audio->noise.tick_update_length();
+    audio->wave.tick_update_length();
   }
   if (audio->frame_counter % 8 == 0) {
     audio->sq0.tick_update_volume();
     audio->sq1.tick_update_volume();
+    audio->noise.tick_update_volume();
   }
 }
 

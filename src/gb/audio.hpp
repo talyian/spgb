@@ -12,10 +12,11 @@ u64 get_monotonic_timer();
 struct Audio;
 
 struct Square {
+  Square(u8* d) : data(d) {}
   // These 5 bytes correspond to the 5 registers the CPU controls the square
   // wave with. The FIELD macro will define getter/setters for logical fields
   // based on the data in these bytes.
-  u8 data[5];
+  u8* data;
   LongSampleQueue qq;
 
   #define FIELD(f, index, len, offset)                                 \
@@ -69,8 +70,9 @@ struct Square {
 };
 
 struct Wave {
+  Wave(u8* data) : data(data) { }
   LongSampleQueue qq;
-  u8 data[5];
+  u8* data;
 
   FIELD(dac_power, 0, 1, 7);
   FIELD(counter, 1, 8, 0);
@@ -113,31 +115,21 @@ struct Wave {
     }
   }
 
-  u64 counter_4mhz = 0;
   u64 monotonic_counter = 0;
   void tick(u32 dt) {
-    counter_4mhz += dt;
     monotonic_counter += dt;
-    while (counter_4mhz > 8192) {
-      counter_4mhz -= 8192;
-      tick_512();
-    }
   }
 
-  u32 counter_512hz = 0;
-  void tick_512() {
+  void tick_update_length() {
     if (!status) return;
-    if (counter_512hz++ % 2 == 0) {
-      if (enable_counter()) {
-        counter(counter() - 1);
-        if (counter() == 0) {
-          enable_counter(0);
-          status = 0;
-          vol_bits(0);
-          freq = 0;
-          add_audio_sample();
-        }
-      }
+    if (!enable_counter()) return;
+    counter(counter() - 1);
+    if (counter() == 0) {
+      enable_counter(0);
+      status = 0;
+      vol_bits(0);
+      freq = 0;
+      add_audio_sample();
     }
   }
 
@@ -155,8 +147,9 @@ struct Wave {
 };
 
 struct Noise {
+  Noise(u8* data) : data(data) { }
   // LongSampleQueue qq;
-  u8 data[5];
+  u8* data;
 
   FIELD(counter, 1, 6, 0);
   u8 volume = 0;
@@ -205,42 +198,33 @@ struct Noise {
   void tick(u32 dt) {
     counter_4mhz += dt;
     monotonic_counter += dt;
-    while (counter_4mhz > 8192) {
-      counter_4mhz -= 8192;
-      tick_512();
-    }
   }
 
   u32 counter_512hz = 0;
   u8 volume_ticker = 0;
-  void tick_512() {
-    if (!status) return;
-    if (counter_512hz++ % 2 == 0) {
-      if (enable_counter()) {
-        counter(counter() - 1);
-        if (counter() == 0) {
-          enable_counter(0);
-          status = 0;
-          volume = 0;
-          add_audio_sample();
-        }
-      }
+  void tick_update_length() {
+    if (!enable_counter()) return;
+    counter(counter() - 1);
+    if (counter() == 0) {
+      enable_counter(0);
+      status = 0;
+      volume = 0;
+      add_audio_sample();
     }
-
-    if (counter_512hz % 8 == 7) {
-      if (vol_period()) {
-        if (++volume_ticker == vol_period()) {
-          volume += vol_add() * 2 - 1;
-          // log("AU", channel, "volume", volume);
-          // if (volume < 0x10) write_audio_frame_out(freq, volume / 15.0);
-          if (volume >= 0x10) {
-            volume = 0;
-            vol_period(0);
-          }
-          add_audio_sample();
-          volume_ticker = 0;
+  }
+  void tick_update_volume() {
+    if (vol_period()) {
+      if (++volume_ticker == vol_period()) {
+        volume += vol_add() * 2 - 1;
+        // log("AU", channel, "volume", volume);
+        // if (volume < 0x10) write_audio_frame_out(freq, volume / 15.0);
+        if (volume >= 0x10) {
+          volume = 0;
+          vol_period(0);
         }
-      } 
+        add_audio_sample();
+        volume_ticker = 0;
+      }
     }
   }
 
@@ -271,20 +255,10 @@ struct Audio {
   }
 
   u8 data[0x30];
-  Square sq0;  // FF10 - FF14
-  Square sq1;  // FF15 - FF19
-  Wave wave;   // FF1A - FF1E
-  Noise noise; // FF1F - FF23
-
-  u8 mask[0x30] = {
-    0x80, 0x3F, 0x00, 0xFF, 0xBF,
-    0xFF, 0x3F, 0x00, 0xFF, 0xBF,
-    0x7F, 0xFF, 0x9F, 0xFF, 0xBF,
-    0xFF, 0xFF, 0x00, 0x00, 0xBF,
-    0x00, 0x00, 0x70,
-    0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, // UNUSED
-  };
-
+  Square sq0{ data };  // FF10 - FF14
+  Square sq1{ data + 5 };  // FF15 - FF19
+  Wave wave{ data + 10 };   // FF1A - FF1E
+  Noise noise{ data + 15 }; // FF1F - FF23
   u8 AU16_power = 0; // FF26
 
   bool power() { return AU16_power & 0x80; }
@@ -333,4 +307,3 @@ struct Audio {
   }
 };
 
-void tick_512hz_frame(Audio* audio);
