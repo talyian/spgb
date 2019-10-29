@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <style>
-  body { background:#333; color:#ddd; }
+  body { font:14pt Helvetica; background:#333; color:#ddd; }
   #tile0 { width:128px; height:64px; }
   #bg { width:256px; height: 256px; }
-  a { color:#fff; font-weight:bold; display:inline-block; padding:5px;  }
+a { color:#fff; display:inline-block; padding:5px;  }
   #cvscreen {
-      width:320px;
-      height:288px;
-      border:1px solid green;
+    width:320px;
+    height:288px;
+    border:1px solid green;
+      margin:auto;
+      display:block;
   }
   /* copied from https://stackoverflow.com/questions/7615009 */
   canvas {
@@ -18,14 +20,18 @@
       image-rendering: pixelated;                 /* Awesome future-browsers       */
       -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
   }
+ h1,h2,h3,li,ul,a { font-weight:normal}
+ #container { max-width:960px; margin:auto; }
 </style>
-
+<div id=container>
+<h1>SPGB - C++ Game Boy Color Emulator</h1>
 <input type=file id=file_upload> </input>
-<ul id=file_list_ul>
-  
-</ul>
 <input type=checkbox id=chkPaused><label for=chkPaused>Pause</label></input>
-<canvas id=cvscreen width=160 height=144 style='background:#edf'> </canvas>
+<br>
+<canvas id=cvscreen width=160 height=144> </canvas>
+<ul id=file_list_ul>
+</ul>
+</div>
 <script src=js/file_cache.js> </script>
 <script src=js/renderer.js> </script>
 <script src=js/audio.js> </script>

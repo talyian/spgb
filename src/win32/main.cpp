@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
   AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
   HWND hwnd = win32_emulator.hwnd = CreateWindow(
     wnd_class.lpszClassName,
-    "hi",
+    "SPGB",
     WS_OVERLAPPEDWINDOW,
     CW_USEDEFAULT,
     CW_USEDEFAULT,
