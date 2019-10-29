@@ -1,0 +1,20 @@
+<!doctype html>
+<div id=container>
+    <h1>SPGB - C++ Game Boy Color Emulator</h1>
+    <input type=file id=file_upload> </input>
+    <input type=checkbox id=chkPaused><label for=chkPaused>Pause</label></input>
+    <br>
+    <canvas id=cvscreen width=160 height=144> </canvas>
+    <ul id=file_list_ul>
+    </ul>
+</div>
+
+<script src=play/file_cache.js> </script>
+<script src=play/renderer.js> </script>
+<script src=play/audio.js> </script>
+<script src=play/main.js> </script>
+
+<script>
+ let files = new FileList(file_upload, file_list_ul);
+ files.redraw();
+</script>
