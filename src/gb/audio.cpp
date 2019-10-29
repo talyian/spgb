@@ -43,8 +43,6 @@ void Audio::write(u16 addr, u8 val) {
     } else {
       AU16_power &= ~0x80;
       memset(data, 0, 0x20);
-      memset(&sq0, 0, 5);
-      memset(&sq1, 0, 5);
     }
   }
   else if (!power()) { }
