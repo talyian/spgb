@@ -3,6 +3,8 @@
 #include "io_ports.hpp"
 #include "../utils/audio_stream.hpp"
 
+extern "C" int rand();
+
 extern "C" f64 ceil(f64);
 u16 get_pc();
 u64 get_monotonic_timer();
@@ -56,10 +58,13 @@ struct Square {
   u32 ticks_4hz = 0; // 4Mhz ticks up to 8192 = 512hz(2ms)
   u32 counter_512hz = 0;
   // each chunk is 1.953ms, which is 93.75 samples at 48k
-  u32 sample_counter = 0;// 4Mhz ticks up to 80   = 50khz(20us)
   u64 monotonic_counter = 0;
 
   void tick(u32 dt); 
+  void tick_update_length();
+  void tick_update_sweep();
+  void tick_update_volume();
+
   void add_audio_sample();
 };
 
@@ -91,7 +96,6 @@ struct Wave {
       return;
     }
     if (addr == 1) {
-      
     }
     if (addr == 3) {
       freq = freq_lo() | 0x100 * freq_hi();
@@ -138,7 +142,7 @@ struct Wave {
   }
 
   void add_audio_sample() {
-    log((u32)monotonic_counter, "Wave sample", freq, vol_bits());
+    // log((u32)monotonic_counter, "Wave sample", freq, vol_bits());
     u8 vol_map[4] = { 0, 0xF, 0x7, 0x3};
     u8 volume = vol_map[vol_bits() & 3];
     LongSample s {{(u32)monotonic_counter}, freq, volume};
@@ -151,7 +155,113 @@ struct Wave {
 };
 
 struct Noise {
+  // LongSampleQueue qq;
+  u8 data[5];
 
+  FIELD(counter, 1, 6, 0);
+  u8 volume = 0;
+  FIELD(vol_start,    2, 4 ,4); // unreadable
+  FIELD(vol_add, 2, 1, 3);
+  FIELD(vol_period,    2, 3, 0);
+  FIELD(freq_shift, 3, 4, 4);
+  FIELD(step, 3, 1, 3);
+  FIELD(freq_d, 3, 3, 0);
+
+  FIELD(trigger, 4, 1, 7);
+  FIELD(enable_counter, 4, 1, 6);
+  
+  u8 table[0x10];
+  u8 table_pos = 0;
+
+  u8 status = 0;
+  u8 channel = 3;
+  u8 mask[5] = { 0xFF, 0xFF, 0x00, 0x00, 0xBF };
+  u8   get(u8 addr) { return data[addr] | mask[addr]; }
+  void set(u8 addr, u8 value) {
+    data[addr] = value;
+    log("set NOISE", addr, value);
+    if (addr == 1) { add_audio_sample(); return; }
+    if (addr == 2) { add_audio_sample(); return; }
+    if (addr == 3) {
+      // volume
+      add_audio_sample();
+      return;
+    }
+    if (addr == 4) {
+      if (trigger()) {
+        if (counter() == 0) { enable_counter(1); }
+        table_pos = 0;
+        status = 1;
+        noise_val = 0xFF;
+        volume = vol_start();
+      }
+      add_audio_sample();
+      return;
+    }
+  }
+
+  u64 counter_4mhz = 0;
+  u64 monotonic_counter = 0;
+  void tick(u32 dt) {
+    counter_4mhz += dt;
+    monotonic_counter += dt;
+    while (counter_4mhz > 8192) {
+      counter_4mhz -= 8192;
+      tick_512();
+    }
+  }
+
+  u32 counter_512hz = 0;
+  u8 volume_ticker = 0;
+  void tick_512() {
+    if (!status) return;
+    if (counter_512hz++ % 2 == 0) {
+      if (enable_counter()) {
+        counter(counter() - 1);
+        if (counter() == 0) {
+          enable_counter(0);
+          status = 0;
+          volume = 0;
+          add_audio_sample();
+        }
+      }
+    }
+
+    if (counter_512hz % 8 == 7) {
+      if (vol_period()) {
+        if (++volume_ticker == vol_period()) {
+          volume += vol_add() * 2 - 1;
+          // log("AU", channel, "volume", volume);
+          // if (volume < 0x10) write_audio_frame_out(freq, volume / 15.0);
+          if (volume >= 0x10) {
+            volume = 0;
+            vol_period(0);
+          }
+          add_audio_sample();
+          volume_ticker = 0;
+        }
+      } 
+    }
+  }
+
+  LongSampleQueue qq;
+  u16 noise_val = 0;
+  void add_audio_sample() {
+    u8 d = freq_d() << 1;
+    d += !d;
+    u16 period = (d << freq_shift()) - 1;
+    u16 freq = 2048 - period;
+    log((u32)monotonic_counter, "Noise sample", freq, volume);
+    LongSample s {{(u32)monotonic_counter}, freq, (u8)(0xf * volume)};
+    for(u8 i = 0; i < 32; i++) {
+      s.table[i] = noise_val & 1;
+      u16 carry = (noise_val >> 1 ) ^ noise_val;
+      carry &= 1;
+      noise_val = (noise_val >> 1) | (carry << 15);
+      s.table[i] = (rand() % 8) * 0.2 ;
+    }
+    qq.add(s);
+  }
 };
 
 struct Audio {
@@ -185,6 +295,10 @@ struct Audio {
   u8 _read(u16 addr); 
 
   void write(u16 addr, u8 val);
+
+  u64 monotonic_t = 0;
+  u32 ticks_to_next_frame = 0;
+  u8 frame_counter = 0;
   void tick(u32 dt);
 
   void render_out(f32 sample_rate, u32 num_channels, i32 frames, f32 * data) {
@@ -197,7 +311,6 @@ struct Audio {
     // One graphics is 456 * 154 cycles and lasts 59.7275 seconds.
     // One audio frame at 48khz lasts 87.3813333 frames.
     // 803.65 audio frames per graphics frame.
-
     f32 frame_count = frames;
     f64 tick_count = 4 * 1024 * 1024 * frame_count / sample_rate;
     f64 tick_increment = ceil(4 * 1024 * 1024 / sample_rate);
@@ -208,16 +321,16 @@ struct Audio {
       sq0.qq.tick({tick_update});
       sq1.qq.tick({tick_update});
       wave.qq.tick({tick_update});
-      f32 u = 0, v = 0, w = 0;
+      noise.qq.tick({ tick_update });
+      f32 u = 0, v = 0, w = 0, n = 0;
       u = sq0.qq.sample();
       v = sq1.qq.sample();
       w = wave.qq.sample();
-      // DEBUG: just testing wave out
-      // u = 0;
-      // v = 0;
-
-      data[j++] = u + v + w;
-      data[j++] = u + v + w;
+      n = noise.qq.sample();
+      data[j++] = u + v + w + n;
+      data[j++] = u + v + w + n;
     }
   }
 };
+
+void tick_512hz_frame(Audio* audio);

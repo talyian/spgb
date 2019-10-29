@@ -1,6 +1,9 @@
 #include "base.hpp"
 #include "gb/emulator.hpp"
 
+extern "C" u8 * EXPORT spgb_audio_create_buffer(u32 size) {
+  return new u8[size]; 
+}
 // functions we need to provide since WASM is a freestanding environment
 extern "C" void *memset(void *dest, int c, size_t n) {
   u8 * d = (u8 *)dest;

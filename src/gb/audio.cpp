@@ -18,6 +18,7 @@ u8 Audio::_read(u16 addr) {
   if (addr < 5) { return sq0.get(addr); }
   if (addr < 10) { return sq1.get(addr - 5); }
   if (addr < 15) return wave.get(addr - 10);
+  if (addr < 20) return noise.get(addr - 15);
   return data[addr] | mask[addr];
 }
 
@@ -41,19 +42,41 @@ void Audio::write(u16 addr, u8 val) {
   else if (addr < 5) { sq0.set(addr, val); }
   else if (addr < 10) { sq1.set(addr - 5, val); }
   else if (addr < 15) wave.set(addr - 10, val);
+  else if (addr < 20) noise.set(addr - 15, val); 
   else if (addr < 0x20) data[addr] = val;
   else wave.table[addr - 0x20] = val;
 }
 
+void tick_512hz_frame(Audio* audio) {
+  audio->frame_counter++;
+  if (audio->frame_counter % 2 == 1) {
+    audio->sq0.tick_update_length();
+    audio->sq1.tick_update_length();
+  }
+  if (audio->frame_counter % 8 == 0) {
+    audio->sq0.tick_update_volume();
+    audio->sq1.tick_update_volume();
+  }
+}
+
 void Audio::tick(u32 dt) {
-  if (power()) { 
+  monotonic_t += dt;
+  if (!power()) return;
+  ticks_to_next_frame += dt;
+  while (ticks_to_next_frame >= 8192) {
+    ticks_to_next_frame -= 8192;
+    tick_512hz_frame(this);
+  }
+  if (power()) {
     sq0.tick(dt);
     sq1.tick(dt);
     wave.tick(dt);
+    noise.tick(dt);
   }
 }
 
 void Square::add_audio_sample() {
+  // log((u32)monotonic_counter, "Square Sample", freq, 0xF * volume);
   LongSample s = {(u32)monotonic_counter, freq, (u8)(0xf * volume)};
   for (int i = 0; i < 32; i++) {
     s.table[i] = (i % 16) / 8;
@@ -94,47 +117,37 @@ void Square::set(u8 addr, u8 val) {
     add_audio_sample();
   }
 }
+void Square::tick_update_length() {
+  if (enable_counter()) {
+    length_counter(length_counter() - 1);
+    if (length_counter() == 0) {
+      status = 0;
+      volume = 0;
+      freq = 0;
+      add_audio_sample();
+    }
+  }
+}
+
+void Square::tick_update_volume() {
+  if (volume_period) {
+    if (++volume_ticker == volume_period) {
+      volume += volume_add;
+      // log("AU", channel, "volume", volume);
+      // if (volume < 0x10) write_audio_frame_out(freq, volume / 15.0);
+      if (volume >= 0x10) {
+        volume = 0;
+        volume_period = 0;
+      }
+      add_audio_sample();
+      volume_ticker = 0;
+    }
+  }
+}
 
 void Square::tick(u32 dt) {
     // dt is a 4Mhz clock tick.
     if (!status) { return; }
     ticks_4hz += dt;
-    sample_counter += dt;
     monotonic_counter += dt;
-    // our internal cycle is 512HZ, so we scale 8000x from 4Mhz
-    while(ticks_4hz >= 8192) {
-      ticks_4hz -= 8192;
-      counter_512hz++;
-
-      // decrement length at 256hz
-      if (counter_512hz % 2 == 0) {
-        if (enable_counter()) {
-          // handle length counter
-          length_counter(length_counter() - 1);
-          if (length_counter() == 0) {
-            status = 0;
-            volume = 0;
-            freq = 0;
-            add_audio_sample();
-          }
-        }
-      }
-
-      // update volume envelope at 64hz
-      if (counter_512hz % 8 == 7) {
-        if (volume_period) {
-          if (++volume_ticker == volume_period) {
-            volume += volume_add;
-            // log("AU", channel, "volume", volume);
-            // if (volume < 0x10) write_audio_frame_out(freq, volume / 15.0);
-            if (volume >= 0x10) {
-              volume = 0;
-              volume_period = 0;
-            }
-            add_audio_sample();
-            volume_ticker = 0;
-          }
-        } 
-      }
-    }
   }

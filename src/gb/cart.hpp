@@ -8,20 +8,17 @@
 enum ConsoleType : u8 { CGB, CGB_Only, DMG, SGB };
 enum class BankMode : u8 { ROM, RAM };
 
-struct Mapper {
-  enum { NONE, MBC1, MBC3, MBC5, ERROR } type;
-  Mapper() : mbc1({}) { }
-  union {
-    struct MBC1Data {
-      u8 enable_ram = 0; 
-      u8 rom_bank = 1;
-      u8 ram_bank = 0;
-      // The Mapper:MBC1 mapper only reads 5 bits of the rom bank value. It
-      // can interpret RAM bank writes as an additional top 2 bits of
-      // the rom bank, if it's in ROM banking mode.
-      BankMode bank_mode = BankMode::ROM;
-    } mbc1;
-    struct MBC3Data {
+struct MBC1Data {
+  u8 enable_ram = 0; 
+  u8 rom_bank = 1;
+  u8 ram_bank = 0;
+  // The Mapper:MBC1 mapper only reads 5 bits of the rom bank value. It
+  // can interpret RAM bank writes as an additional top 2 bits of
+  // the rom bank, if it's in ROM banking mode.
+  BankMode bank_mode = BankMode::ROM;
+};
+
+struct MBC3Data {
       u8 enable_ram = 0;
       u8 rom_bank = 1;
       u8 ram_bank = 0;
@@ -52,13 +49,23 @@ struct Mapper {
         rtc_control |= ((new_value /= 2) & 1) << 7; // carry bit, days
         // TODO enable/disable RTC
       }
-    } mbc3;
-    struct MBC5Data {
-      u8 enable_ram = 0;
-      u8 rom_bank = 1;
-      u8 ram_bank = 0;
-      u8 rtc_index = -1;
-    } mbc5;
+};
+
+
+struct MBC5Data {
+  u8 enable_ram = 0;
+  u8 rom_bank = 1;
+  u8 ram_bank = 0;
+  u8 rtc_index = -1;
+};
+
+struct Mapper {
+  enum { NONE, MBC1, MBC3, MBC5, ERROR } type;
+  Mapper() : mbc1({}) { }
+  union {
+    MBC1Data mbc1;
+    MBC3Data mbc3;
+    MBC5Data mbc5;
   };
 };
 

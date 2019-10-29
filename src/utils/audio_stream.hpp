@@ -65,6 +65,7 @@ struct LongSampleQueue {
     if (!current.frequency) return 0;
     if (!current.volume) return 0;
     u16 period = (2048 - current.frequency) * 2;
+    period += !period;
     u16 index = monotonic_ticks / period % 32;
     u8 wave = current.table[index];
     // wave = (index / 16) % 2 == 0;

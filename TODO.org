@@ -1,4 +1,4 @@
-* [26/35] GBE Tasks
+* [26/37] GBE Tasks
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :END:
@@ -7,15 +7,17 @@
    CLOSED: [2019-10-19 Sat 12:24]
    - State "DONE"       from "TODO"       [2019-10-19 Sat 12:24]
    marking as "done" for now. Need to revisit for the RTC.
-** TODO RTC - MBC3
+** TODO RTC - MBC3                                                       :m.2:
    Partially done. implemented spgb_get_timestamp() so that the game actually loads
-   and increment the timer registers.
+   and increment the timer registers. 
 ** DONE Blargg instr_timing
    CLOSED: [2019-10-20 Sun 21:59]
    - State "DONE"       from              [2019-10-20 Sun 21:59]
    the new executor is fantastic. bugfix to timer frequency and some
    edits related to LoadHL and all tests pass.
-** TODO Blargg mem_timing
+** TODO Blargg mem_timing :m.2: :m.2:
+** TODO Blargg interrupt_timing :m.2:
+** TODO HBlank DMA                                                      :m.1:
 ** [11/11] Blargg CPU Tests
 *** DONE Blargg CPU Test 01
 *** DONE Blargg CPU Test 02 - interrupts
@@ -90,4 +92,13 @@ sprite when flipY is on
 * DONE BUG: gbc display broken
   CLOSED: [2019-10-27 Sun 01:47]
   I was loading the wrong Bios: should I always the load the CGB bios, even for DMG roms?
-* TODO BUG: bgbtest audio notes play too long
+* DONE BUG: bgbtest audio notes play too long
+  CLOSED: [2019-10-28 Mon 13:29]
+* Milestone 1 - Initial Release 
+** Sound Issues - Noise Unit, Length bugs, Square0 Sweep
+** Save States
+** HBLank DMA
+* Milestone 2 - Major issues
+** Linux / SDL Port
+** Interrupt Timing
+** DMA Timing
