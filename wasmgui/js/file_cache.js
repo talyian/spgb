@@ -12,7 +12,8 @@ function decode(str) {
     data[i] = str.charCodeAt(i);
   return array;
 }
-            
+
+var current_cart = 0;
 class FileList {
   constructor(file_upload, file_list) {
     this.file_upload = file_upload;
@@ -60,6 +61,8 @@ class FileList {
         let file_name = localStorage.getItem("rom_" + index + "_name");
         let file_data = localStorage.getItem("rom_" + index + "_data");
         list_object.load_cart(decode(file_data))
+        current_cart = file_name;
+        // chkPaused.checked = false;
         return false;
       });
       li.appendChild(a);

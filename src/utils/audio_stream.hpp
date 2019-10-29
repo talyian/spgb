@@ -45,17 +45,11 @@ struct LongSampleQueue {
   void tick(cycle_time_delta ticks) {
     monotonic_ticks += ticks.value;
     current.tick_time = current.tick_time + ticks;
-    while (true) {
-      if (read_pos == write_pos) 
-        return; // queue is empty
-      const LongSample &head = data[read_pos];
-      auto elapsed = head.tick_time - current.tick_time;
-      if (elapsed.value <= 0) {
-        current = head;
-        read_pos = (read_pos + 1) % QUEUESIZE;
-      }
-      else
-        return;
+    while (read_pos != write_pos) {
+      auto elapsed = data[read_pos].tick_time - current.tick_time;
+      if (elapsed.value > 0) return;
+      current = data[read_pos];
+      read_pos = (read_pos + 1) % QUEUESIZE;
     }
   }
 

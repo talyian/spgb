@@ -25,3 +25,4 @@ build-win
 data
 winformui1
 build-wasm
+vs2019

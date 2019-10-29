@@ -3,8 +3,6 @@
 #include "io_ports.hpp"
 #include "../utils/audio_stream.hpp"
 
-extern "C" int rand();
-
 extern "C" f64 ceil(f64);
 u16 get_pc();
 u64 get_monotonic_timer();
@@ -148,9 +146,7 @@ struct Wave {
 
 struct Noise {
   Noise(u8* data) : data(data) { }
-  // LongSampleQueue qq;
   u8* data;
-
   FIELD(counter, 1, 6, 0);
   u8 volume = 0;
   FIELD(vol_start,    2, 4 ,4); // unreadable
@@ -159,20 +155,16 @@ struct Noise {
   FIELD(freq_shift, 3, 4, 4);
   FIELD(step, 3, 1, 3);
   FIELD(freq_d, 3, 3, 0);
-
   FIELD(trigger, 4, 1, 7);
   FIELD(enable_counter, 4, 1, 6);
   
-  u8 table[0x10];
-  u8 table_pos = 0;
-
   u8 status = 0;
   u8 channel = 3;
   u8 mask[5] = { 0xFF, 0xFF, 0x00, 0x00, 0xBF };
   u8   get(u8 addr) { return data[addr] | mask[addr]; }
   void set(u8 addr, u8 value) {
     data[addr] = value;
-    log("set NOISE", addr, value);
+    // log("set NOISE", addr, value);
     if (addr == 1) { add_audio_sample(); return; }
     if (addr == 2) { add_audio_sample(); return; }
     if (addr == 3) {
@@ -183,7 +175,6 @@ struct Noise {
     if (addr == 4) {
       if (trigger()) {
         if (counter() == 0) { enable_counter(1); }
-        table_pos = 0;
         status = 1;
         noise_val = 0xFF;
         volume = vol_start();
@@ -235,14 +226,13 @@ struct Noise {
     d += !d;
     u16 period = (d << freq_shift()) - 1;
     u16 freq = 2048 - period;
-    log((u32)monotonic_counter, "Noise sample", freq, volume);
+    // log((u32)monotonic_counter, "Noise sample", freq, volume);
     LongSample s {{(u32)monotonic_counter}, freq, (u8)(0xf * volume)};
     for(u8 i = 0; i < 32; i++) {
       s.table[i] = noise_val & 1;
       u16 carry = (noise_val >> 1 ) ^ noise_val;
       carry &= 1;
       noise_val = (noise_val >> 1) | (carry << 15);
-      s.table[i] = (rand() % 8) * 0.2 ;
     }
     qq.add(s);
   }

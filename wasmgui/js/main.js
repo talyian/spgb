@@ -37,12 +37,13 @@ fetch("build/gb_emulator.wasm")
     let DEBUG = 2;
     let ERROR = 3;
     function loop() {
-      // if (chkPaused.checked) return;
-      instance.exports.spgb_step_frame(emulator);
+      if (!chkPaused.checked && current_cart)
+        instance.exports.spgb_step_frame(emulator);
       requestAnimationFrame(loop);
     }
+    start_audio();
     requestAnimationFrame(loop);
-    chkPaused.addEventListener("change", loop);
+    // chkPaused.addEventListener("change", loop);
 
     var RIGHT = 0, LEFT = 1, UP = 2, DOWN = 3,
         A = 4, B = 5, SELECT = 6, START = 7,
