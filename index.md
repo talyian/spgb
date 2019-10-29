@@ -11,6 +11,3 @@ Current Status: functional but buggy
 ![mario](images/mario.png)
 ![kirby](images/kirby.png)
 
-## Play On the Web:
-
-<script src=spgb.js> </script>
