@@ -42,8 +42,9 @@ class FileList {
       rom[offset + i] = file_data[i];
     }
     instance.exports.spgb_load_cart(emulator, offset, file_data.byteLength);
+    if (audio) audio.resume();
   }
-  
+
   redraw() {
     this.file_list.innerHTML = "";
     let list_object = this;

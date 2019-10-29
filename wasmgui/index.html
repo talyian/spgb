@@ -24,16 +24,10 @@
 <ul id=file_list_ul>
   
 </ul>
-<input type=checkbox id=chkPaused checked><label for=chkPaused>Pause</label></input>
-<input type=button id=btnStep value=Step></input>
 <canvas id=cvscreen width=160 height=144 style='background:#edf'> </canvas>
-<!--Background map preview - 32x32 tiles * 8x8 tile size = 256 * 256 -->
-<canvas id=bg width=256 height=256 style='background:#def'> </canvas>
-<!--Tile map preview: 16 * 8 tiles each at 8*8-->
-<canvas id=tile0 width=128 height=64 style='background:#fed'> </canvas> 
-<canvas id=tile1 width=128 height=64 style='background:#fed'> </canvas>
-<canvas id=tile2 width=128 height=64 style='background:#fed'> </canvas>
 <script src=js/file_cache.js> </script>
+<script src=js/renderer.js> </script>
+<script src=js/audio.js> </script>
 <script src=js/main.js> </script>
 
 <script>
