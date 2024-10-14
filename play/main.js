@@ -26,7 +26,7 @@ var env = {
   memory:memory,
 };
 
-fetch("build/gb_emulator.wasm")
+fetch("play/gb_emulator.wasm")
   .then((resp) => resp.arrayBuffer())
   .then((wasm) => WebAssembly.instantiate(wasm, { env: env }))
   .then((module) => {
